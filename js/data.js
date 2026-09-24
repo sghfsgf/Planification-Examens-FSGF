@@ -1,3 +1,4 @@
+
 // =====================================================
 // PLANIFICATION DES EXAMENS FSGF
 // DATA.JS
@@ -5,6 +6,10 @@
 // Compatible SITE PUBLIC + ADMIN
 // =====================================================
 
+
+// =====================================================
+// 1. DONNÉES GLOBALES
+// =====================================================
 
 let donneesExamens = {
 
@@ -23,7 +28,29 @@ let donneesRessources = {
 
 
 // =====================================================
-// 1. DÉTERMINER LE CHEMIN DU DOSSIER DATA
+// 2. ÉTAT DU CHARGEMENT
+// =====================================================
+
+let chargementTermine = false;
+
+let chargementReussi = false;
+
+
+// Promesse permettant aux autres fichiers JS
+// d'attendre que les fichiers Excel soient chargés.
+
+let resolveDonneesChargees;
+
+const donneesChargees =
+    new Promise(function (resolve) {
+
+        resolveDonneesChargees = resolve;
+
+    });
+
+
+// =====================================================
+// 3. DÉTERMINER LE CHEMIN DU DOSSIER DATA
 // =====================================================
 
 function obtenirCheminData() {
@@ -37,6 +64,7 @@ function obtenirCheminData() {
        /Planification-Examens-FSGF/admin/
        → ../data/
     */
+
 
     const cheminActuel =
         window.location.pathname;
@@ -57,7 +85,7 @@ function obtenirCheminData() {
 
 
 // =====================================================
-// 2. LECTURE D'UN FICHIER EXCEL
+// 4. LECTURE D'UN FICHIER EXCEL
 // =====================================================
 
 async function lireFichierExcel(url) {
@@ -69,7 +97,8 @@ async function lireFichierExcel(url) {
     if (!reponse.ok) {
 
         throw new Error(
-            `Impossible de charger le fichier Excel : ${url}`
+            `Impossible de charger le fichier Excel : ${url} ` +
+            `(HTTP ${reponse.status})`
         );
 
     }
@@ -81,10 +110,13 @@ async function lireFichierExcel(url) {
 
     const classeur =
         XLSX.read(
+
             tableau,
+
             {
                 type: "array"
             }
+
         );
 
 
@@ -94,12 +126,15 @@ async function lireFichierExcel(url) {
 
 
 // =====================================================
-// 3. CONVERSION D'UNE FEUILLE EXCEL EN TABLEAU JS
+// 5. CONVERSION D'UNE FEUILLE EXCEL
 // =====================================================
 
 function lireFeuille(
+
     classeur,
+
     nomFeuille
+
 ) {
 
     if (
@@ -113,21 +148,60 @@ function lireFeuille(
     }
 
 
-    return XLSX.utils.sheet_to_json(
+    const donnees =
+        XLSX.utils.sheet_to_json(
 
-        classeur.Sheets[nomFeuille],
+            classeur.Sheets[nomFeuille],
 
-        {
-            defval: ""
-        }
+            {
+                defval: ""
+            }
 
+        );
+
+
+    // -------------------------------------------------
+    // Diagnostic de la structure de la feuille
+    // -------------------------------------------------
+
+    console.log(
+        `Feuille "${nomFeuille}" :`,
+        donnees.length,
+        "ligne(s)"
     );
+
+
+    if (donnees.length > 0) {
+
+        console.log(
+            `Colonnes "${nomFeuille}" :`,
+            Object.keys(donnees[0])
+        );
+
+
+        console.log(
+            `Premier enregistrement "${nomFeuille}" :`,
+            donnees[0]
+        );
+
+    }
+
+    else {
+
+        console.warn(
+            `⚠ La feuille "${nomFeuille}" est vide.`
+        );
+
+    }
+
+
+    return donnees;
 
 }
 
 
 // =====================================================
-// 4. CHARGEMENT DU FICHIER PARAMÉTRAGE
+// 6. CHARGEMENT DU FICHIER PARAMÉTRAGE
 // =====================================================
 
 async function chargerParametrageExamens() {
@@ -136,35 +210,66 @@ async function chargerParametrageExamens() {
         obtenirCheminData();
 
 
+    const url =
+        cheminData +
+        "parametrage_examens.xlsx";
+
+
+    console.log(
+        "Chargement :",
+        url
+    );
+
+
     const classeur =
-        await lireFichierExcel(
+        await lireFichierExcel(url);
 
-            cheminData +
-            "parametrage_examens.xlsx"
 
-        );
-
+    // -------------------------------------------------
+    // Matières
+    // -------------------------------------------------
 
     donneesExamens.matieres =
         lireFeuille(
+
             classeur,
+
             "matieres"
+
         );
 
+
+    // -------------------------------------------------
+    // Sessions
+    // -------------------------------------------------
 
     donneesExamens.sessions =
         lireFeuille(
+
             classeur,
+
             "sessions"
+
         );
 
+
+    // -------------------------------------------------
+    // Créneaux
+    // -------------------------------------------------
 
     donneesExamens.creneaux =
         lireFeuille(
+
             classeur,
+
             "creneaux"
+
         );
 
+
+    // -------------------------------------------------
+    // Résumé
+    // -------------------------------------------------
 
     console.log(
         "✓ parametrage_examens.xlsx chargé"
@@ -192,7 +297,7 @@ async function chargerParametrageExamens() {
 
 
 // =====================================================
-// 5. CHARGEMENT DES SALLES ET AMPHIS
+// 7. CHARGEMENT DES SALLES ET AMPHIS
 // =====================================================
 
 async function chargerSallesAmphis() {
@@ -201,19 +306,26 @@ async function chargerSallesAmphis() {
         obtenirCheminData();
 
 
+    const url =
+        cheminData +
+        "salles_amphis.xlsx";
+
+
+    console.log(
+        "Chargement :",
+        url
+    );
+
+
     const classeur =
-        await lireFichierExcel(
-
-            cheminData +
-            "salles_amphis.xlsx"
-
-        );
+        await lireFichierExcel(url);
 
 
     donneesRessources.sallesAmphis =
         lireFeuille(
 
             classeur,
+
             "salles_amphis"
 
         );
@@ -233,17 +345,39 @@ async function chargerSallesAmphis() {
 
 
 // =====================================================
-// 6. CHARGEMENT GLOBAL
+// 8. CHARGEMENT GLOBAL
 // =====================================================
 
 async function chargerToutesLesDonnees() {
 
     try {
 
+        chargementTermine = false;
+
+        chargementReussi = false;
+
+
+        // ---------------------------------------------
+        // Paramétrage des examens
+        // ---------------------------------------------
+
         await chargerParametrageExamens();
 
 
+        // ---------------------------------------------
+        // Salles / amphis
+        // ---------------------------------------------
+
         await chargerSallesAmphis();
+
+
+        // ---------------------------------------------
+        // Confirmation
+        // ---------------------------------------------
+
+        chargementTermine = true;
+
+        chargementReussi = true;
 
 
         console.log(
@@ -261,6 +395,10 @@ async function chargerToutesLesDonnees() {
         );
 
 
+        // Résoudre la promesse
+        resolveDonneesChargees(true);
+
+
         return true;
 
     }
@@ -268,10 +406,36 @@ async function chargerToutesLesDonnees() {
 
     catch (erreur) {
 
+        chargementTermine = true;
+
+        chargementReussi = false;
+
+
         console.error(
-            "❌ Erreur de chargement des données :",
+            "===================================="
+        );
+
+
+        console.error(
+            "❌ ERREUR DE CHARGEMENT DES DONNÉES"
+        );
+
+
+        console.error(
             erreur
         );
+
+
+        console.error(
+            "===================================="
+        );
+
+
+        // Résoudre quand même la promesse
+        // pour éviter qu'un autre script
+        // reste bloqué indéfiniment.
+
+        resolveDonneesChargees(false);
 
 
         return false;
@@ -282,7 +446,7 @@ async function chargerToutesLesDonnees() {
 
 
 // =====================================================
-// 7. ACCÈS AUX DONNÉES
+// 9. ACCÈS AUX DONNÉES
 // =====================================================
 
 function obtenirMatieres() {
@@ -314,7 +478,28 @@ function obtenirSallesAmphis() {
 
 
 // =====================================================
-// 8. INITIALISATION
+// 10. ÉTAT DU CHARGEMENT
+// =====================================================
+
+function donneesSontChargees() {
+
+    return chargementTermine;
+
+}
+
+
+function donneesSontDisponibles() {
+
+    return (
+        chargementTermine &&
+        chargementReussi
+    );
+
+}
+
+
+// =====================================================
+// 11. INITIALISATION
 // =====================================================
 
 document.addEventListener(
@@ -328,3 +513,4 @@ document.addEventListener(
     }
 
 );
+
