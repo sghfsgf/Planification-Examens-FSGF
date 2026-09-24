@@ -389,32 +389,68 @@ async function chargerParametrageExamens() {
         );
 
 
+   // -------------------------------------------------
+// Sessions
+// -------------------------------------------------
+
+donneesExamens.sessions =
+    lireFeuille(
+
+        classeur,
+
+        "sessions"
+
+    ).map(function (session) {
+
+        return {
+
+            ...session,
+
+            dateDebutAffichage:
+                formaterDate(
+                    session.dateDebut
+                ),
+
+            dateFinAffichage:
+                formaterDate(
+                    session.dateFin
+                )
+
+        };
+
+    });
+
+
     // -------------------------------------------------
-    // Sessions
-    // -------------------------------------------------
+// Créneaux
+// -------------------------------------------------
 
-    donneesExamens.sessions =
-        lireFeuille(
+donneesExamens.creneaux =
+    lireFeuille(
 
-            classeur,
+        classeur,
 
-            "sessions"
+        "creneaux"
 
-        );
+    ).map(function (creneau) {
 
+        return {
 
-    // -------------------------------------------------
-    // Créneaux
-    // -------------------------------------------------
+            ...creneau,
 
-    donneesExamens.creneaux =
-        lireFeuille(
+            heureDebutAffichage:
+                convertirHeureExcel(
+                    creneau.heureDebut
+                ),
 
-            classeur,
+            heureFinAffichage:
+                convertirHeureExcel(
+                    creneau.heureFin
+                )
 
-            "creneaux"
+        };
 
-        );
+    });
 
 
     // -------------------------------------------------
