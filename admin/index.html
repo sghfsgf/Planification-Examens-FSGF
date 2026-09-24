@@ -781,89 +781,92 @@
     </footer>
 
 
-    <!-- =====================================================
-         BIBLIOTHÈQUE SHEETJS
-         
-         Sera utilisée pour lire les fichiers Excel.
-    ====================================================== -->
+   <!-- =====================================================
+     BIBLIOTHÈQUE SHEETJS
+====================================================== -->
 
-    <script
-        src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-    </script>
+<script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+</script>
 
 
-    <!-- =====================================================
-         SCRIPT ADMIN
-         
-         La logique sera ajoutée progressivement.
-    ====================================================== -->
+<!-- =====================================================
+     DONNÉES EXCEL
+====================================================== -->
 
-    <script>
-
-        document.addEventListener(
-            "DOMContentLoaded",
-            function () {
-
-                const boutons =
-                    document.querySelectorAll(
-                        ".menu-admin button[data-section]"
-                    );
-
-                const sections =
-                    document.querySelectorAll(
-                        ".section-admin"
-                    );
+<script src="../js/data.js"></script>
 
 
-                boutons.forEach(function (bouton) {
+<!-- =====================================================
+     SCRIPT ADMIN
+====================================================== -->
 
-                    bouton.addEventListener(
-                        "click",
-                        function () {
+<script>
 
-                            const idSection =
-                                bouton.dataset.section;
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
 
+            const boutons =
+                document.querySelectorAll(
+                    ".menu-admin button[data-section]"
+                );
 
-                            sections.forEach(
-                                function (section) {
-
-                                    section.classList.remove(
-                                        "active"
-                                    );
-
-                                }
-                            );
-
-
-                            const section =
-                                document.getElementById(
-                                    idSection
-                                );
+            const sections =
+                document.querySelectorAll(
+                    ".section-admin"
+                );
 
 
-                            if (section) {
+            boutons.forEach(function (bouton) {
 
-                                section.classList.add(
+                bouton.addEventListener(
+                    "click",
+                    function () {
+
+                        const idSection =
+                            bouton.dataset.section;
+
+
+                        sections.forEach(
+                            function (section) {
+
+                                section.classList.remove(
                                     "active"
                                 );
 
                             }
+                        );
+
+
+                        const section =
+                            document.getElementById(
+                                idSection
+                            );
+
+
+                        if (section) {
+
+                            section.classList.add(
+                                "active"
+                            );
 
                         }
-                    );
 
-                });
-
-
-                console.log(
-                    "Administration : interface initialisée."
+                    }
                 );
 
-            }
-        );
+            });
 
-    </script>
+
+            console.log(
+                "Administration : interface initialisée."
+            );
+
+        }
+    );
+
+</script>
 
 </body>
 
