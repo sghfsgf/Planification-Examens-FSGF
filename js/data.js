@@ -199,6 +199,156 @@ function lireFeuille(
 
 }
 
+// =====================================================
+// 5 BIS. CONVERSION DES DATES ET HORAIRES EXCEL
+// =====================================================
+
+function convertirDateExcel(valeur) {
+
+    if (
+        valeur === "" ||
+        valeur === null ||
+        valeur === undefined
+    ) {
+
+        return null;
+
+    }
+
+
+    const nombre =
+        Number(valeur);
+
+
+    if (Number.isNaN(nombre)) {
+
+        return null;
+
+    }
+
+
+    const dateExcel =
+        XLSX.SSF.parse_date_code(nombre);
+
+
+    if (!dateExcel) {
+
+        return null;
+
+    }
+
+
+    return new Date(
+
+        dateExcel.y,
+
+        dateExcel.m - 1,
+
+        dateExcel.d
+
+    );
+
+}
+
+
+// -----------------------------------------------------
+// Format : JJ/MM/AAAA
+// Exemple : 14/12/2025
+// -----------------------------------------------------
+
+function formaterDate(valeur) {
+
+    const date =
+        convertirDateExcel(valeur);
+
+
+    if (!date) {
+
+        return "";
+
+    }
+
+
+    const jour =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
+
+
+    const mois =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+
+
+    const annee =
+        date.getFullYear();
+
+
+    return (
+        jour +
+        "/" +
+        mois +
+        "/" +
+        annee
+    );
+
+}
+
+
+// -----------------------------------------------------
+// Format : HHhMM
+// Exemple : 08h00
+// -----------------------------------------------------
+
+function convertirHeureExcel(valeur) {
+
+    if (
+        valeur === "" ||
+        valeur === null ||
+        valeur === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    const fraction =
+        Number(valeur);
+
+
+    if (Number.isNaN(fraction)) {
+
+        return "";
+
+    }
+
+
+    let totalMinutes =
+        Math.round(
+            fraction * 24 * 60
+        );
+
+
+    const heures =
+        Math.floor(
+            totalMinutes / 60
+        );
+
+
+    const minutes =
+        totalMinutes % 60;
+
+
+    return (
+        String(heures).padStart(2, "0") +
+        "h" +
+        String(minutes).padStart(2, "0")
+    );
+
+}
+
 
 // =====================================================
 // 6. CHARGEMENT DU FICHIER PARAMÉTRAGE
