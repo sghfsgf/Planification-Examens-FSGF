@@ -11,6 +11,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const niveauCalendrier =
         document.getElementById("niveauCalendrier");
 
+    const selectSemestre =
+        document.getElementById("selectSemestre");
+
+    const selectRegime =
+        document.getElementById("selectRegime");
+
+    const selectSession =
+        document.getElementById("selectSession");
+
 
     // =================================================
     // CONSTRUIRE LE CALENDRIER
@@ -28,65 +37,74 @@ document.addEventListener("DOMContentLoaded", function () {
         // -------------------------------------------------
 
         if (!tableau) {
+
             console.error(
                 "Calendrier : tableauCalendrier introuvable."
             );
+
             return;
         }
 
 
         if (!niveauCalendrier) {
+
             console.error(
                 "Calendrier : niveauCalendrier introuvable."
             );
+
             return;
         }
 
 
         // -------------------------------------------------
-        // Vérification des données
+        // Récupération des données chargées par data.js
         // -------------------------------------------------
 
-       // -------------------------------------------------
-// Récupération des données chargées par data.js
-// -------------------------------------------------
+        if (
+            typeof donneesExamens === "undefined" ||
+            !donneesExamens
+        ) {
 
-if (
-    typeof donneesExamens === "undefined" ||
-    !donneesExamens
-) {
+            console.error(
+                "Calendrier : donneesExamens introuvable."
+            );
 
-    console.error(
-        "Calendrier : donneesExamens introuvable."
-    );
-
-    return;
-}
+            return;
+        }
 
 
-const matieres =
-    donneesExamens.matieres || [];
+        const matieres =
+            donneesExamens.matieres || [];
 
-const sessions =
-    donneesExamens.sessions || [];
+        const sessions =
+            donneesExamens.sessions || [];
 
-const creneaux =
-    donneesExamens.creneaux || [];
+        const creneaux =
+            donneesExamens.creneaux || [];
 
-const sallesAmphis =
-    donneesExamens.sallesAmphis || [];
-
-
-console.log("Matières :", matieres);
-console.log("Sessions :", sessions);
-console.log("Créneaux :", creneaux);
-console.log("Salles / amphis :", sallesAmphis);
+        const sallesAmphis =
+            donneesExamens.sallesAmphis || [];
 
 
-        console.log("Matières :", matieres);
-        console.log("Sessions :", sessions);
-        console.log("Créneaux :", creneaux);
-        console.log("Salles / Amphis :", sallesAmphis);
+        console.log(
+            "Matières :",
+            matieres
+        );
+
+        console.log(
+            "Sessions :",
+            sessions
+        );
+
+        console.log(
+            "Créneaux :",
+            creneaux
+        );
+
+        console.log(
+            "Salles / amphis :",
+            sallesAmphis
+        );
 
 
         // -------------------------------------------------
@@ -112,17 +130,71 @@ console.log("Salles / amphis :", sallesAmphis);
             niveauCalendrier.textContent.trim();
 
 
+        // -------------------------------------------------
+        // Paramètres sélectionnés
+        // -------------------------------------------------
+
+        const semestre =
+            selectSemestre
+                ? selectSemestre.value
+                : "";
+
+        const regime =
+            selectRegime
+                ? selectRegime.value
+                : "";
+
+        const sessionCode =
+            selectSession
+                ? selectSession.value
+                : "";
+
+
         console.log(
-            "Niveau du calendrier :",
+            "Niveau :",
             niveau
+        );
+
+        console.log(
+            "Semestre :",
+            semestre
+        );
+
+        console.log(
+            "Régime :",
+            regime
+        );
+
+        console.log(
+            "Session sélectionnée :",
+            sessionCode
         );
 
 
         // -------------------------------------------------
-        // Vérification des créneaux
+        // Vérification des données
         // -------------------------------------------------
 
-        if (!creneaux || creneaux.length === 0) {
+        if (matieres.length === 0) {
+
+            console.warn(
+                "Calendrier : aucune matière disponible."
+            );
+
+        }
+
+
+        if (sessions.length === 0) {
+
+            console.warn(
+                "Calendrier : aucune session disponible."
+            );
+
+            return;
+        }
+
+
+        if (creneaux.length === 0) {
 
             console.warn(
                 "Calendrier : aucun créneau disponible."
@@ -132,90 +204,155 @@ console.log("Salles / amphis :", sallesAmphis);
         }
 
 
-        // -------------------------------------------------
-        // EN-TÊTE DU CALENDRIER
-        // -------------------------------------------------
+        // =================================================
+        // SESSION SÉLECTIONNÉE
+        // =================================================
 
-        const ligneEntete =
-            document.createElement("tr");
+        const sessionSelectionnee =
+            sessions.find(function (session) {
 
-
-        // Colonne FILIÈRE
-
-        const thFiliere =
-            document.createElement("th");
-
-        thFiliere.textContent =
-            "FILIÈRE";
-
-        ligneEntete.appendChild(thFiliere);
-
-
-        // Colonne AMPHIS
-
-        const thAmphis =
-            document.createElement("th");
-
-        thAmphis.textContent =
-            "AMPHIS";
-
-        ligneEntete.appendChild(thAmphis);
-
-
-        // -------------------------------------------------
-        // Pour le moment :
-        // affichage des créneaux disponibles
-        // -------------------------------------------------
-
-        creneaux.forEach(function (creneau) {
-
-            const th =
-                document.createElement("th");
-
-
-            const heureDebut =
-                creneau.heureDebutAffichage ||
-                convertirHeureExcel(
-                    creneau.heureDebut
+                return (
+                    session.sessionCode ===
+                    sessionCode
                 );
 
-
-            const heureFin =
-                creneau.heureFinAffichage ||
-                convertirHeureExcel(
-                    creneau.heureFin
-                );
+            });
 
 
-            th.innerHTML =
-                "Créneau " +
-                creneau.creneauOrdre +
-                "<br>" +
-                heureDebut +
-                " – " +
-                heureFin;
+        if (!sessionSelectionnee) {
 
+            console.warn(
+                "Calendrier : session introuvable :",
+                sessionCode
+            );
 
-            ligneEntete.appendChild(th);
-
-        });
-
-
-        thead.appendChild(ligneEntete);
+            return;
+        }
 
 
         // -------------------------------------------------
+        // Vérification semestre / régime
+        // -------------------------------------------------
+
+        if (
+            sessionSelectionnee.semestreCode !==
+            semestre
+        ) {
+
+            console.warn(
+                "Calendrier : la session ne correspond pas au semestre sélectionné."
+            );
+
+            return;
+        }
+
+
+        if (
+            sessionSelectionnee.regimeCode !==
+            regime
+        ) {
+
+            console.warn(
+                "Calendrier : la session ne correspond pas au régime sélectionné."
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Session trouvée :",
+            sessionSelectionnee
+        );
+
+
+        // =================================================
+        // CRÉNEAUX DE LA SESSION
+        // =================================================
+
+        const creneauxSession =
+            creneaux
+                .filter(function (creneau) {
+
+                    return (
+                        creneau.sessionCode ===
+                        sessionCode
+                    );
+
+                })
+                .sort(function (a, b) {
+
+                    return (
+                        Number(a.creneauOrdre) -
+                        Number(b.creneauOrdre)
+                    );
+
+                });
+
+
+        console.log(
+            "Créneaux de la session",
+            sessionCode,
+            ":",
+            creneauxSession
+        );
+
+
+        if (creneauxSession.length === 0) {
+
+            console.warn(
+                "Calendrier : aucun créneau pour la session sélectionnée."
+            );
+
+            return;
+        }
+
+
+        // =================================================
+        // MATIÈRES DU NIVEAU
+        // =================================================
+
+        const matieresNiveau =
+            matieres.filter(function (matiere) {
+
+                return (
+                    matiere.niveauCode ===
+                    niveau
+                );
+
+            });
+
+
+        console.log(
+            "Matières du niveau",
+            niveau,
+            ":",
+            matieresNiveau
+        );
+
+
+        // =================================================
         // FILIÈRES DU NIVEAU
-        // -------------------------------------------------
+        // =================================================
 
         const filieres =
             [
                 ...new Set(
-                    matieres
+
+                    matieresNiveau
                         .filter(function (matiere) {
 
                             return (
-                                matiere.niveauCode === niveau
+                                matiere.semestreCode ===
+                                semestre
+                            );
+
+                        })
+                        .filter(function (matiere) {
+
+                            return (
+                                matiere.regimeCode ===
+                                regime
                             );
 
                         })
@@ -225,6 +362,7 @@ console.log("Salles / amphis :", sallesAmphis);
 
                         })
                         .filter(Boolean)
+
                 )
             ];
 
@@ -237,60 +375,307 @@ console.log("Salles / amphis :", sallesAmphis);
         );
 
 
+        // =================================================
+        // EN-TÊTE DU CALENDRIER
+        // =================================================
+
+        const ligneEntete =
+            document.createElement("tr");
+
+
         // -------------------------------------------------
-        // LIGNES DU CALENDRIER
+        // Colonne FILIÈRE
         // -------------------------------------------------
 
-        filieres.forEach(function (filiere) {
+        const thFiliere =
+            document.createElement("th");
 
-            const ligne =
-                document.createElement("tr");
+        thFiliere.textContent =
+            "FILIÈRE";
 
-
-            // Filière
-
-            const celluleFiliere =
-                document.createElement("td");
-
-            celluleFiliere.textContent =
-                filiere;
-
-            ligne.appendChild(celluleFiliere);
+        ligneEntete.appendChild(
+            thFiliere
+        );
 
 
-            // Amphis
+        // -------------------------------------------------
+        // Colonne AMPHIS
+        // -------------------------------------------------
 
-            const celluleAmphis =
-                document.createElement("td");
+        const thAmphis =
+            document.createElement("th");
 
-            celluleAmphis.textContent =
-                "";
+        thAmphis.textContent =
+            "AMPHIS";
 
-            ligne.appendChild(celluleAmphis);
+        ligneEntete.appendChild(
+            thAmphis
+        );
 
 
-            // Cellules des créneaux
+        // -------------------------------------------------
+        // Colonnes des créneaux
+        // -------------------------------------------------
 
-            creneaux.forEach(function () {
+        creneauxSession.forEach(
+            function (creneau) {
 
-                const cellule =
+                const th =
+                    document.createElement("th");
+
+
+                const heureDebut =
+                    creneau.heureDebutAffichage ||
+                    convertirHeureExcel(
+                        creneau.heureDebut
+                    );
+
+
+                const heureFin =
+                    creneau.heureFinAffichage ||
+                    convertirHeureExcel(
+                        creneau.heureFin
+                    );
+
+
+                th.innerHTML =
+                    "Créneau " +
+                    creneau.creneauOrdre +
+                    "<br>" +
+                    heureDebut +
+                    " – " +
+                    heureFin;
+
+
+                ligneEntete.appendChild(th);
+
+            }
+        );
+
+
+        thead.appendChild(
+            ligneEntete
+        );
+
+
+        // =================================================
+        // LIGNES DES FILIÈRES
+        // =================================================
+
+        filieres.forEach(
+            function (filiere) {
+
+                const ligne =
+                    document.createElement("tr");
+
+
+                // -------------------------------------------------
+                // FILIÈRE
+                // -------------------------------------------------
+
+                const celluleFiliere =
                     document.createElement("td");
 
-                cellule.textContent =
+                celluleFiliere.textContent =
+                    filiere;
+
+                ligne.appendChild(
+                    celluleFiliere
+                );
+
+
+                // -------------------------------------------------
+                // AMPHIS
+                // -------------------------------------------------
+
+                const celluleAmphis =
+                    document.createElement("td");
+
+                celluleAmphis.textContent =
                     "";
 
-                ligne.appendChild(cellule);
+                ligne.appendChild(
+                    celluleAmphis
+                );
 
-            });
+
+                // -------------------------------------------------
+                // CELLULES DES CRÉNEAUX
+                // -------------------------------------------------
+
+                creneauxSession.forEach(
+                    function () {
+
+                        const cellule =
+                            document.createElement("td");
+
+                        cellule.textContent =
+                            "";
+
+                        ligne.appendChild(
+                            cellule
+                        );
+
+                    }
+                );
 
 
-            tbody.appendChild(ligne);
+                tbody.appendChild(
+                    ligne
+                );
 
-        });
+            }
+        );
 
 
         console.log(
             "✓ Calendrier construit."
+        );
+
+    }
+
+
+    // =====================================================
+    // MISE À JOUR DES SESSIONS
+    // =====================================================
+
+    function mettreAJourSessions() {
+
+        if (
+            !selectSemestre ||
+            !selectRegime ||
+            !selectSession
+        ) {
+
+            return;
+        }
+
+
+        if (
+            typeof donneesExamens === "undefined" ||
+            !donneesExamens
+        ) {
+
+            return;
+        }
+
+
+        const semestre =
+            selectSemestre.value;
+
+        const regime =
+            selectRegime.value;
+
+        const sessions =
+            donneesExamens.sessions || [];
+
+
+        // -------------------------------------------------
+        // Sessions correspondant au semestre + régime
+        // -------------------------------------------------
+
+        const sessionsDisponibles =
+            sessions.filter(
+                function (session) {
+
+                    return (
+                        session.semestreCode ===
+                        semestre &&
+
+                        session.regimeCode ===
+                        regime
+                    );
+
+                }
+            );
+
+
+        console.log(
+            "Sessions disponibles :",
+            sessionsDisponibles
+        );
+
+
+        // -------------------------------------------------
+        // Reconstruction de la liste
+        // -------------------------------------------------
+
+        selectSession.innerHTML = "";
+
+
+        sessionsDisponibles.forEach(
+            function (session) {
+
+                const option =
+                    document.createElement("option");
+
+
+                option.value =
+                    session.sessionCode;
+
+
+                option.textContent =
+                    session.sessionLibelle;
+
+
+                selectSession.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        // -------------------------------------------------
+        // Reconstruction du calendrier
+        // -------------------------------------------------
+
+        construireCalendrier();
+
+    }
+
+
+    // =====================================================
+    // ÉVÉNEMENTS DES FILTRES
+    // =====================================================
+
+    if (selectSemestre) {
+
+        selectSemestre.addEventListener(
+            "change",
+            function () {
+
+                mettreAJourSessions();
+
+            }
+        );
+
+    }
+
+
+    if (selectRegime) {
+
+        selectRegime.addEventListener(
+            "change",
+            function () {
+
+                mettreAJourSessions();
+
+            }
+        );
+
+    }
+
+
+    if (selectSession) {
+
+        selectSession.addEventListener(
+            "change",
+            function () {
+
+                construireCalendrier();
+
+            }
         );
 
     }
@@ -305,15 +690,20 @@ console.log("Salles / amphis :", sallesAmphis);
         donneesChargees
     ) {
 
-        donneesChargees.then(function () {
+        donneesChargees.then(
+            function () {
 
-            console.log(
-                "Calendriers : données reçues."
-            );
+                console.log(
+                    "Calendriers : données reçues."
+                );
 
-            construireCalendrier();
 
-        });
+                // Initialiser la liste des sessions
+
+                mettreAJourSessions();
+
+            }
+        );
 
     } else {
 
