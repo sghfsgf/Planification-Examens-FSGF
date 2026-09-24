@@ -475,24 +475,43 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    // =====================================================
-    // 11. CONSTRUCTION INITIALE
-    // =====================================================
+   // =====================================================
+// 11. ATTENDRE LE CHARGEMENT COMPLET DES DONNÉES
+// =====================================================
 
-    /*
-     * data.js charge les fichiers Excel de manière
-     * asynchrone.
-     *
-     * On attend donc légèrement avant de construire
-     * le tableau.
-     */
+if (typeof donneesChargees !== "undefined") {
 
-    setTimeout(function () {
+    donneesChargees.then(function (succes) {
 
-        construireCalendrier();
+        if (succes) {
 
-    }, 300);
+            console.log(
+                "Calendriers : données Excel complètement chargées."
+            );
 
+            construireCalendrier();
+
+        }
+
+        else {
+
+            console.error(
+                "Calendriers : impossible de construire le calendrier."
+            );
+
+        }
+
+    });
+
+}
+
+else {
+
+    console.error(
+        "Calendriers : la promesse donneesChargees est introuvable."
+    );
+
+}
 
     // =====================================================
     // 12. EXPOSER LA FONCTION
