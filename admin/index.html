@@ -4,7 +4,7 @@
 
 <head>
 
-```
+
 <meta charset="UTF-8">
 
 <meta
@@ -20,13 +20,12 @@
     rel="stylesheet"
     href="style-admin.css"
 >
-```
+
 
 </head>
 
 <body>
 
-```
 <!-- =====================================================
      EN-TÊTE ADMINISTRATION
 ====================================================== -->
@@ -875,8 +874,178 @@
     );
 
 </script>
-```
+<!--877========================================
+    <!-- =====================================================
+     BIBLIOTHÈQUE SHEETJS
+====================================================== -->
 
+<script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+</script>
+
+
+<!-- =====================================================
+     TEST FIREBASE / FIRESTORE
+====================================================== -->
+
+<script type="module">
+
+    import { app } from "../firebase-config.js";
+
+    import {
+        getFirestore,
+        collection,
+        getDocs
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+
+    // =====================================================
+    // INITIALISATION FIRESTORE
+    // =====================================================
+
+    const db = getFirestore(app);
+
+
+    console.log(
+        "✓ Firebase initialisé :",
+        app.options.projectId
+    );
+
+
+    // =====================================================
+    // TEST DE LECTURE FIRESTORE
+    // =====================================================
+
+    try {
+
+        const resultat =
+            await getDocs(
+                collection(
+                    db,
+                    "test_connexion"
+                )
+            );
+
+
+        console.log(
+            "✓ Firestore accessible"
+        );
+
+
+        console.log(
+            "Nombre de documents :",
+            resultat.size
+        );
+
+
+        resultat.forEach(
+            function (documentFirestore) {
+
+                console.log(
+                    "Document :",
+                    documentFirestore.id
+                );
+
+
+                console.log(
+                    "Données :",
+                    documentFirestore.data()
+                );
+
+            }
+        );
+
+    } catch (erreur) {
+
+        console.error(
+            "✗ Erreur Firestore :",
+            erreur
+        );
+
+    }
+
+</script>
+
+
+<!-- =====================================================
+     DONNÉES EXCEL
+====================================================== -->
+
+<script src="../js/data.js"></script>
+
+
+<!-- =====================================================
+     SCRIPT ADMIN
+====================================================== -->
+
+<script>
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            const boutons =
+                document.querySelectorAll(
+                    ".menu-admin button[data-section]"
+                );
+
+            const sections =
+                document.querySelectorAll(
+                    ".section-admin"
+                );
+
+
+            boutons.forEach(function (bouton) {
+
+                bouton.addEventListener(
+                    "click",
+                    function () {
+
+                        const idSection =
+                            bouton.dataset.section;
+
+
+                        sections.forEach(
+                            function (section) {
+
+                                section.classList.remove(
+                                    "active"
+                                );
+
+                            }
+                        );
+
+
+                        const section =
+                            document.getElementById(
+                                idSection
+                            );
+
+
+                        if (section) {
+
+                            section.classList.add(
+                                "active"
+                            );
+
+                        }
+
+                    }
+                );
+
+            });
+
+
+            console.log(
+                "Administration : interface initialisée."
+            );
+
+        }
+    );
+
+</script>
+
+ 
 </body>
 
 </html>
