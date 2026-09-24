@@ -1,0 +1,1038 @@
+/* =========================================================
+   PLANIFICATION DES EXAMENS - FSGF
+   STYLE PRINCIPAL
+========================================================= */
+
+
+/* =========================================================
+   1. VARIABLES
+========================================================= */
+
+:root {
+    --bleu-principal: #1e5a8a;
+    --bleu-clair: #eaf4fb;
+    --bleu-bordure: #b8d5e8;
+
+    --orange-principal: #e68a2e;
+    --orange-clair: #fff4e6;
+
+    --vert: #198754;
+    --vert-clair: #e9f7ef;
+
+    --rouge: #c0392b;
+    --rouge-clair: #fdecea;
+
+    --gris-fond: #f5f7fa;
+    --gris-bordure: #d9e0e7;
+    --gris-texte: #555;
+
+    --blanc: #ffffff;
+    --noir: #222;
+
+    --ombre: 0 3px 12px rgba(0, 0, 0, 0.08);
+
+    --rayon: 10px;
+}
+
+
+/* =========================================================
+   2. RESET
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    font-size: 16px;
+
+    line-height: 1.5;
+
+    background: var(--gris-fond);
+
+    color: var(--noir);
+}
+
+
+/* =========================================================
+   3. EN-TÊTE
+========================================================= */
+
+.entete {
+    background: linear-gradient(
+        135deg,
+        var(--bleu-principal),
+        #2e78ad
+    );
+
+    color: var(--blanc);
+
+    text-align: center;
+
+    padding: 25px 15px;
+
+    box-shadow: var(--ombre);
+}
+
+.entete h1 {
+    margin: 0;
+
+    font-size: 28px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+}
+
+.entete p {
+    margin: 7px 0 0;
+
+    font-size: 16px;
+
+    opacity: 0.95;
+}
+
+
+/* =========================================================
+   4. MENU PRINCIPAL
+========================================================= */
+
+.menu-principal {
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    padding: 12px 15px;
+
+    background: var(--blanc);
+
+    border-bottom: 1px solid var(--gris-bordure);
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 100;
+}
+
+.menu-principal button {
+    border: 1px solid var(--bleu-bordure);
+
+    background: var(--bleu-clair);
+
+    color: var(--bleu-principal);
+
+    padding: 10px 15px;
+
+    border-radius: 7px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.menu-principal button:hover {
+    background: var(--bleu-principal);
+
+    color: var(--blanc);
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   5. ESPACE DE TRAVAIL
+========================================================= */
+
+.espace-travail {
+    width: min(1400px, 96%);
+
+    margin: 25px auto;
+
+    min-height: 650px;
+}
+
+
+/* =========================================================
+   6. SECTIONS
+========================================================= */
+
+.section-app {
+    display: none;
+}
+
+.section-app.active {
+    display: block;
+}
+
+
+/* =========================================================
+   7. CARTES
+========================================================= */
+
+.carte {
+    background: var(--blanc);
+
+    border: 1px solid var(--gris-bordure);
+
+    border-radius: var(--rayon);
+
+    padding: 25px;
+
+    margin-bottom: 25px;
+
+    box-shadow: var(--ombre);
+}
+
+.carte h2 {
+    margin-top: 0;
+
+    margin-bottom: 22px;
+
+    color: var(--bleu-principal);
+
+    font-size: 22px;
+
+    border-bottom: 2px solid var(--orange-principal);
+
+    padding-bottom: 10px;
+}
+
+
+/* =========================================================
+   8. FORMULAIRE DE PARAMÉTRAGE
+========================================================= */
+
+.formulaire {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(190px, 1fr));
+
+    gap: 18px;
+
+    margin-bottom: 25px;
+}
+
+.champ {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+}
+
+.champ label {
+    font-weight: 600;
+
+    color: #444;
+}
+
+.champ select {
+    width: 100%;
+
+    padding: 11px 12px;
+
+    border: 1px solid var(--gris-bordure);
+
+    border-radius: 7px;
+
+    background: var(--blanc);
+
+    color: var(--noir);
+
+    font-size: 15px;
+
+    outline: none;
+}
+
+.champ select:focus {
+    border-color: var(--bleu-principal);
+
+    box-shadow:
+        0 0 0 3px rgba(30, 90, 138, 0.12);
+}
+
+
+/* =========================================================
+   9. BOUTONS
+========================================================= */
+
+.actions {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    align-items: center;
+}
+
+.actions button {
+    border: 1px solid var(--gris-bordure);
+
+    background: var(--blanc);
+
+    color: #333;
+
+    padding: 10px 15px;
+
+    border-radius: 7px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.actions button:hover {
+    background: var(--bleu-clair);
+
+    border-color: var(--bleu-bordure);
+
+    color: var(--bleu-principal);
+}
+
+.btn-principal {
+    background: var(--orange-principal) !important;
+
+    color: var(--blanc) !important;
+
+    border-color: var(--orange-principal) !important;
+
+    padding: 12px 20px !important;
+
+    font-size: 16px !important;
+}
+
+.btn-principal:hover {
+    background: #cf7420 !important;
+
+    border-color: #cf7420 !important;
+}
+
+
+/* =========================================================
+   10. TABLEAUX
+========================================================= */
+
+.tableau-conteneur {
+    width: 100%;
+
+    overflow-x: auto;
+
+    border: 1px solid var(--gris-bordure);
+
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    background: var(--blanc);
+}
+
+th,
+td {
+    border: 1px solid var(--gris-bordure);
+
+    padding: 10px;
+
+    text-align: center;
+
+    vertical-align: middle;
+}
+
+thead th {
+    background: var(--bleu-principal);
+
+    color: var(--blanc);
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+tbody tr:hover {
+    background: var(--orange-clair);
+}
+
+
+/* =========================================================
+   11. TABLEAU CALENDRIER
+========================================================= */
+
+#tableauCalendrier {
+    min-width: 850px;
+}
+
+#tableauCalendrier th:first-child,
+#tableauCalendrier td:first-child {
+    min-width: 110px;
+
+    font-weight: 700;
+}
+
+#tableauCalendrier th:nth-child(2),
+#tableauCalendrier td:nth-child(2) {
+    min-width: 100px;
+}
+
+
+/* =========================================================
+   12. CELLULES D'EXAMEN
+========================================================= */
+
+.cellule-examen {
+    background: var(--orange-clair);
+
+    color: #7a4718;
+
+    font-weight: 700;
+
+    cursor: grab;
+
+    min-width: 120px;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.cellule-examen:hover {
+    transform: scale(1.02);
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.cellule-examen:active {
+    cursor: grabbing;
+}
+
+
+/* =========================================================
+   13. AIDE CALENDRIER
+========================================================= */
+
+.aide-calendrier {
+    margin: 15px 0;
+
+    padding: 10px 12px;
+
+    background: var(--bleu-clair);
+
+    border-left: 4px solid var(--bleu-principal);
+
+    border-radius: 5px;
+
+    color: #38566c;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   14. CONTRÔLE DES CONTRAINTES
+========================================================= */
+
+.controle-ligne {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 15px;
+
+    margin-bottom: 10px;
+
+    background: #fafafa;
+
+    border: 1px solid var(--gris-bordure);
+
+    border-radius: 7px;
+}
+
+.controle-ligne span {
+    font-weight: 600;
+}
+
+.controle-ligne strong {
+    color: var(--vert);
+
+    background: var(--vert-clair);
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   15. SIAD
+========================================================= */
+
+#tableauSIAD {
+    min-width: 750px;
+}
+
+#tableauSIAD td {
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   16. RÉCAPITULATIF
+========================================================= */
+
+.recap-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(150px, 1fr));
+
+    gap: 15px;
+
+    margin-bottom: 25px;
+}
+
+.recap-grid > div {
+    padding: 18px;
+
+    background: var(--bleu-clair);
+
+    border: 1px solid var(--bleu-bordure);
+
+    border-radius: 8px;
+
+    text-align: center;
+}
+
+.recap-grid span {
+    display: block;
+
+    color: var(--gris-texte);
+
+    font-size: 14px;
+
+    margin-bottom: 6px;
+}
+
+.recap-grid strong {
+    display: block;
+
+    color: var(--bleu-principal);
+
+    font-size: 22px;
+}
+
+
+/* =========================================================
+   17. CONTRAINTES DU RÉCAPITULATIF
+========================================================= */
+
+.recap-contraintes {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+.recap-contraintes span {
+    display: inline-block;
+
+    padding: 8px 14px;
+
+    background: var(--vert-clair);
+
+    color: var(--vert);
+
+    border: 1px solid #bde5cc;
+
+    border-radius: 20px;
+
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   18. STATUT FINAL
+========================================================= */
+
+.statut-final {
+    padding: 18px;
+
+    margin-bottom: 20px;
+
+    text-align: center;
+
+    background: var(--vert-clair);
+
+    border: 1px solid #bde5cc;
+
+    border-radius: 8px;
+
+    color: #315d43;
+
+    font-size: 17px;
+}
+
+.statut-final strong {
+    color: var(--vert);
+
+    margin-left: 5px;
+}
+
+
+/* =========================================================
+   19. PIED DE PAGE
+========================================================= */
+
+.pied-page {
+    text-align: center;
+
+    padding: 20px 15px;
+
+    background: var(--bleu-principal);
+
+    color: var(--blanc);
+
+    margin-top: 40px;
+}
+
+.pied-page p {
+    margin: 0;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   20. ÉTAT FOCUS ACCESSIBLE
+========================================================= */
+
+button:focus-visible,
+select:focus-visible {
+    outline: 3px solid rgba(230, 138, 46, 0.35);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   21. RESPONSIVE — TABLETTE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .entete h1 {
+        font-size: 24px;
+    }
+
+    .menu-principal {
+        justify-content: flex-start;
+
+        overflow-x: auto;
+
+        flex-wrap: nowrap;
+
+        padding: 10px;
+    }
+
+    .menu-principal button {
+        flex: 0 0 auto;
+    }
+
+    .espace-travail {
+        width: 94%;
+
+        margin-top: 18px;
+    }
+
+    .carte {
+        padding: 18px;
+    }
+
+}
+
+
+/* =========================================================
+   22. RESPONSIVE — SMARTPHONE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        font-size: 15px;
+    }
+
+
+    /* -------------------------
+       EN-TÊTE
+    ------------------------- */
+
+    .entete {
+        padding: 18px 10px;
+    }
+
+    .entete h1 {
+        font-size: 21px;
+
+        line-height: 1.3;
+    }
+
+    .entete p {
+        font-size: 14px;
+    }
+
+
+    /* -------------------------
+       MENU
+    ------------------------- */
+
+    .menu-principal {
+        justify-content: flex-start;
+
+        gap: 6px;
+
+        padding: 8px;
+
+        overflow-x: auto;
+    }
+
+    .menu-principal button {
+        padding: 9px 11px;
+
+        font-size: 13px;
+
+        white-space: nowrap;
+    }
+
+
+    /* -------------------------
+       ESPACE
+    ------------------------- */
+
+    .espace-travail {
+        width: 96%;
+
+        margin: 15px auto;
+
+        min-height: 500px;
+    }
+
+
+    /* -------------------------
+       CARTES
+    ------------------------- */
+
+    .carte {
+        padding: 15px;
+
+        border-radius: 8px;
+    }
+
+    .carte h2 {
+        font-size: 19px;
+
+        margin-bottom: 18px;
+    }
+
+
+    /* -------------------------
+       FORMULAIRE
+    ------------------------- */
+
+    .formulaire {
+        grid-template-columns: 1fr;
+
+        gap: 13px;
+    }
+
+    .champ select {
+        padding: 12px;
+
+        font-size: 16px;
+    }
+
+
+    /* -------------------------
+       ACTIONS
+    ------------------------- */
+
+    .actions {
+        display: grid;
+
+        grid-template-columns: 1fr;
+
+        width: 100%;
+    }
+
+    .actions button {
+        width: 100%;
+
+        min-height: 44px;
+
+        font-size: 15px;
+    }
+
+    .btn-principal {
+        min-height: 48px !important;
+    }
+
+
+    /* -------------------------
+       CONTRÔLE
+    ------------------------- */
+
+    .controle-ligne {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 8px;
+    }
+
+
+    /* -------------------------
+       RÉCAPITULATIF
+    ------------------------- */
+
+    .recap-grid {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 10px;
+    }
+
+    .recap-grid > div {
+        padding: 13px 8px;
+    }
+
+    .recap-grid strong {
+        font-size: 19px;
+    }
+
+    .recap-contraintes {
+        justify-content: center;
+    }
+
+
+    /* -------------------------
+       TABLEAUX
+    ------------------------- */
+
+    .tableau-conteneur {
+        margin-left: -2px;
+
+        margin-right: -2px;
+
+        width: calc(100% + 4px);
+    }
+
+
+    /* -------------------------
+       PIED DE PAGE
+    ------------------------- */
+
+    .pied-page {
+        margin-top: 25px;
+
+        padding: 16px 10px;
+    }
+
+}
+
+
+/* =========================================================
+   23. TRÈS PETIT ÉCRAN
+========================================================= */
+
+@media (max-width: 380px) {
+
+    .entete h1 {
+        font-size: 19px;
+    }
+
+    .recap-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-principal button {
+        font-size: 12px;
+
+        padding: 8px 10px;
+    }
+
+}
+
+
+/* =========================================================
+   24. IMPRESSION
+========================================================= */
+
+@media print {
+
+    @page {
+        size: landscape;
+
+        margin: 10mm;
+    }
+
+
+    body {
+        background: white;
+
+        color: black;
+
+        font-size: 10pt;
+    }
+
+
+    .entete {
+        background: none;
+
+        color: black;
+
+        box-shadow: none;
+
+        padding: 5px;
+
+        border-bottom: 2px solid black;
+    }
+
+    .entete h1 {
+        font-size: 18pt;
+    }
+
+
+    .menu-principal,
+    .actions,
+    .aide-calendrier,
+    .pied-page {
+        display: none !important;
+    }
+
+
+    .espace-travail {
+        width: 100%;
+
+        margin: 0;
+    }
+
+
+    .section-app {
+        display: none !important;
+    }
+
+
+    #calendriers {
+        display: block !important;
+    }
+
+
+    .carte {
+        border: none;
+
+        box-shadow: none;
+
+        padding: 0;
+
+        margin: 0;
+    }
+
+
+    .carte h2 {
+        color: black;
+
+        border-bottom: 1px solid black;
+
+        font-size: 14pt;
+    }
+
+
+    .tableau-conteneur {
+        overflow: visible;
+
+        border: none;
+    }
+
+
+    table {
+        width: 100%;
+
+        min-width: 0 !important;
+
+        page-break-inside: avoid;
+    }
+
+
+    th,
+    td {
+        border: 1px solid black;
+
+        color: black;
+
+        background: white !important;
+
+        padding: 5px;
+
+        font-size: 8pt;
+    }
+
+
+    .cellule-examen {
+        background: white !important;
+
+        color: black;
+
+        box-shadow: none;
+
+        transform: none;
+    }
+
+}
