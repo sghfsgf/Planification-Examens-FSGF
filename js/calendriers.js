@@ -43,7 +43,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =================================================
-    // 2. CONSTRUIRE LE CALENDRIER
+    // 2. OUTILS DE DATE
+    // =================================================
+
+    function formaterDateCourte(date) {
+
+        const jour =
+            String(
+                date.getDate()
+            ).padStart(2, "0");
+
+
+        const mois =
+            String(
+                date.getMonth() + 1
+            ).padStart(2, "0");
+
+
+        const annee =
+            date.getFullYear();
+
+
+        return (
+            jour +
+            "/" +
+            mois +
+            "/" +
+            annee
+        );
+
+    }
+
+
+    function ajouterUnJour(date) {
+
+        const nouvelleDate =
+            new Date(date);
+
+
+        nouvelleDate.setDate(
+            nouvelleDate.getDate() + 1
+        );
+
+
+        return nouvelleDate;
+
+    }
+
+
+    // =================================================
+    // 3. CONSTRUIRE LE CALENDRIER
     // =================================================
 
     function construireCalendrier() {
@@ -97,94 +146,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // 3. DIAGNOSTIC DE LA STRUCTURE EXCEL
-        // =================================================
-
-        console.log(
-            "===================================="
-        );
-
-        console.log(
-            "=== DIAGNOSTIC EXCEL ==="
-        );
-
-
-        // -------------------------------------------------
-        // MATIERES
-        // -------------------------------------------------
-
-        console.log(
-            "Colonnes MATIERES :",
-            Object.keys(matieres[0] || {})
-        );
-
-        console.log(
-            "Premier MATIERE :",
-            matieres[0] || {}
-        );
-
-
-        // -------------------------------------------------
-        // SESSIONS
-        // -------------------------------------------------
-
-        console.log(
-            "Colonnes SESSIONS :",
-            Object.keys(sessions[0] || {})
-        );
-
-        console.log(
-            "Première SESSION :",
-            sessions[0] || {}
-        );
-
-
-        // -------------------------------------------------
-        // CRENEAUX
-        // -------------------------------------------------
-
-        console.log(
-            "Colonnes CRENEAUX :",
-            Object.keys(creneaux[0] || {})
-        );
-
-        console.log(
-            "Premier CRENEAU :",
-            creneaux[0] || {}
-        );
-
-        console.log(
-            "TOUS LES CRENEAUX :"
-        );
-
-        console.table(creneaux);
-
-
-        // -------------------------------------------------
-        // SALLES / AMPHIS
-        // -------------------------------------------------
-
-        console.log(
-            "Colonnes SALLES / AMPHIS :",
-            Object.keys(sallesAmphis[0] || {})
-        );
-
-        console.log(
-            "Première SALLE / AMPHI :",
-            sallesAmphis[0] || {}
-        );
-
-
-        console.log(
-            "=== FIN DIAGNOSTIC EXCEL ==="
-        );
-
-        console.log(
-            "===================================="
-        );
-
-
-        // =================================================
         // 4. PRÉPARER LE TABLEAU
         // =================================================
 
@@ -206,22 +167,25 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // Vider le tableau
-
         thead.innerHTML = "";
         tbody.innerHTML = "";
 
 
         // =================================================
-        // 5. DIAGNOSTIC TEMPORAIRE
+        // 5. DÉTERMINER LE NIVEAU
         // =================================================
 
-        if (creneaux.length === 0) {
+        const niveau =
+            niveauElement
+                ? niveauElement.textContent.trim()
+                : "";
 
-            console.warn(
-                "Calendriers : aucun créneau disponible."
-            );
 
+        // =================================================
+        // 6. VÉRIFIER LES SESSIONS
+        // =================================================
+
+        if (sessions.length === 0) {
 
             const ligne =
                 document.createElement("tr");
@@ -231,10 +195,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.createElement("td");
 
 
-            cellule.colSpan = 2;
+            cellule.colSpan = 3;
 
             cellule.textContent =
-                "Aucun créneau disponible.";
+                "Aucune session disponible.";
 
 
             ligne.appendChild(cellule);
@@ -246,127 +210,501 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // -------------------------------------------------
-        // Pour cette étape, on affiche simplement les
-        // créneaux tels qu'ils sont réellement présents
-        // dans Excel.
-        // -------------------------------------------------
+        // =================================================
+        // 7. CONSTRUIRE LES COLONNES DATE + CRÉNEAU
+        // =================================================
 
-        const ligneEntete =
-            document.createElement("tr");
+        const colonnesCalendrier = [];
 
 
-        const thNumero =
-            document.createElement("th");
+        sessions.forEach(function (session) {
 
-        thNumero.textContent =
-            "N°";
+            // ---------------------------------------------
+            // Vérifier les dates de la session
+            // ---------------------------------------------
 
-        ligneEntete.appendChild(thNumero);
+            const dateDebut =
+                convertirDateExcel(
+                    session.dateDebut
+                );
 
 
-        const colonnes =
-            Object.keys(creneaux[0] || {});
+            const dateFin =
+                convertirDateExcel(
+                    session.dateFin
+                );
 
 
-        colonnes.forEach(function (colonne) {
+            if (!dateDebut || !dateFin) {
 
-            const th =
-                document.createElement("th");
+                console.warn(
+                    "Session ignorée : dates invalides.",
+                    session
+                );
 
-            th.textContent =
-                colonne;
+                return;
 
-            ligneEntete.appendChild(th);
+            }
+
+
+            // ---------------------------------------------
+            // Créneaux appartenant à cette session
+            // ---------------------------------------------
+
+            const creneauxSession =
+                creneaux.filter(function (creneau) {
+
+                    return (
+                        creneau.sessionCode ===
+                        session.sessionCode
+                    );
+
+                });
+
+
+            if (creneauxSession.length === 0) {
+
+                console.warn(
+                    "Aucun créneau pour la session :",
+                    session.sessionCode
+                );
+
+                return;
+
+            }
+
+
+            // ---------------------------------------------
+            // Générer les dates de la session
+            // ---------------------------------------------
+
+            let dateCourante =
+                new Date(dateDebut);
+
+
+            while (
+                dateCourante <= dateFin
+            ) {
+
+                creneauxSession.forEach(
+                    function (creneau) {
+
+                        colonnesCalendrier.push({
+
+                            sessionCode:
+                                session.sessionCode,
+
+                            sessionLibelle:
+                                session.sessionLibelle,
+
+                            date:
+                                new Date(dateCourante),
+
+                            dateAffichage:
+                                formaterDateCourte(
+                                    dateCourante
+                                ),
+
+                            creneauOrdre:
+                                creneau.creneauOrdre,
+
+                            heureDebut:
+                                creneau.heureDebut,
+
+                            heureFin:
+                                creneau.heureFin,
+
+                            heureDebutAffichage:
+                                creneau.heureDebutAffichage,
+
+                            heureFinAffichage:
+                                creneau.heureFinAffichage
+
+                        });
+
+                    }
+                );
+
+
+                dateCourante =
+                    ajouterUnJour(
+                        dateCourante
+                    );
+
+            }
 
         });
 
 
-        thead.appendChild(ligneEntete);
-
-
         // =================================================
-        // 6. AFFICHER LES CRÉNEAUX
+        // 8. VÉRIFIER LES COLONNES
         // =================================================
 
-        creneaux.forEach(function (creneau, index) {
+        if (
+            colonnesCalendrier.length === 0
+        ) {
 
             const ligne =
                 document.createElement("tr");
 
 
-            const tdNumero =
+            const cellule =
                 document.createElement("td");
 
-            tdNumero.textContent =
-                index + 1;
 
-            ligne.appendChild(tdNumero);
+            cellule.colSpan = 3;
 
-
-            colonnes.forEach(function (colonne) {
-
-                const td =
-                    document.createElement("td");
+            cellule.textContent =
+                "Aucun créneau disponible pour les sessions configurées.";
 
 
-                const valeur =
-                    creneau[colonne];
-
-
-                td.textContent =
-                    valeur === undefined ||
-                    valeur === null
-                        ? ""
-                        : valeur;
-
-
-                ligne.appendChild(td);
-
-            });
-
+            ligne.appendChild(cellule);
 
             tbody.appendChild(ligne);
 
-        });
+            return;
+
+        }
+
+
+        // =================================================
+        // 9. TRI CHRONOLOGIQUE
+        // =================================================
+
+        colonnesCalendrier.sort(
+            function (a, b) {
+
+                const dateA =
+                    a.date.getTime();
+
+                const dateB =
+                    b.date.getTime();
+
+
+                if (dateA !== dateB) {
+
+                    return dateA - dateB;
+
+                }
+
+
+                return (
+                    Number(a.creneauOrdre) -
+                    Number(b.creneauOrdre)
+                );
+
+            }
+        );
+
+
+        // =================================================
+        // 10. EN-TÊTE DU TABLEAU
+        // =================================================
+
+        const ligneEntete =
+            document.createElement("tr");
+
+
+        // -------------------------------------------------
+        // Filière
+        // -------------------------------------------------
+
+        const thFiliere =
+            document.createElement("th");
+
+
+        thFiliere.textContent =
+            "FILIÈRE";
+
+
+        ligneEntete.appendChild(
+            thFiliere
+        );
+
+
+        // -------------------------------------------------
+        // Amphis
+        // -------------------------------------------------
+
+        const thAmphis =
+            document.createElement("th");
+
+
+        thAmphis.textContent =
+            "AMPHIS";
+
+
+        ligneEntete.appendChild(
+            thAmphis
+        );
+
+
+        // -------------------------------------------------
+        // Colonnes temporelles
+        // -------------------------------------------------
+
+        colonnesCalendrier.forEach(
+            function (colonne) {
+
+                const th =
+                    document.createElement("th");
+
+
+                th.innerHTML =
+                    colonne.dateAffichage +
+                    "<br>" +
+                    colonne.heureDebutAffichage +
+                    " – " +
+                    colonne.heureFinAffichage;
+
+
+                ligneEntete.appendChild(th);
+
+            }
+        );
+
+
+        thead.appendChild(
+            ligneEntete
+        );
+
+
+        // =================================================
+        // 11. FILIÈRES DU NIVEAU
+        // =================================================
+
+        const filieres =
+            [];
+
+
+        matieres.forEach(
+            function (matiere) {
+
+                if (
+                    niveau &&
+                    matiere.niveauCode !== niveau
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !filieres.includes(
+                        matiere.filiereCode
+                    )
+                ) {
+
+                    filieres.push(
+                        matiere.filiereCode
+                    );
+
+                }
+
+            }
+        );
+
+
+        // -------------------------------------------------
+        // Si aucune filière
+        // -------------------------------------------------
+
+        if (filieres.length === 0) {
+
+            const ligne =
+                document.createElement("tr");
+
+
+            const cellule =
+                document.createElement("td");
+
+
+            cellule.colSpan =
+                colonnesCalendrier.length + 2;
+
+
+            cellule.textContent =
+                "Aucune filière disponible pour ce niveau.";
+
+
+            ligne.appendChild(cellule);
+
+            tbody.appendChild(ligne);
+
+            return;
+
+        }
+
+
+        // =================================================
+        // 12. CRÉER LES LIGNES DES FILIÈRES
+        // =================================================
+
+        filieres.forEach(
+            function (filiere) {
+
+                const ligne =
+                    document.createElement("tr");
+
+
+                // -----------------------------------------
+                // Filière
+                // -----------------------------------------
+
+                const tdFiliere =
+                    document.createElement("td");
+
+
+                tdFiliere.textContent =
+                    filiere;
+
+
+                ligne.appendChild(
+                    tdFiliere
+                );
+
+
+                // -----------------------------------------
+                // Amphis
+                // -----------------------------------------
+
+                const tdAmphis =
+                    document.createElement("td");
+
+
+                tdAmphis.textContent =
+                    "";
+
+
+                ligne.appendChild(
+                    tdAmphis
+                );
+
+
+                // -----------------------------------------
+                // Cellules des créneaux
+                // -----------------------------------------
+
+                colonnesCalendrier.forEach(
+                    function () {
+
+                        const td =
+                            document.createElement("td");
+
+
+                        td.textContent =
+                            "";
+
+
+                        ligne.appendChild(
+                            td
+                        );
+
+                    }
+                );
+
+
+                tbody.appendChild(
+                    ligne
+                );
+
+            }
+        );
+
+
+        // =================================================
+        // 13. DIAGNOSTIC MINIMAL
+        // =================================================
+
+        console.log(
+            "✓ Calendrier temporel construit."
+        );
 
 
         console.log(
-            "✓ Diagnostic des créneaux affiché dans le calendrier."
+            "Colonnes calendrier :",
+            colonnesCalendrier.length
+        );
+
+
+        console.log(
+            "Filières affichées :",
+            filieres
+        );
+
+
+        console.log(
+            "Sessions utilisées :",
+            sessions.map(
+                function (session) {
+
+                    return (
+                        session.sessionCode +
+                        " : " +
+                        session.dateDebutAffichage +
+                        " → " +
+                        session.dateFinAffichage
+                    );
+
+                }
+            )
+        );
+
+
+        console.log(
+            "Créneaux utilisés :",
+            creneaux.map(
+                function (creneau) {
+
+                    return (
+                        creneau.sessionCode +
+                        " / " +
+                        creneau.creneauOrdre +
+                        " : " +
+                        creneau.heureDebutAffichage +
+                        " → " +
+                        creneau.heureFinAffichage
+                    );
+
+                }
+            )
         );
 
     }
 
 
     // =====================================================
-    // 7. ATTENDRE LE CHARGEMENT COMPLET DES DONNÉES
+    // 14. ATTENDRE LE CHARGEMENT COMPLET DES DONNÉES
     // =====================================================
 
     if (
         typeof donneesChargees !== "undefined"
     ) {
 
-        donneesChargees.then(function (succes) {
+        donneesChargees.then(
+            function (succes) {
 
-            if (succes) {
+                if (succes) {
 
-                console.log(
-                    "Calendriers : données Excel complètement chargées."
-                );
+                    console.log(
+                        "Calendriers : données Excel complètement chargées."
+                    );
 
-                construireCalendrier();
+                    construireCalendrier();
+
+                }
+
+                else {
+
+                    console.error(
+                        "Calendriers : impossible de construire le calendrier."
+                    );
+
+                }
 
             }
-
-            else {
-
-                console.error(
-                    "Calendriers : impossible de construire le calendrier."
-                );
-
-            }
-
-        });
+        );
 
     }
 
@@ -380,12 +718,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // 8. EXPOSER LA FONCTION
+    // 15. EXPOSER LA FONCTION
     // =====================================================
 
     window.construireCalendrier =
         construireCalendrier;
 
-
 });
-
