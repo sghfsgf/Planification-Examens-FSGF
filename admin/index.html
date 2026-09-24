@@ -1,787 +1,794 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 
 <head>
 
-    <meta charset="UTF-8">
+```
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>
-        Administration - Planification des examens
-    </title>
+<title>
+    Administration - Planification des examens
+</title>
 
-    <link
-        rel="stylesheet"
-        href="style-admin.css"
-    >
+<link
+    rel="stylesheet"
+    href="style-admin.css"
+>
+```
 
 </head>
 
-
 <body>
 
-    <!-- =====================================================
-         EN-TÊTE ADMINISTRATION
-    ====================================================== -->
+```
+<!-- =====================================================
+     EN-TÊTE ADMINISTRATION
+====================================================== -->
 
-    <header class="entete-admin">
+<header class="entete-admin">
 
-        <h1>
-            PLANIFICATION DES EXAMENS
-        </h1>
+    <h1>
+        PLANIFICATION DES EXAMENS
+    </h1>
 
-        <p>
-            Espace d'administration
-        </p>
+    <p>
+        Espace d'administration
+    </p>
 
-    </header>
-
-
-    <!-- =====================================================
-         MENU ADMINISTRATION
-    ====================================================== -->
-
-    <nav class="menu-admin">
-
-        <button
-            type="button"
-            data-section="admin-accueil"
-        >
-            🏠 Accueil
-        </button>
+</header>
 
 
-        <button
-            type="button"
-            data-section="parametrage"
-        >
-            ⚙️ Paramétrage
-        </button>
+<!-- =====================================================
+     MENU ADMINISTRATION
+====================================================== -->
+
+<nav class="menu-admin">
+
+    <button
+        type="button"
+        data-section="admin-accueil"
+    >
+        🏠 Accueil
+    </button>
 
 
-        <button
-            type="button"
-            data-section="matieres"
-        >
-            📚 Matières
-        </button>
+    <button
+        type="button"
+        data-section="parametrage"
+    >
+        ⚙️ Paramétrage
+    </button>
 
 
-        <button
-            type="button"
-            data-section="sessions"
-        >
-            📅 Sessions
-        </button>
+    <button
+        type="button"
+        data-section="matieres"
+    >
+        📚 Matières
+    </button>
 
 
-        <button
-            type="button"
-            data-section="creneaux"
-        >
-            ⏰ Créneaux
-        </button>
+    <button
+        type="button"
+        data-section="sessions"
+    >
+        📅 Sessions
+    </button>
 
 
-        <button
-            type="button"
-            data-section="salles-amphis"
-        >
-            🏫 Salles / Amphis
-        </button>
+    <button
+        type="button"
+        data-section="creneaux"
+    >
+        ⏰ Créneaux
+    </button>
 
 
-        <button
-            type="button"
-            data-section="generation"
-        >
-            🚀 Génération
-        </button>
+    <button
+        type="button"
+        data-section="salles-amphis"
+    >
+        🏫 Salles / Amphis
+    </button>
 
 
-        <button
-            type="button"
-            data-section="calendriers-admin"
-        >
-            📊 Calendriers
-        </button>
+    <button
+        type="button"
+        data-section="generation"
+    >
+        🚀 Génération
+    </button>
 
 
-        <button
-            type="button"
-            data-section="controle"
-        >
-            ✓ Contrôle
-        </button>
+    <button
+        type="button"
+        data-section="calendriers-admin"
+    >
+        📊 Calendriers
+    </button>
 
 
-        <button
-            type="button"
-            data-section="siad"
-        >
-            📈 SIAD
-        </button>
+    <button
+        type="button"
+        data-section="controle"
+    >
+        ✓ Contrôle
+    </button>
 
 
-        <button
-            type="button"
-            data-section="recap"
-        >
-            📋 Récapitulatif
-        </button>
+    <button
+        type="button"
+        data-section="siad"
+    >
+        📈 SIAD
+    </button>
 
 
-        <a
-            href="../index.html"
-            class="btn-retour-site"
-        >
-            🌐 Site public
-        </a>
-
-    </nav>
+    <button
+        type="button"
+        data-section="recap"
+    >
+        📋 Récapitulatif
+    </button>
 
 
-    <!-- =====================================================
-         ESPACE DE TRAVAIL ADMIN
-    ====================================================== -->
+    <a
+        href="../index.html"
+        class="btn-retour-site"
+    >
+        🌐 Site public
+    </a>
 
-    <main class="espace-admin">
+</nav>
 
 
-        <!-- =================================================
-             ACCUEIL ADMIN
-        ================================================== -->
+<!-- =====================================================
+     ESPACE DE TRAVAIL ADMIN
+====================================================== -->
 
-        <section
-            id="admin-accueil"
-            class="section-admin active"
-        >
+<main class="espace-admin">
 
-            <div class="carte-admin">
 
-                <h2>
-                    ADMINISTRATION
-                </h2>
+    <!-- =================================================
+         ACCUEIL ADMIN
+    ================================================== -->
+
+    <section
+        id="admin-accueil"
+        class="section-admin active"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                ADMINISTRATION
+            </h2>
+
+            <p>
+                Bienvenue dans l'espace
+                d'administration de la planification
+                des examens.
+            </p>
+
+            <p>
+                Cet espace permet de préparer les
+                données, générer les calendriers,
+                affecter les salles et amphithéâtres,
+                contrôler les contraintes et publier
+                les calendriers.
+            </p>
+
+        </div>
+
+
+        <!-- ---------------------------------------------
+             RÉSUMÉ DES MODULES
+        ---------------------------------------------- -->
+
+        <div class="grille-modules">
+
+
+            <div class="module-admin">
+
+                <h3>
+                    ⚙️ Paramétrage
+                </h3>
 
                 <p>
-                    Bienvenue dans l'espace
-                    d'administration de la planification
-                    des examens.
+                    Année universitaire,
+                    niveaux, filières et règles.
                 </p>
+
+            </div>
+
+
+            <div class="module-admin">
+
+                <h3>
+                    📚 Matières
+                </h3>
 
                 <p>
-                    Cet espace permet de préparer les
-                    données, générer les calendriers,
-                    affecter les salles et amphithéâtres,
-                    contrôler les contraintes et publier
-                    les calendriers.
+                    Gestion des matières
+                    et de leurs régimes.
                 </p>
 
             </div>
 
 
-            <!-- ---------------------------------------------
-                 RÉSUMÉ DES MODULES
-            ---------------------------------------------- -->
+            <div class="module-admin">
 
-            <div class="grille-modules">
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        ⚙️ Paramétrage
-                    </h3>
-
-                    <p>
-                        Année universitaire,
-                        niveaux, filières et règles.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        📚 Matières
-                    </h3>
-
-                    <p>
-                        Gestion des matières
-                        et de leurs régimes.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        📅 Sessions
-                    </h3>
-
-                    <p>
-                        DS, principale et
-                        rattrapage.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        ⏰ Créneaux
-                    </h3>
-
-                    <p>
-                        Dates et horaires
-                        disponibles.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        🏫 Salles / Amphis
-                    </h3>
-
-                    <p>
-                        Ressources disponibles
-                        et capacités.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        🚀 Génération
-                    </h3>
-
-                    <p>
-                        Construction automatique
-                        des calendriers.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        ✓ Contrôle
-                    </h3>
-
-                    <p>
-                        Vérification des contraintes
-                        C1, C2 et C3.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        📈 SIAD
-                    </h3>
-
-                    <p>
-                        Analyse des besoins
-                        en salles et amphithéâtres.
-                    </p>
-
-                </div>
-
-
-                <div class="module-admin">
-
-                    <h3>
-                        📋 Récapitulatif
-                    </h3>
-
-                    <p>
-                        Synthèse de la
-                        planification.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             PARAMÉTRAGE
-        ================================================== -->
-
-        <section
-            id="parametrage"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    ⚙️ PARAMÉTRAGE
-                </h2>
+                <h3>
+                    📅 Sessions
+                </h3>
 
                 <p>
-                    Paramètres généraux de la
-                    planification des examens.
+                    DS, principale et
+                    rattrapage.
                 </p>
-
-
-                <div class="bloc-information">
-
-                    <p>
-                        <strong>
-                            Année universitaire :
-                        </strong>
-
-                        <span id="anneeUniversitaireAdmin">
-                            2025-2026
-                        </span>
-                    </p>
-
-                    <p>
-                        Les données de planification
-                        seront chargées depuis :
-                    </p>
-
-                    <ul>
-
-                        <li>
-                            parametrage_examens.xlsx
-                        </li>
-
-                        <li>
-                            salles_amphis.xlsx
-                        </li>
-
-                    </ul>
-
-                </div>
 
             </div>
 
-        </section>
 
+            <div class="module-admin">
 
-        <!-- =================================================
-             MATIÈRES
-        ================================================== -->
-
-        <section
-            id="matieres"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    📚 MATIÈRES
-                </h2>
+                <h3>
+                    ⏰ Créneaux
+                </h3>
 
                 <p>
-                    Liste des matières provenant
-                    du fichier de paramétrage.
+                    Dates et horaires
+                    disponibles.
                 </p>
-
-
-                <div
-                    id="listeMatieres"
-                    class="zone-donnees"
-                >
-
-                    Les matières seront affichées ici.
-
-                </div>
 
             </div>
 
-        </section>
 
+            <div class="module-admin">
 
-        <!-- =================================================
-             SESSIONS
-        ================================================== -->
-
-        <section
-            id="sessions"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    📅 SESSIONS
-                </h2>
+                <h3>
+                    🏫 Salles / Amphis
+                </h3>
 
                 <p>
-                    Gestion des sessions d'examens.
+                    Ressources disponibles
+                    et capacités.
                 </p>
-
-
-                <div
-                    id="listeSessions"
-                    class="zone-donnees"
-                >
-
-                    Les sessions seront affichées ici.
-
-                </div>
 
             </div>
 
-        </section>
 
+            <div class="module-admin">
 
-        <!-- =================================================
-             CRÉNEAUX
-        ================================================== -->
-
-        <section
-            id="creneaux"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    ⏰ CRÉNEAUX
-                </h2>
+                <h3>
+                    🚀 Génération
+                </h3>
 
                 <p>
-                    Créneaux horaires disponibles
-                    pour chaque session.
+                    Construction automatique
+                    des calendriers.
                 </p>
-
-
-                <div
-                    id="listeCreneaux"
-                    class="zone-donnees"
-                >
-
-                    Les créneaux seront affichés ici.
-
-                </div>
 
             </div>
 
-        </section>
 
+            <div class="module-admin">
 
-        <!-- =================================================
-             SALLES / AMPHIS
-        ================================================== -->
-
-        <section
-            id="salles-amphis"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    🏫 SALLES / AMPHIS
-                </h2>
+                <h3>
+                    ✓ Contrôle
+                </h3>
 
                 <p>
-                    Gestion des ressources disponibles
-                    pour les examens.
+                    Vérification des contraintes
+                    C1, C2 et C3.
                 </p>
 
-
-                <div
-                    id="listeSallesAmphis"
-                    class="zone-donnees"
-                >
-
-                    Les salles et amphithéâtres
-                    seront affichés ici.
-
-                </div>
-
             </div>
 
-        </section>
 
+            <div class="module-admin">
 
-        <!-- =================================================
-             GÉNÉRATION
-        ================================================== -->
-
-        <section
-            id="generation"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    🚀 GÉNÉRATION DU CALENDRIER
-                </h2>
-
-                <p>
-                    Génération automatique des
-                    calendriers selon les règles
-                    définies.
-                </p>
-
-
-                <div class="bloc-generation">
-
-                    <button
-                        type="button"
-                        id="btnGenererCalendrier"
-                        class="btn-action"
-                    >
-                        🚀 Générer le calendrier
-                    </button>
-
-
-                    <div
-                        id="statutGeneration"
-                        class="statut-generation"
-                    >
-
-                        En attente de génération.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             CALENDRIERS ADMIN
-        ================================================== -->
-
-        <section
-            id="calendriers-admin"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    📊 CALENDRIERS
-                </h2>
-
-                <p>
-                    Consultation et modification manuelle
-                    des calendriers générés.
-                </p>
-
-
-                <div class="bloc-calendrier">
-
-                    <p>
-                        Le calendrier généré apparaîtra ici.
-                    </p>
-
-                    <p>
-                        ✋ Les matières pourront ensuite
-                        être déplacées ou échangées
-                        manuellement.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             CONTRÔLE C1 / C2 / C3
-        ================================================== -->
-
-        <section
-            id="controle"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
-                    ✓ CONTRÔLE DES CONTRAINTES
-                </h2>
-
-
-                <div class="controle-item">
-
-                    <h3>
-                        C1 — Espacement
-                    </h3>
-
-                    <p>
-                        Aucun enchaînement d'examens
-                        sur deux créneaux successifs
-                        pour une même filière.
-                    </p>
-
-                    <span
-                        id="statutC1"
-                        class="statut-controle"
-                    >
-                        Non contrôlé
-                    </span>
-
-                </div>
-
-
-                <div class="controle-item">
-
-                    <h3>
-                        C2 — Matières communes
-                    </h3>
-
-                    <p>
-                        Les matières communes à plusieurs
-                        filières sont regroupées dans
-                        le même créneau lorsque possible.
-                    </p>
-
-                    <span
-                        id="statutC2"
-                        class="statut-controle"
-                    >
-                        Non contrôlé
-                    </span>
-
-                </div>
-
-
-                <div class="controle-item">
-
-                    <h3>
-                        C3 — Équilibrage
-                    </h3>
-
-                    <p>
-                        Répartition équilibrée des examens
-                        entre les créneaux.
-                    </p>
-
-                    <span
-                        id="statutC3"
-                        class="statut-controle"
-                    >
-                        Non contrôlé
-                    </span>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             SIAD
-        ================================================== -->
-
-        <section
-            id="siad"
-            class="section-admin"
-        >
-
-            <div class="carte-admin">
-
-                <h2>
+                <h3>
                     📈 SIAD
-                </h2>
+                </h3>
 
                 <p>
-                    Analyse des besoins en salles
-                    et amphithéâtres après génération
-                    du calendrier.
+                    Analyse des besoins
+                    en salles et amphithéâtres.
+                </p>
+
+            </div>
+
+
+            <div class="module-admin">
+
+                <h3>
+                    📋 Récapitulatif
+                </h3>
+
+                <p>
+                    Synthèse de la
+                    planification.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         PARAMÉTRAGE
+    ================================================== -->
+
+    <section
+        id="parametrage"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                ⚙️ PARAMÉTRAGE
+            </h2>
+
+            <p>
+                Paramètres généraux de la
+                planification des examens.
+            </p>
+
+
+            <div class="bloc-information">
+
+                <p>
+
+                    <strong>
+                        Année universitaire :
+                    </strong>
+
+                    <span id="anneeUniversitaireAdmin">
+                        2025-2026
+                    </span>
+
                 </p>
 
 
+                <p>
+                    Les données de planification
+                    seront chargées depuis :
+                </p>
+
+
+                <ul>
+
+                    <li>
+                        parametrage_examens.xlsx
+                    </li>
+
+                    <li>
+                        salles_amphis.xlsx
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         MATIÈRES
+    ================================================== -->
+
+    <section
+        id="matieres"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                📚 MATIÈRES
+            </h2>
+
+            <p>
+                Liste des matières provenant
+                du fichier de paramétrage.
+            </p>
+
+
+            <div
+                id="listeMatieres"
+                class="zone-donnees"
+            >
+
+                Les matières seront affichées ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SESSIONS
+    ================================================== -->
+
+    <section
+        id="sessions"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                📅 SESSIONS
+            </h2>
+
+            <p>
+                Gestion des sessions d'examens.
+            </p>
+
+
+            <div
+                id="listeSessions"
+                class="zone-donnees"
+            >
+
+                Les sessions seront affichées ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         CRÉNEAUX
+    ================================================== -->
+
+    <section
+        id="creneaux"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                ⏰ CRÉNEAUX
+            </h2>
+
+            <p>
+                Créneaux horaires disponibles
+                pour chaque session.
+            </p>
+
+
+            <div
+                id="listeCreneaux"
+                class="zone-donnees"
+            >
+
+                Les créneaux seront affichés ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SALLES / AMPHIS
+    ================================================== -->
+
+    <section
+        id="salles-amphis"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                🏫 SALLES / AMPHIS
+            </h2>
+
+            <p>
+                Gestion des ressources disponibles
+                pour les examens.
+            </p>
+
+
+            <div
+                id="listeSallesAmphis"
+                class="zone-donnees"
+            >
+
+                Les salles et amphithéâtres
+                seront affichés ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         GÉNÉRATION
+    ================================================== -->
+
+    <section
+        id="generation"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                🚀 GÉNÉRATION DU CALENDRIER
+            </h2>
+
+            <p>
+                Génération automatique des
+                calendriers selon les règles
+                définies.
+            </p>
+
+
+            <div class="bloc-generation">
+
+                <button
+                    type="button"
+                    id="btnGenererCalendrier"
+                    class="btn-action"
+                >
+                    🚀 Générer le calendrier
+                </button>
+
+
                 <div
-                    id="zoneSIAD"
-                    class="zone-donnees"
+                    id="statutGeneration"
+                    class="statut-generation"
                 >
 
-                    Les indicateurs SIAD seront
-                    affichés ici.
+                    En attente de génération.
 
                 </div>
 
             </div>
 
-        </section>
+        </div>
+
+    </section>
 
 
-        <!-- =================================================
-             RÉCAPITULATIF
-        ================================================== -->
+    <!-- =================================================
+         CALENDRIERS ADMIN
+    ================================================== -->
 
-        <section
-            id="recap"
-            class="section-admin"
-        >
+    <section
+        id="calendriers-admin"
+        class="section-admin"
+    >
 
-            <div class="carte-admin">
+        <div class="carte-admin">
 
-                <h2>
-                    📋 RÉCAPITULATIF
-                </h2>
+            <h2>
+                📊 CALENDRIERS
+            </h2>
+
+            <p>
+                Consultation et modification manuelle
+                des calendriers générés.
+            </p>
+
+
+            <div class="bloc-calendrier">
 
                 <p>
-                    Synthèse de la planification
-                    générée.
+                    Le calendrier généré apparaîtra ici.
                 </p>
 
-
-                <div
-                    id="zoneRecap"
-                    class="zone-donnees"
-                >
-
-                    Le récapitulatif sera affiché ici.
-
-                </div>
+                <p>
+                    ✋ Les matières pourront ensuite
+                    être déplacées ou échangées
+                    manuellement.
+                </p>
 
             </div>
 
-        </section>
+        </div>
 
-    </main>
-
-
-    <!-- =====================================================
-         PIED DE PAGE
-    ====================================================== -->
-
-    <footer class="pied-page-admin">
-
-        <p>
-            Administration —
-            Planification des examens —
-            Faculté des Sciences de Gafsa
-        </p>
-
-    </footer>
+    </section>
 
 
-   <!-- =====================================================
+    <!-- =================================================
+         CONTRÔLE C1 / C2 / C3
+    ================================================== -->
+
+    <section
+        id="controle"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                ✓ CONTRÔLE DES CONTRAINTES
+            </h2>
+
+
+            <div class="controle-item">
+
+                <h3>
+                    C1 — Espacement
+                </h3>
+
+                <p>
+                    Aucun enchaînement d'examens
+                    sur deux créneaux successifs
+                    pour une même filière.
+                </p>
+
+                <span
+                    id="statutC1"
+                    class="statut-controle"
+                >
+                    Non contrôlé
+                </span>
+
+            </div>
+
+
+            <div class="controle-item">
+
+                <h3>
+                    C2 — Matières communes
+                </h3>
+
+                <p>
+                    Les matières communes à plusieurs
+                    filières sont regroupées dans
+                    le même créneau lorsque possible.
+                </p>
+
+                <span
+                    id="statutC2"
+                    class="statut-controle"
+                >
+                    Non contrôlé
+                </span>
+
+            </div>
+
+
+            <div class="controle-item">
+
+                <h3>
+                    C3 — Équilibrage
+                </h3>
+
+                <p>
+                    Répartition équilibrée des examens
+                    entre les créneaux.
+                </p>
+
+                <span
+                    id="statutC3"
+                    class="statut-controle"
+                >
+                    Non contrôlé
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         SIAD
+    ================================================== -->
+
+    <section
+        id="siad"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                📈 SIAD
+            </h2>
+
+            <p>
+                Analyse des besoins en salles
+                et amphithéâtres après génération
+                du calendrier.
+            </p>
+
+
+            <div
+                id="zoneSIAD"
+                class="zone-donnees"
+            >
+
+                Les indicateurs SIAD seront
+                affichés ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         RÉCAPITULATIF
+    ================================================== -->
+
+    <section
+        id="recap"
+        class="section-admin"
+    >
+
+        <div class="carte-admin">
+
+            <h2>
+                📋 RÉCAPITULATIF
+            </h2>
+
+            <p>
+                Synthèse de la planification
+                générée.
+            </p>
+
+
+            <div
+                id="zoneRecap"
+                class="zone-donnees"
+            >
+
+                Le récapitulatif sera affiché ici.
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- =====================================================
+     PIED DE PAGE
+====================================================== -->
+
+<footer class="pied-page-admin">
+
+    <p>
+        Administration —
+        Planification des examens —
+        Faculté des Sciences de Gafsa
+    </p>
+
+</footer>
+
+
+<!-- =====================================================
      BIBLIOTHÈQUE SHEETJS
 ====================================================== -->
 
@@ -789,60 +796,6 @@
     src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
 </script>
 
-    // =====================================================
-    // INITIALISATION FIRESTORE
-    // =====================================================
-
-    const db = getFirestore(app);
-
-
-    console.log(
-        "✓ Firebase initialisé :",
-        app.options.projectId
-    );
-
-
-    // =====================================================
-    // TEST DE LECTURE FIRESTORE
-    // =====================================================
-
-    const resultat =
-        await getDocs(
-            collection(
-                db,
-                "test_connexion"
-            )
-        );
-
-
-    console.log(
-        "✓ Firestore accessible"
-    );
-
-    console.log(
-        "Nombre de documents :",
-        resultat.size
-    );
-
-
-    resultat.forEach(
-        function (documentFirestore) {
-
-            console.log(
-                "Document :",
-                documentFirestore.id
-            );
-
-            console.log(
-                "Données :",
-                documentFirestore.data()
-            );
-
-        }
-    );
-
-</script>
-    
 
 <!-- =====================================================
      DONNÉES EXCEL
@@ -865,6 +818,7 @@
                 document.querySelectorAll(
                     ".menu-admin button[data-section]"
                 );
+
 
             const sections =
                 document.querySelectorAll(
@@ -921,167 +875,7 @@
     );
 
 </script>
-
-    <!-- =====================================================
-     BIBLIOTHÈQUE SHEETJS
-====================================================== -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-</script>
-
-
-<!-- =====================================================
-     TEST FIREBASE / FIRESTORE
-====================================================== -->
-
-<script type="module">
-
-    import { app } from "../firebase-config.js";
-
-    import {
-        getFirestore,
-        collection,
-        getDocs
-    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
-
-    // =====================================================
-    // INITIALISATION FIRESTORE
-    // =====================================================
-
-    const db = getFirestore(app);
-
-
-    console.log(
-        "✓ Firebase initialisé :",
-        app.options.projectId
-    );
-
-
-    // =====================================================
-    // TEST DE LECTURE FIRESTORE
-    // =====================================================
-
-    const resultat =
-        await getDocs(
-            collection(
-                db,
-                "test_connexion"
-            )
-        );
-
-
-    console.log(
-        "✓ Firestore accessible"
-    );
-
-
-    console.log(
-        "Nombre de documents :",
-        resultat.size
-    );
-
-
-    resultat.forEach(
-        function (documentFirestore) {
-
-            console.log(
-                "Document :",
-                documentFirestore.id
-            );
-
-
-            console.log(
-                "Données :",
-                documentFirestore.data()
-            );
-
-        }
-    );
-
-</script>
-
-
-<!-- =====================================================
-     DONNÉES EXCEL
-====================================================== -->
-
-<script src="../js/data.js"></script>
-
-
-<!-- =====================================================
-     SCRIPT ADMIN
-====================================================== -->
-
-<script>
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        function () {
-
-            const boutons =
-                document.querySelectorAll(
-                    ".menu-admin button[data-section]"
-                );
-
-            const sections =
-                document.querySelectorAll(
-                    ".section-admin"
-                );
-
-
-            boutons.forEach(function (bouton) {
-
-                bouton.addEventListener(
-                    "click",
-                    function () {
-
-                        const idSection =
-                            bouton.dataset.section;
-
-
-                        sections.forEach(
-                            function (section) {
-
-                                section.classList.remove(
-                                    "active"
-                                );
-
-                            }
-                        );
-
-
-                        const section =
-                            document.getElementById(
-                                idSection
-                            );
-
-
-                        if (section) {
-
-                            section.classList.add(
-                                "active"
-                            );
-
-                        }
-
-                    }
-                );
-
-            });
-
-
-            console.log(
-                "Administration : interface initialisée."
-            );
-
-        }
-    );
-
-</script>
-
-</body>
+```
 
 </body>
 
