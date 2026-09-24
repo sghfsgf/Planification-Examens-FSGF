@@ -388,7 +388,116 @@
 
     </section>
 
+```
+<!-- =================================================
+     IMPORT DES DONNÉES
+================================================== -->
 
+<section
+    id="import-donnees"
+    class="section-admin"
+>
+
+    <div class="carte-admin">
+
+        <h2>
+            📥 IMPORT DES DONNÉES
+        </h2>
+
+        <p>
+            Importation des fichiers Excel
+            utilisés pour la planification des examens.
+        </p>
+
+
+        <!-- -----------------------------------------
+             PARAMÉTRAGE DES EXAMENS
+        ------------------------------------------ -->
+
+        <div class="bloc-information">
+
+            <h3>
+                📊 Paramétrage des examens
+            </h3>
+
+            <p>
+                Fichier :
+                <strong>
+                    parametrage_examens.xlsx
+                </strong>
+            </p>
+
+            <input
+                type="file"
+                id="fichierParametrage"
+                accept=".xlsx,.xls"
+            >
+
+            <button
+                type="button"
+                id="btnImporterParametrage"
+                class="btn-action"
+            >
+                📥 Importer le paramétrage
+            </button>
+
+            <div
+                id="statutImportParametrage"
+                class="statut-generation"
+            >
+                Aucun import effectué.
+            </div>
+
+        </div>
+
+
+        <!-- -----------------------------------------
+             SALLES / AMPHIS
+        ------------------------------------------ -->
+
+        <div class="bloc-information">
+
+            <h3>
+                🏫 Salles / Amphis
+            </h3>
+
+            <p>
+                Fichier :
+                <strong>
+                    salles_amphis.xlsx
+                </strong>
+            </p>
+
+            <input
+                type="file"
+                id="fichierSallesAmphis"
+                accept=".xlsx,.xls"
+            >
+
+            <button
+                type="button"
+                id="btnImporterSallesAmphis"
+                class="btn-action"
+            >
+                📥 Importer les salles / amphis
+            </button>
+
+            <div
+                id="statutImportSallesAmphis"
+                class="statut-generation"
+            >
+                Aucun import effectué.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+```
+
+
+    
     <!-- =================================================
          MATIÈRES
     ================================================== -->
