@@ -376,10 +376,85 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
+        // CONSTRUCTION DES DATES DE LA SESSION
+        // =================================================
+
+        const dateDebut =
+            convertirDateExcel(
+                sessionSelectionnee.dateDebut
+            );
+
+        const dateFin =
+            convertirDateExcel(
+                sessionSelectionnee.dateFin
+            );
+
+
+        if (!dateDebut || !dateFin) {
+
+            console.warn(
+                "Calendrier : dates de session invalides."
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Date début :",
+            formaterDate(
+                sessionSelectionnee.dateDebut
+            )
+        );
+
+        console.log(
+            "Date fin :",
+            formaterDate(
+                sessionSelectionnee.dateFin
+            )
+        );
+
+
+        // -------------------------------------------------
+        // Création de la liste des dates
+        // -------------------------------------------------
+
+        const datesSession = [];
+
+        const dateCourante =
+            new Date(dateDebut);
+
+
+        while (
+            dateCourante <= dateFin
+        ) {
+
+            datesSession.push(
+                new Date(dateCourante)
+            );
+
+            dateCourante.setDate(
+                dateCourante.getDate() + 1
+            );
+
+        }
+
+
+        console.log(
+            "Dates de la session :",
+            datesSession
+        );
+
+
+        // =================================================
         // EN-TÊTE DU CALENDRIER
         // =================================================
 
-        const ligneEntete =
+        // -------------------------------------------------
+        // Ligne 1 : FILIÈRE + AMPHIS + DATES
+        // -------------------------------------------------
+
+        const ligneDates =
             document.createElement("tr");
 
 
@@ -393,7 +468,9 @@ document.addEventListener("DOMContentLoaded", function () {
         thFiliere.textContent =
             "FILIÈRE";
 
-        ligneEntete.appendChild(
+        thFiliere.rowSpan = 2;
+
+        ligneDates.appendChild(
             thFiliere
         );
 
@@ -408,53 +485,101 @@ document.addEventListener("DOMContentLoaded", function () {
         thAmphis.textContent =
             "AMPHIS";
 
-        ligneEntete.appendChild(
+        thAmphis.rowSpan = 2;
+
+        ligneDates.appendChild(
             thAmphis
         );
 
 
         // -------------------------------------------------
-        // Colonnes des créneaux
+        // Dates
         // -------------------------------------------------
 
-        creneauxSession.forEach(
-            function (creneau) {
+        datesSession.forEach(
+            function (date) {
 
-                const th =
+                const thDate =
                     document.createElement("th");
 
 
-                const heureDebut =
-                    creneau.heureDebutAffichage ||
-                    convertirHeureExcel(
-                        creneau.heureDebut
+                thDate.textContent =
+                    formaterDateDepuisObjet(
+                        date
                     );
 
 
-                const heureFin =
-                    creneau.heureFinAffichage ||
-                    convertirHeureExcel(
-                        creneau.heureFin
-                    );
+                // Une date contient autant de colonnes
+                // qu'il existe de créneaux pour la session
+
+                thDate.colSpan =
+                    creneauxSession.length;
 
 
-                th.innerHTML =
-                    "Créneau " +
-                    creneau.creneauOrdre +
-                    "<br>" +
-                    heureDebut +
-                    " – " +
-                    heureFin;
-
-
-                ligneEntete.appendChild(th);
+                ligneDates.appendChild(
+                    thDate
+                );
 
             }
         );
 
 
         thead.appendChild(
-            ligneEntete
+            ligneDates
+        );
+
+
+        // =================================================
+        // LIGNE 2 : CRÉNEAUX
+        // =================================================
+
+        const ligneCreneaux =
+            document.createElement("tr");
+
+
+        datesSession.forEach(
+            function () {
+
+                creneauxSession.forEach(
+                    function (creneau) {
+
+                        const th =
+                            document.createElement("th");
+
+
+                        const heureDebut =
+                            creneau.heureDebutAffichage ||
+                            convertirHeureExcel(
+                                creneau.heureDebut
+                            );
+
+
+                        const heureFin =
+                            creneau.heureFinAffichage ||
+                            convertirHeureExcel(
+                                creneau.heureFin
+                            );
+
+
+                        th.innerHTML =
+                            heureDebut +
+                            "–" +
+                            heureFin;
+
+
+                        ligneCreneaux.appendChild(
+                            th
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        thead.appendChild(
+            ligneCreneaux
         );
 
 
@@ -499,21 +624,34 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
-                // -------------------------------------------------
-                // CELLULES DES CRÉNEAUX
-                // -------------------------------------------------
+                // =================================================
+                // CELLULES DATE × CRÉNEAU
+                // =================================================
 
-                creneauxSession.forEach(
+                datesSession.forEach(
                     function () {
 
-                        const cellule =
-                            document.createElement("td");
+                        creneauxSession.forEach(
+                            function () {
 
-                        cellule.textContent =
-                            "";
+                                const cellule =
+                                    document.createElement("td");
 
-                        ligne.appendChild(
-                            cellule
+
+                                // -------------------------------------------------
+                                // Pour le moment aucune matière n'est
+                                // affectée à une date/créneau.
+                                // -------------------------------------------------
+
+                                cellule.textContent =
+                                    "—";
+
+
+                                ligne.appendChild(
+                                    cellule
+                                );
+
+                            }
                         );
 
                     }
@@ -530,6 +668,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
         console.log(
             "✓ Calendrier construit."
+        );
+
+    }
+
+
+    // =====================================================
+    // FORMATAGE D'UNE DATE JAVASCRIPT
+    // =====================================================
+
+    function formaterDateDepuisObjet(date) {
+
+        const jour =
+            String(
+                date.getDate()
+            ).padStart(2, "0");
+
+
+        const mois =
+            String(
+                date.getMonth() + 1
+            ).padStart(2, "0");
+
+
+        const annee =
+            date.getFullYear();
+
+
+        return (
+            jour +
+            "/" +
+            mois +
+            "/" +
+            annee
         );
 
     }
