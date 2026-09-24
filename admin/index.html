@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 
 <html lang="fr">
 
 <head>
-
 
 <meta charset="UTF-8">
 
@@ -20,7 +20,6 @@
     rel="stylesheet"
     href="style-admin.css"
 >
-
 
 </head>
 
@@ -804,87 +803,6 @@
 
 
 <!-- =====================================================
-     SCRIPT ADMIN
-====================================================== -->
-
-<script>
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        function () {
-
-            const boutons =
-                document.querySelectorAll(
-                    ".menu-admin button[data-section]"
-                );
-
-
-            const sections =
-                document.querySelectorAll(
-                    ".section-admin"
-                );
-
-
-            boutons.forEach(function (bouton) {
-
-                bouton.addEventListener(
-                    "click",
-                    function () {
-
-                        const idSection =
-                            bouton.dataset.section;
-
-
-                        sections.forEach(
-                            function (section) {
-
-                                section.classList.remove(
-                                    "active"
-                                );
-
-                            }
-                        );
-
-
-                        const section =
-                            document.getElementById(
-                                idSection
-                            );
-
-
-                        if (section) {
-
-                            section.classList.add(
-                                "active"
-                            );
-
-                        }
-
-                    }
-                );
-
-            });
-
-
-            console.log(
-                "Administration : interface initialisée."
-            );
-
-        }
-    );
-
-</script>
-<!--877========================================
-<!-- =====================================================
-     BIBLIOTHÈQUE SHEETJS
-====================================================== -->
-
-<script
-    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-</script>
-
-
-<!-- =====================================================
      TEST FIREBASE / FIRESTORE
 ====================================================== -->
 
@@ -1030,12 +948,17 @@
             });
 
 
-           
+            console.log(
+                "Administration : interface initialisée."
+            );
+
         }
     );
 
 </script>
 
+
 </body>
 
 </html>
+
