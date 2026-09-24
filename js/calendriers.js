@@ -47,32 +47,40 @@ document.addEventListener("DOMContentLoaded", function () {
         // Vérification des données
         // -------------------------------------------------
 
-        if (
-            typeof getMatieres !== "function" ||
-            typeof getSessions !== "function" ||
-            typeof getCreneaux !== "function" ||
-            typeof getSallesAmphis !== "function"
-        ) {
+       // -------------------------------------------------
+// Récupération des données chargées par data.js
+// -------------------------------------------------
 
-            console.error(
-                "Calendrier : fonctions de récupération des données introuvables."
-            );
+if (
+    typeof donneesExamens === "undefined" ||
+    !donneesExamens
+) {
 
-            return;
-        }
+    console.error(
+        "Calendrier : donneesExamens introuvable."
+    );
+
+    return;
+}
 
 
-        const matieres =
-            getMatieres();
+const matieres =
+    donneesExamens.matieres || [];
 
-        const sessions =
-            getSessions();
+const sessions =
+    donneesExamens.sessions || [];
 
-        const creneaux =
-            getCreneaux();
+const creneaux =
+    donneesExamens.creneaux || [];
 
-        const sallesAmphis =
-            getSallesAmphis();
+const sallesAmphis =
+    donneesExamens.sallesAmphis || [];
+
+
+console.log("Matières :", matieres);
+console.log("Sessions :", sessions);
+console.log("Créneaux :", creneaux);
+console.log("Salles / amphis :", sallesAmphis);
 
 
         console.log("Matières :", matieres);
