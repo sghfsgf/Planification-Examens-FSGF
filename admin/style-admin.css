@@ -1,0 +1,750 @@
+/* =====================================================
+   PLANIFICATION DES EXAMENS FSGF
+   STYLE ADMINISTRATION
+   Thème : orangé clair
+===================================================== */
+
+
+/* =====================================================
+   1. VARIABLES
+===================================================== */
+
+:root {
+
+    --orange-principal: #f4a261;
+    --orange-clair: #fff4e6;
+    --orange-tres-clair: #fffaf5;
+
+    --orange-fonce: #d97706;
+    --orange-hover: #e88b3a;
+
+    --texte: #4a3b32;
+    --texte-secondaire: #75675d;
+
+    --blanc: #ffffff;
+    --bordure: #f1d4b5;
+
+    --ombre: 0 4px 14px rgba(120, 80, 40, 0.10);
+
+}
+
+
+/* =====================================================
+   2. GLOBAL
+===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+
+    margin: 0;
+
+    font-family:
+        Arial,
+        "Segoe UI",
+        sans-serif;
+
+    background: var(--orange-tres-clair);
+
+    color: var(--texte);
+
+    direction: ltr;
+
+}
+
+
+/* =====================================================
+   3. EN-TÊTE
+===================================================== */
+
+.entete-admin {
+
+    text-align: center;
+
+    padding: 25px 15px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff4e6,
+            #ffe8cc
+        );
+
+    border-bottom: 1px solid var(--bordure);
+
+}
+
+
+.entete-admin h1 {
+
+    margin: 0;
+
+    font-size: 28px;
+
+    color: var(--orange-fonce);
+
+    letter-spacing: 0.5px;
+
+}
+
+
+.entete-admin p {
+
+    margin: 8px 0 0;
+
+    color: var(--texte-secondaire);
+
+    font-size: 16px;
+
+}
+
+
+/* =====================================================
+   4. MENU ADMINISTRATION
+===================================================== */
+
+.menu-admin {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 12px;
+
+    background: var(--blanc);
+
+    border-bottom: 1px solid var(--bordure);
+
+    box-shadow: 0 2px 8px rgba(120, 80, 40, 0.06);
+
+}
+
+
+.menu-admin button,
+.btn-retour-site {
+
+    border: 1px solid var(--bordure);
+
+    background: var(--orange-clair);
+
+    color: var(--texte);
+
+    padding: 10px 14px;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.menu-admin button:hover,
+.btn-retour-site:hover {
+
+    background: var(--orange-principal);
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 3px 8px
+        rgba(217, 119, 6, 0.18);
+
+}
+
+
+.menu-admin button:active,
+.btn-retour-site:active {
+
+    transform: translateY(0);
+
+}
+
+
+/* =====================================================
+   5. ESPACE ADMIN
+===================================================== */
+
+.espace-admin {
+
+    width: 100%;
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding: 25px 20px 40px;
+
+}
+
+
+/* =====================================================
+   6. SECTIONS
+===================================================== */
+
+.section-admin {
+
+    display: none;
+
+}
+
+
+.section-admin.active {
+
+    display: block;
+
+}
+
+
+/* =====================================================
+   7. CARTES
+===================================================== */
+
+.carte-admin {
+
+    background: var(--blanc);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 14px;
+
+    padding: 25px;
+
+    margin-bottom: 20px;
+
+    box-shadow: var(--ombre);
+
+}
+
+
+.carte-admin h2 {
+
+    margin-top: 0;
+
+    margin-bottom: 12px;
+
+    color: var(--orange-fonce);
+
+    font-size: 22px;
+
+}
+
+
+.carte-admin p {
+
+    line-height: 1.6;
+
+}
+
+
+/* =====================================================
+   8. GRILLE DES MODULES
+===================================================== */
+
+.grille-modules {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(240px, 1fr)
+        );
+
+    gap: 16px;
+
+}
+
+
+.module-admin {
+
+    background: var(--blanc);
+
+    border: 1px solid var(--bordure);
+
+    border-left: 5px solid var(--orange-principal);
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+    box-shadow: var(--ombre);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.module-admin:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 7px 18px
+        rgba(120, 80, 40, 0.13);
+
+}
+
+
+.module-admin h3 {
+
+    margin-top: 0;
+
+    color: var(--orange-fonce);
+
+    font-size: 17px;
+
+}
+
+
+.module-admin p {
+
+    margin-bottom: 0;
+
+    color: var(--texte-secondaire);
+
+    line-height: 1.5;
+
+}
+
+
+/* =====================================================
+   9. BLOCS D'INFORMATION
+===================================================== */
+
+.bloc-information {
+
+    margin-top: 20px;
+
+    padding: 18px;
+
+    background: var(--orange-clair);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 10px;
+
+}
+
+
+.bloc-information strong {
+
+    color: var(--orange-fonce);
+
+}
+
+
+.bloc-information ul {
+
+    margin-bottom: 0;
+
+}
+
+
+/* =====================================================
+   10. ZONES DE DONNÉES
+===================================================== */
+
+.zone-donnees {
+
+    margin-top: 20px;
+
+    min-height: 80px;
+
+    padding: 20px;
+
+    background: var(--orange-tres-clair);
+
+    border: 1px dashed var(--bordure);
+
+    border-radius: 10px;
+
+    color: var(--texte-secondaire);
+
+}
+
+
+/* =====================================================
+   11. GÉNÉRATION
+===================================================== */
+
+.bloc-generation {
+
+    margin-top: 20px;
+
+    padding: 22px;
+
+    background: var(--orange-clair);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 12px;
+
+}
+
+
+.btn-action {
+
+    border: none;
+
+    background: var(--orange-principal);
+
+    color: #ffffff;
+
+    padding: 12px 20px;
+
+    border-radius: 9px;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.15s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.btn-action:hover {
+
+    background: var(--orange-hover);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 4px 10px
+        rgba(217, 119, 6, 0.20);
+
+}
+
+
+.statut-generation {
+
+    margin-top: 15px;
+
+    padding: 10px 14px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 8px;
+
+    color: var(--texte-secondaire);
+
+}
+
+
+/* =====================================================
+   12. CALENDRIER ADMIN
+===================================================== */
+
+.bloc-calendrier {
+
+    margin-top: 20px;
+
+    padding: 20px;
+
+    background: var(--orange-tres-clair);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 10px;
+
+}
+
+
+/* =====================================================
+   13. CONTRÔLE C1 / C2 / C3
+===================================================== */
+
+.controle-item {
+
+    margin-top: 18px;
+
+    padding: 18px;
+
+    background: var(--orange-tres-clair);
+
+    border: 1px solid var(--bordure);
+
+    border-radius: 10px;
+
+}
+
+
+.controle-item h3 {
+
+    margin-top: 0;
+
+    color: var(--orange-fonce);
+
+}
+
+
+.controle-item p {
+
+    color: var(--texte-secondaire);
+
+}
+
+
+.statut-controle {
+
+    display: inline-block;
+
+    padding: 6px 12px;
+
+    border-radius: 20px;
+
+    background: #f3f0ed;
+
+    color: var(--texte-secondaire);
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+}
+
+
+/* =====================================================
+   14. SIAD / RÉCAPITULATIF
+===================================================== */
+
+#zoneSIAD,
+#zoneRecap {
+
+    min-height: 120px;
+
+}
+
+
+/* =====================================================
+   15. PIED DE PAGE
+===================================================== */
+
+.pied-page-admin {
+
+    text-align: center;
+
+    padding: 20px 15px;
+
+    background: #fff0df;
+
+    border-top: 1px solid var(--bordure);
+
+    color: var(--texte-secondaire);
+
+    font-size: 14px;
+
+}
+
+
+/* =====================================================
+   16. RESPONSIVE — TABLETTE
+===================================================== */
+
+@media (max-width: 900px) {
+
+    .entete-admin h1 {
+
+        font-size: 24px;
+
+    }
+
+
+    .menu-admin {
+
+        gap: 6px;
+
+    }
+
+
+    .menu-admin button,
+    .btn-retour-site {
+
+        padding: 9px 11px;
+
+        font-size: 13px;
+
+    }
+
+
+    .espace-admin {
+
+        padding: 20px 15px 30px;
+
+    }
+
+}
+
+
+/* =====================================================
+   17. RESPONSIVE — SMARTPHONE
+===================================================== */
+
+@media (max-width: 600px) {
+
+    .entete-admin {
+
+        padding: 20px 10px;
+
+    }
+
+
+    .entete-admin h1 {
+
+        font-size: 20px;
+
+        line-height: 1.3;
+
+    }
+
+
+    .entete-admin p {
+
+        font-size: 14px;
+
+    }
+
+
+    .menu-admin {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 7px;
+
+        padding: 10px;
+
+    }
+
+
+    .menu-admin button,
+    .btn-retour-site {
+
+        width: 100%;
+
+        padding: 10px 6px;
+
+        font-size: 12px;
+
+        text-align: center;
+
+    }
+
+
+    .espace-admin {
+
+        padding: 15px 10px 25px;
+
+    }
+
+
+    .carte-admin {
+
+        padding: 18px 14px;
+
+        border-radius: 11px;
+
+    }
+
+
+    .carte-admin h2 {
+
+        font-size: 19px;
+
+    }
+
+
+    .grille-modules {
+
+        grid-template-columns: 1fr;
+
+        gap: 12px;
+
+    }
+
+
+    .module-admin {
+
+        padding: 15px;
+
+    }
+
+
+    .btn-action {
+
+        width: 100%;
+
+        padding: 12px;
+
+    }
+
+
+    .pied-page-admin {
+
+        font-size: 12px;
+
+    }
+
+}
+
+
+/* =====================================================
+   18. PETITS SMARTPHONES
+===================================================== */
+
+@media (max-width: 380px) {
+
+    .menu-admin {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .entete-admin h1 {
+
+        font-size: 18px;
+
+    }
+
+}
