@@ -1,7 +1,8 @@
+
 // =====================================================
 // PLANIFICATION DES EXAMENS FSGF
 // IMPORT-DONNEES.JS
-// Import du paramétrage Excel vers Firestore
+// Import des données Excel vers Firestore
 // =====================================================
 
 
@@ -13,7 +14,6 @@ import { app } from "../firebase-config.js";
 
 import {
     getFirestore,
-    collection,
     doc,
     setDoc
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -24,39 +24,75 @@ const db =
 
 
 // =====================================================
-// 2. BOUTON IMPORT PARAMÉTRAGE
+// 2. BOUTONS IMPORT
 // =====================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        const bouton =
+        // -------------------------------------------------
+        // Bouton import paramétrage
+        // -------------------------------------------------
+
+        const boutonParametrage =
             document.getElementById(
                 "btnImporterParametrage"
             );
 
 
-        if (!bouton) {
+        if (boutonParametrage) {
+
+            boutonParametrage.addEventListener(
+                "click",
+                importerParametrage
+            );
+
+
+            console.log(
+                "✓ Import du paramétrage : bouton connecté."
+            );
+
+        }
+        else {
 
             console.error(
                 "❌ Bouton btnImporterParametrage introuvable."
             );
 
-            return;
-
         }
 
 
-        bouton.addEventListener(
-            "click",
-            importerParametrage
-        );
+        // -------------------------------------------------
+        // Bouton import salles / amphis
+        // -------------------------------------------------
+
+        const boutonSalles =
+            document.getElementById(
+                "btnImporterSallesAmphis"
+            );
 
 
-        console.log(
-            "✓ Import du paramétrage : bouton connecté."
-        );
+        if (boutonSalles) {
+
+            boutonSalles.addEventListener(
+                "click",
+                importerSallesAmphis
+            );
+
+
+            console.log(
+                "✓ Import salles / amphis : bouton connecté."
+            );
+
+        }
+        else {
+
+            console.error(
+                "❌ Bouton btnImporterSallesAmphis introuvable."
+            );
+
+        }
 
     }
 );
@@ -305,3 +341,144 @@ async function importerParametrage() {
 
 }
 
+
+// =====================================================
+// 4. IMPORT DES SALLES / AMPHIS
+// =====================================================
+
+async function importerSallesAmphis() {
+
+    const statut =
+        document.getElementById(
+            "statutImportSallesAmphis"
+        );
+
+
+    try {
+
+        // -------------------------------------------------
+        // Vérification du chargement Excel
+        // -------------------------------------------------
+
+        if (
+            !donneesSontDisponibles()
+        ) {
+
+            throw new Error(
+                "Les données Excel ne sont pas encore disponibles."
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // Récupération des salles / amphis
+        // -------------------------------------------------
+
+        const sallesAmphis =
+            obtenirSallesAmphis();
+
+
+        console.log(
+            "Début de l'import des salles / amphis..."
+        );
+
+
+        console.log(
+            "Salles / amphis à importer :",
+            sallesAmphis.length
+        );
+
+
+        // -------------------------------------------------
+        // Import dans Firestore
+        // -------------------------------------------------
+
+        for (
+            let i = 0;
+            i < sallesAmphis.length;
+            i++
+        ) {
+
+            const salleAmphi =
+                sallesAmphis[i];
+
+
+            // Le code métier devient
+            // l'identifiant du document Firestore
+
+            const identifiant =
+                salleAmphi.code;
+
+
+            await setDoc(
+
+                doc(
+                    db,
+                    "salles_amphis",
+                    identifiant
+                ),
+
+                salleAmphi
+
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // Confirmation
+        // -------------------------------------------------
+
+        console.log(
+            "✓ Salles / amphis importées :",
+            sallesAmphis.length
+        );
+
+
+        if (statut) {
+
+            statut.textContent =
+                "✓ Import terminé : " +
+                sallesAmphis.length +
+                " salles / amphis.";
+
+        }
+
+
+        console.log(
+            "===================================="
+        );
+
+
+        console.log(
+            "✓ IMPORT SALLES / AMPHIS TERMINÉ"
+        );
+
+
+        console.log(
+            "===================================="
+        );
+
+    }
+
+
+    catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de l'import des salles / amphis :",
+            erreur
+        );
+
+
+        if (statut) {
+
+            statut.textContent =
+                "❌ Erreur lors de l'import. " +
+                "Consultez la console F12.";
+
+        }
+
+    }
+
+}
