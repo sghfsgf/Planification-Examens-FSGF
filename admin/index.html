@@ -789,17 +789,67 @@
     src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
 </script>
 <!791  -- =====================================================
-<!-- =====================================================
-     TEST FIREBASE
-====================================================== -->
-
 <script type="module">
 
     import { app } from "../firebase-config.js";
 
+    import {
+        getFirestore,
+        collection,
+        getDocs
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+
+    // =====================================================
+    // INITIALISATION FIRESTORE
+    // =====================================================
+
+    const db = getFirestore(app);
+
+
     console.log(
         "✓ Firebase initialisé :",
         app.options.projectId
+    );
+
+
+    // =====================================================
+    // TEST DE LECTURE FIRESTORE
+    // =====================================================
+
+    const resultat =
+        await getDocs(
+            collection(
+                db,
+                "test_connexion"
+            )
+        );
+
+
+    console.log(
+        "✓ Firestore accessible"
+    );
+
+    console.log(
+        "Nombre de documents :",
+        resultat.size
+    );
+
+
+    resultat.forEach(
+        function (documentFirestore) {
+
+            console.log(
+                "Document :",
+                documentFirestore.id
+            );
+
+            console.log(
+                "Données :",
+                documentFirestore.data()
+            );
+
+        }
     );
 
 </script>
