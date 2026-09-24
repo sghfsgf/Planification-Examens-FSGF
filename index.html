@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Planification des examens</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- =====================================================
+         EN-TÊTE
+    ====================================================== -->
+    <header class="entete">
+        <h1>PLANIFICATION DES EXAMENS</h1>
+        <p>Année universitaire : <span id="anneeAffichee">2025-2026</span></p>
+    </header>
+
+
+    <!-- =====================================================
+         MENU PRINCIPAL
+    ====================================================== -->
+    <nav class="menu-principal">
+
+        <button type="button" data-section="accueil">
+            🏠 Accueil
+        </button>
+
+        <button type="button" data-section="parametrage">
+            ⚙ Paramétrage
+        </button>
+
+        <button type="button" data-section="calendriers">
+            📅 Calendriers
+        </button>
+
+        <button type="button" data-section="siad">
+            📊 SIAD
+        </button>
+
+        <button type="button" data-section="controle">
+            ✓ Contrôle
+        </button>
+
+        <button type="button" data-section="recap">
+            📈 Récapitulatif
+        </button>
+
+    </nav>
+
+
+    <!-- =====================================================
+         ESPACE DE TRAVAIL
+    ====================================================== -->
+    <main class="espace-travail">
+
+
+        <!-- =================================================
+             ACCUEIL
+        ================================================== -->
+        <section id="accueil" class="section-app active">
+
+            <div class="carte">
+
+                <h2>PLANIFICATION DES EXAMENS</h2>
+
+                <p>
+                    Application de génération et de contrôle
+                    des calendriers d'examens.
+                </p>
+
+                <p>
+                    Utilisez le menu pour accéder au paramétrage,
+                    aux calendriers, au contrôle et à l'analyse SIAD.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PARAMÉTRAGE
+        ================================================== -->
+        <section id="parametrage" class="section-app">
+
+            <div class="carte">
+
+                <h2>PARAMÈTRES DE PLANIFICATION</h2>
+
+                <div class="formulaire">
+
+                    <div class="champ">
+
+                        <label for="anneeUniversitaire">
+                            Année universitaire
+                        </label>
+
+                        <select id="anneeUniversitaire">
+                            <option value="2025-2026">2025-2026</option>
+                            <option value="2026-2027">2026-2027</option>
+                        </select>
+
+                    </div>
+
+
+                    <div class="champ">
+
+                        <label for="niveau">
+                            Niveau
+                        </label>
+
+                        <select id="niveau">
+
+                            <option value="L1">L1</option>
+                            <option value="L2">L2</option>
+                            <option value="L3">L3</option>
+                            <option value="MP">MP</option>
+                            <option value="MR">MR</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="champ">
+
+                        <label for="semestre">
+                            Semestre
+                        </label>
+
+                        <select id="semestre">
+
+                            <option value="S1">S1</option>
+                            <option value="S2">S2</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="champ">
+
+                        <label for="regime">
+                            Régime
+                        </label>
+
+                        <select id="regime">
+
+                            <option value="CC">CC</option>
+                            <option value="MX">MX</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="champ">
+
+                        <label for="session">
+                            Session
+                        </label>
+
+                        <select id="session">
+
+                            <option value="DS_S1">
+                                DS S1
+                            </option>
+
+                            <option value="PRINCIPALE_S1">
+                                Session principale S1
+                            </option>
+
+                            <option value="RATTRAPAGE_S1">
+                                Rattrapage S1
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <div class="actions">
+
+                    <button
+                        id="btnGenerer"
+                        type="button"
+                        class="btn-principal">
+
+                        🚀 Générer le calendrier
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CALENDRIER
+        ================================================== -->
+        <section id="calendriers" class="section-app">
+
+            <div class="carte">
+
+                <h2>
+                    CALENDRIER
+                    <span id="niveauCalendrier">L1</span>
+                </h2>
+
+                <div class="tableau-conteneur">
+
+                    <table id="tableauCalendrier">
+
+                        <thead>
+
+                            <tr>
+
+                                <th rowspan="2">
+                                    FILIÈRE
+                                </th>
+
+                                <th rowspan="2">
+                                    AMPHIS
+                                </th>
+
+                                <th colspan="2">
+                                    12/06
+                                </th>
+
+                                <th colspan="2">
+                                    13/06
+                                </th>
+
+                                <th colspan="2">
+                                    14/06
+                                </th>
+
+                            </tr>
+
+                            <tr>
+
+                                <th>08h30</th>
+                                <th>10h30</th>
+
+                                <th>08h30</th>
+                                <th>10h30</th>
+
+                                <th>08h30</th>
+                                <th>10h30</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td>LISI</td>
+
+                                <td></td>
+
+                                <td
+                                    class="cellule-examen"
+                                    draggable="true">
+
+                                    ALGEBRE 1
+
+                                </td>
+
+                                <td></td>
+
+                                <td>
+                                    ANALYSE 1
+                                </td>
+
+                                <td></td>
+
+                                <td>
+                                    PHYSIQUE
+                                </td>
+
+                                <td></td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>LIGE</td>
+
+                                <td></td>
+
+                                <td
+                                    class="cellule-examen"
+                                    draggable="true">
+
+                                    ALGEBRE 1
+
+                                </td>
+
+                                <td></td>
+
+                                <td>
+                                    CHIMIE
+                                </td>
+
+                                <td></td>
+
+                                <td>
+                                    PHYSIQUE
+                                </td>
+
+                                <td></td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>LIPE</td>
+
+                                <td></td>
+
+                                <td
+                                    class="cellule-examen"
+                                    draggable="true">
+
+                                    ALGEBRE 1
+
+                                </td>
+
+                                <td></td>
+
+                                <td>
+                                    BIOLOGIE
+                                </td>
+
+                                <td></td>
+
+                                <td></td>
+
+                                <td></td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <p class="aide-calendrier">
+
+                    ↕ Glisser-déposer pour effectuer une
+                    modification manuelle du calendrier.
+
+                </p>
+
+
+                <div class="actions">
+
+                    <button
+                        type="button"
+                        id="btnConsultationMobile">
+
+                        📱 Consultation smartphone
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnImprimerCalendrier">
+
+                        🖨️ Imprimer
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnExportExcel">
+
+                        📥 Excel
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnExportCSV">
+
+                        📄 CSV
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CONTRÔLE
+        ================================================== -->
+        <section id="controle" class="section-app">
+
+            <div class="carte">
+
+                <h2>CONTRÔLE DU CALENDRIER</h2>
+
+
+                <div class="controle-ligne">
+
+                    <span>
+                        C1 — Espacement
+                    </span>
+
+                    <strong id="statutC1">
+                        ✓ Conforme
+                    </strong>
+
+                </div>
+
+
+                <div class="controle-ligne">
+
+                    <span>
+                        C2 — Matières communes
+                    </span>
+
+                    <strong id="statutC2">
+                        ✓ Conforme
+                    </strong>
+
+                </div>
+
+
+                <div class="controle-ligne">
+
+                    <span>
+                        C3 — Équilibrage
+                    </span>
+
+                    <strong id="statutC3">
+                        ✓ Conforme
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             SIAD
+        ================================================== -->
+        <section id="siad" class="section-app">
+
+            <div class="carte">
+
+                <h2>
+                    ANALYSE SIAD — PAR CRÉNEAU
+                </h2>
+
+                <div class="tableau-conteneur">
+
+                    <table id="tableauSIAD">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>DATE</th>
+                                <th>CRÉNEAU</th>
+                                <th>EXAMENS</th>
+                                <th>FILIÈRES</th>
+                                <th>SALLES</th>
+                                <th>AMPHIS</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td>12/06/2026</td>
+                                <td>08h30-10h30</td>
+                                <td>8</td>
+                                <td>5</td>
+                                <td>6</td>
+                                <td>2</td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>12/06/2026</td>
+                                <td>10h30-12h30</td>
+                                <td>6</td>
+                                <td>4</td>
+                                <td>5</td>
+                                <td>1</td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>13/06/2026</td>
+                                <td>08h30-10h30</td>
+                                <td>7</td>
+                                <td>5</td>
+                                <td>5</td>
+                                <td>2</td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>13/06/2026</td>
+                                <td>10h30-12h30</td>
+                                <td>4</td>
+                                <td>3</td>
+                                <td>3</td>
+                                <td>1</td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <div class="actions">
+
+                    <button
+                        type="button"
+                        id="btnExportSIAD">
+
+                        📥 Exporter SIAD
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnImprimerSIAD">
+
+                        🖨️ Imprimer SIAD
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnCSVSIAD">
+
+                        📄 CSV SIAD
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             RÉCAPITULATIF
+        ================================================== -->
+        <section id="recap" class="section-app">
+
+            <div class="carte">
+
+                <h2>RÉCAPITULATIF</h2>
+
+                <div class="recap-grid">
+
+                    <div>
+                        <span>Niveau</span>
+                        <strong id="recapNiveau">L1</strong>
+                    </div>
+
+                    <div>
+                        <span>Filières</span>
+                        <strong id="recapFilieres">5</strong>
+                    </div>
+
+                    <div>
+                        <span>Matières</span>
+                        <strong id="recapMatieres">42</strong>
+                    </div>
+
+                    <div>
+                        <span>Matières communes</span>
+                        <strong id="recapCommunes">8</strong>
+                    </div>
+
+                    <div>
+                        <span>Non placées</span>
+                        <strong id="recapNonPlacees">0</strong>
+                    </div>
+
+                    <div>
+                        <span>Créneaux utilisés</span>
+                        <strong id="recapCreneaux">12</strong>
+                    </div>
+
+                    <div>
+                        <span>Écart maximum</span>
+                        <strong id="recapEcart">1</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="recap-contraintes">
+
+                    <span>
+                        C1 ✓
+                    </span>
+
+                    <span>
+                        C2 ✓
+                    </span>
+
+                    <span>
+                        C3 ✓
+                    </span>
+
+                </div>
+
+
+                <div class="statut-final">
+
+                    STATUT :
+                    <strong id="statutFinal">
+                        CALENDRIER VALIDE
+                    </strong>
+
+                </div>
+
+
+                <div class="actions">
+
+                    <button
+                        type="button"
+                        id="btnRecap">
+
+                        📊 Récapitulatif
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnRecapExcel">
+
+                        📥 Excel
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnRecapCSV">
+
+                        📄 CSV
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnImprimerRecap">
+
+                        🖨️ Imprimer
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         PIED DE PAGE
+    ====================================================== -->
+    <footer class="pied-page">
+
+        <p>
+            Planification des examens —
+            Faculté des Sciences de Gafsa
+        </p>
+
+    </footer>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+         
+         Les fichiers seront ajoutés progressivement.
+    ====================================================== -->
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
