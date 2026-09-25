@@ -15,7 +15,10 @@ import { app } from "../firebase-config.js";
 import {
     getFirestore,
     doc,
-    setDoc
+    setDoc,
+    getDocs,
+    collection,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 
@@ -102,11 +105,15 @@ document.addEventListener(
 // 3. IMPORT DU PARAMÉTRAGE
 // =====================================================
 
-async function importerParametrage() {
+// =====================================================
+// 4. IMPORT DES SALLES / AMPHIS
+// =====================================================
+
+async function importerSallesAmphis() {
 
     const statut =
         document.getElementById(
-            "statutImportParametrage"
+            "statutImportSallesAmphis"
         );
 
 
@@ -128,161 +135,105 @@ async function importerParametrage() {
 
 
         // -------------------------------------------------
-        // Récupération des données
+        // Récupération des salles / amphis
         // -------------------------------------------------
 
-        const matieres =
-            obtenirMatieres();
-
-
-        const sessions =
-            obtenirSessions();
-
-
-        const creneaux =
-            obtenirCreneaux();
+        const sallesAmphis =
+            obtenirSallesAmphis();
 
 
         console.log(
-            "Début de l'import Firestore..."
+            "Début de la synchronisation des salles / amphis..."
         );
 
 
         console.log(
-            "Matières à importer :",
-            matieres.length
+            "Salles / amphis à importer :",
+            sallesAmphis.length
+        );
+
+
+        // =================================================
+        // 1. PRÉPARATION DU BATCH
+        // =================================================
+
+        const batch =
+            writeBatch(db);
+
+
+        // =================================================
+        // 2. SUPPRESSION DES ANCIENNES SALLES / AMPHIS
+        // =================================================
+
+        const anciennesSallesAmphis =
+            await getDocs(
+                collection(
+                    db,
+                    "salles_amphis"
+                )
+            );
+
+
+        anciennesSallesAmphis.forEach(
+            function (documentFirestore) {
+
+                batch.delete(
+                    documentFirestore.ref
+                );
+
+            }
         );
 
 
         console.log(
-            "Sessions à importer :",
-            sessions.length
+            "Anciennes salles / amphis supprimées :",
+            anciennesSallesAmphis.size
         );
 
 
-        console.log(
-            "Créneaux à importer :",
-            creneaux.length
-        );
-
-
-        // -------------------------------------------------
-        // Import des matières
-        // -------------------------------------------------
+        // =================================================
+        // 3. AJOUT DES SALLES / AMPHIS DU NOUVEL EXCEL
+        // =================================================
 
         for (
             let i = 0;
-            i < matieres.length;
+            i < sallesAmphis.length;
             i++
         ) {
 
-            const matiere =
-                matieres[i];
+            const salleAmphi =
+                sallesAmphis[i];
 
 
             const identifiant =
-                "matiere_" +
-                i;
+                salleAmphi.code;
 
 
-            await setDoc(
+            batch.set(
 
                 doc(
                     db,
-                    "matieres",
+                    "salles_amphis",
                     identifiant
                 ),
 
-                matiere
+                salleAmphi
 
             );
 
         }
 
 
-        console.log(
-            "✓ Matières importées :",
-            matieres.length
-        );
+        // =================================================
+        // 4. EXÉCUTION
+        // =================================================
 
-
-        // -------------------------------------------------
-        // Import des sessions
-        // -------------------------------------------------
-
-        for (
-            let i = 0;
-            i < sessions.length;
-            i++
-        ) {
-
-            const session =
-                sessions[i];
-
-
-            const identifiant =
-                session.sessionCode;
-
-
-            await setDoc(
-
-                doc(
-                    db,
-                    "sessions",
-                    identifiant
-                ),
-
-                session
-
-            );
-
-        }
+        await batch.commit();
 
 
         console.log(
-            "✓ Sessions importées :",
-            sessions.length
-        );
-
-
-        // -------------------------------------------------
-        // Import des créneaux
-        // -------------------------------------------------
-
-        for (
-            let i = 0;
-            i < creneaux.length;
-            i++
-        ) {
-
-            const creneau =
-                creneaux[i];
-
-
-            const identifiant =
-                creneau.sessionCode +
-                "_" +
-                creneau.creneauOrdre;
-
-
-            await setDoc(
-
-                doc(
-                    db,
-                    "creneaux",
-                    identifiant
-                ),
-
-                creneau
-
-            );
-
-        }
-
-
-        console.log(
-            "✓ Créneaux importés :",
-            creneaux.length
+            "✓ Salles / amphis synchronisées :",
+            sallesAmphis.length
         );
 
 
@@ -293,13 +244,9 @@ async function importerParametrage() {
         if (statut) {
 
             statut.textContent =
-                "✓ Import terminé : " +
-                matieres.length +
-                " matières, " +
-                sessions.length +
-                " sessions et " +
-                creneaux.length +
-                " créneaux.";
+                "✓ Synchronisation terminée : " +
+                sallesAmphis.length +
+                " salles / amphis.";
 
         }
 
@@ -310,7 +257,7 @@ async function importerParametrage() {
 
 
         console.log(
-            "✓ IMPORT PARAMÉTRAGE TERMINÉ"
+            "✓ SYNCHRONISATION SALLES / AMPHIS TERMINÉE"
         );
 
 
@@ -324,7 +271,7 @@ async function importerParametrage() {
     catch (erreur) {
 
         console.error(
-            "❌ Erreur lors de l'import :",
+            "❌ Erreur lors de la synchronisation des salles / amphis :",
             erreur
         );
 
@@ -332,7 +279,7 @@ async function importerParametrage() {
         if (statut) {
 
             statut.textContent =
-                "❌ Erreur lors de l'import. " +
+                "❌ Erreur lors de la synchronisation. " +
                 "Consultez la console F12.";
 
         }
