@@ -643,6 +643,8 @@ window.generationExamens = {
     obtenirMatieres:
         obtenirMatieresDeFiliere,
 
+     identifierMatieresCommunes:
+        identifierMatieresCommunes,
     construireStructure:
         construireStructureGeneration,
 
