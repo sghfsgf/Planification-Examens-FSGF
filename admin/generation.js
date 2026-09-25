@@ -1402,6 +1402,245 @@ function construireMatricePlanning(niveauCode, sessionCode) {
 
     return planning;
 }
+function placerMatieresCommunes(planning) {
+
+    if (!planning) {
+        console.error("❌ Planning absent.");
+        return null;
+    }
+
+    if (
+        !planning.matieresCommunes ||
+        planning.matieresCommunes.length === 0
+    ) {
+        console.log("ℹ️ Aucune matière commune à placer.");
+        return planning;
+    }
+
+    console.log("------------------------------------------");
+    console.log("PLACEMENT DES MATIÈRES COMMUNES");
+    console.log("------------------------------------------");
+
+    // -------------------------------------------------
+    // Pour chaque matière commune
+    // -------------------------------------------------
+
+    planning.matieresCommunes.forEach(function (matiereCommune) {
+
+        const filieresConcernees = matiereCommune.filieres;
+
+        if (!filieresConcernees || filieresConcernees.length < 2) {
+            console.warn(
+                "⚠️ Matière commune invalide :",
+                matiereCommune.matiereLibelle
+            );
+            return;
+        }
+
+        // -------------------------------------------------
+        // Recherche d'une position disponible commune
+        // à toutes les filières concernées
+        // -------------------------------------------------
+
+        let positionChoisie = null;
+
+        const premiereFiliere = planning.filieres.find(
+            function (filiere) {
+                return filieresConcernees.includes(
+                    filiere.filiereCode
+                );
+            }
+        );
+
+        if (!premiereFiliere) {
+            console.warn(
+                "⚠️ Filière introuvable pour :",
+                matiereCommune.matiereLibelle
+            );
+            return;
+        }
+
+        // -------------------------------------------------
+        // On parcourt les cellules dans l'ordre
+        // date → créneau
+        // -------------------------------------------------
+
+        for (
+            let i = 0;
+            i < premiereFiliere.cellules.length;
+            i++
+        ) {
+
+            const celluleCandidate =
+                premiereFiliere.cellules[i];
+
+            // Vérifier que la même position existe
+            // et est libre dans toutes les filières
+            // concernées.
+            const positionDisponible =
+                filieresConcernees.every(
+                    function (filiereCode) {
+
+                        const filiere =
+                            planning.filieres.find(
+                                function (f) {
+                                    return (
+                                        f.filiereCode ===
+                                        filiereCode
+                                    );
+                                }
+                            );
+
+                        if (!filiere) {
+                            return false;
+                        }
+
+                        const cellule =
+                            filiere.cellules.find(
+                                function (c) {
+
+                                    return (
+                                        c.dateAffichage ===
+                                            celluleCandidate.dateAffichage
+                                        &&
+                                        c.creneauOrdre ===
+                                            celluleCandidate.creneauOrdre
+                                    );
+
+                                }
+                            );
+
+                        return (
+                            cellule &&
+                            cellule.estOccupee === false
+                        );
+
+                    }
+                );
+
+            if (positionDisponible) {
+
+                positionChoisie = celluleCandidate;
+                break;
+
+            }
+
+        }
+
+        // -------------------------------------------------
+        // Aucune position disponible
+        // -------------------------------------------------
+
+        if (!positionChoisie) {
+
+            console.error(
+                "❌ Aucune position disponible pour la matière commune :",
+                matiereCommune.matiereLibelle
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // Affectation dans toutes les filières concernées
+        // -------------------------------------------------
+
+        filieresConcernees.forEach(function (filiereCode) {
+
+            const filiere =
+                planning.filieres.find(
+                    function (f) {
+                        return f.filiereCode === filiereCode;
+                    }
+                );
+
+            if (!filiere) {
+                return;
+            }
+
+            const cellule =
+                filiere.cellules.find(
+                    function (c) {
+
+                        return (
+                            c.dateAffichage ===
+                                positionChoisie.dateAffichage
+                            &&
+                            c.creneauOrdre ===
+                                positionChoisie.creneauOrdre
+                        );
+
+                    }
+                );
+
+            if (!cellule) {
+                return;
+            }
+
+            cellule.matiereLibelle =
+                matiereCommune.matiereLibelle;
+
+            cellule.estOccupee = true;
+            cellule.estCommune = true;
+
+        });
+
+        console.log(
+            "✓ Matière commune placée :",
+            matiereCommune.matiereLibelle
+        );
+
+        console.log(
+            "  Filières :",
+            filieresConcernees.join(" / ")
+        );
+
+        console.log(
+            "  Date :",
+            positionChoisie.dateAffichage
+        );
+
+        console.log(
+            "  Créneau :",
+            positionChoisie.creneauOrdre,
+            "(" +
+            (positionChoisie.heureDebutAffichage || "") +
+            " - " +
+            (positionChoisie.heureFinAffichage || "") +
+            ")"
+        );
+
+    });
+
+    // -------------------------------------------------
+    // Diagnostic final
+    // -------------------------------------------------
+
+    console.log("------------------------------------------");
+    console.log("✓ MATIÈRES COMMUNES PLACÉES");
+    console.log("------------------------------------------");
+
+    planning.filieres.forEach(function (filiere) {
+
+        const matieresPlacees =
+            filiere.cellules.filter(
+                function (cellule) {
+                    return cellule.estOccupee;
+                }
+            );
+
+        console.log(
+            filiere.filiereCode +
+            " → " +
+            matieresPlacees.length +
+            " matière(s) placée(s)"
+        );
+
+    });
+
+    return planning;
+}
+
 
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
@@ -1692,7 +1931,8 @@ window.generationExamens = {
 
     construireMatricePlanning:
         construireMatricePlanning,
-    
+    placerMatieresCommunes: 
+        placerMatieresCommunes,
     construireStructure:
         construireStructureGeneration,
 
