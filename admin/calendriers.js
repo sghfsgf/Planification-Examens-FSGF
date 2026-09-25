@@ -285,3 +285,268 @@ function construireTableauCalendrier(planning) {
 
     return tableau;
 }
+// =====================================================
+// FILTRES DU CALENDRIER ADMIN
+// =====================================================
+
+function initialiserFiltresCalendrierAdmin() {
+
+    const selectNiveau =
+        document.getElementById("niveauCalendrierAdmin");
+
+    const selectSemestre =
+        document.getElementById("semestreCalendrierAdmin");
+
+    const selectRegime =
+        document.getElementById("regimeCalendrierAdmin");
+
+    const selectSession =
+        document.getElementById("sessionCalendrierAdmin");
+
+    const bouton =
+        document.getElementById("btnAfficherCalendrierAdmin");
+
+
+    if (
+        !selectNiveau ||
+        !selectSemestre ||
+        !selectRegime ||
+        !selectSession ||
+        !bouton
+    ) {
+        console.error(
+            "❌ Éléments des filtres du calendrier introuvables."
+        );
+        return;
+    }
+
+
+    // =================================================
+    // METTRE À JOUR LES SESSIONS
+    // =================================================
+
+    function mettreAJourSessions() {
+
+        const semestre =
+            selectSemestre.value;
+
+        const regime =
+            selectRegime.value;
+
+
+        selectSession.innerHTML = "";
+
+
+        if (
+            !window.donneesExamens ||
+            !Array.isArray(window.donneesExamens.sessions)
+        ) {
+            console.error(
+                "❌ Données des sessions indisponibles."
+            );
+            return;
+        }
+
+
+        const sessionsDisponibles =
+            window.donneesExamens.sessions.filter(
+                function (session) {
+
+                    return (
+                        session.semestreCode === semestre &&
+                        session.regimeCode === regime
+                    );
+
+                }
+            );
+
+
+        sessionsDisponibles.forEach(
+            function (session) {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    session.sessionCode;
+
+                option.textContent =
+                    session.sessionLibelle;
+
+                selectSession.appendChild(option);
+
+            }
+        );
+
+
+        if (sessionsDisponibles.length === 0) {
+
+            const option =
+                document.createElement("option");
+
+            option.value = "";
+
+            option.textContent =
+                "Aucune session disponible";
+
+            selectSession.appendChild(option);
+
+        }
+
+    }
+
+
+    // =================================================
+    // CHANGEMENT SEMESTRE
+    // =================================================
+
+    selectSemestre.addEventListener(
+        "change",
+        function () {
+
+            mettreAJourSessions();
+
+        }
+    );
+
+
+    // =================================================
+    // CHANGEMENT RÉGIME
+    // =================================================
+
+    selectRegime.addEventListener(
+        "change",
+        function () {
+
+            mettreAJourSessions();
+
+        }
+    );
+
+
+    // =================================================
+    // AFFICHER LE CALENDRIER
+    // =================================================
+
+    bouton.addEventListener(
+        "click",
+        function () {
+
+            const niveau =
+                selectNiveau.value;
+
+            const sessionCode =
+                selectSession.value;
+
+
+            if (!niveau || !sessionCode) {
+
+                console.error(
+                    "❌ Niveau ou session invalide."
+                );
+
+                return;
+            }
+
+
+            console.log("------------------------------------------");
+            console.log("AFFICHAGE CALENDRIER ADMIN");
+            console.log("------------------------------------------");
+
+            console.log("Niveau :", niveau);
+            console.log(
+                "Semestre :",
+                selectSemestre.value
+            );
+            console.log(
+                "Régime :",
+                selectRegime.value
+            );
+            console.log(
+                "Session :",
+                sessionCode
+            );
+
+
+            // =========================================
+            // CONSTRUCTION DU PLANNING
+            // =========================================
+
+            let planning =
+                generationExamens.construireMatricePlanning(
+                    niveau,
+                    sessionCode
+                );
+
+
+            if (!planning) {
+
+                console.error(
+                    "❌ Impossible de construire le planning."
+                );
+
+                return;
+            }
+
+
+            // =========================================
+            // PLACEMENT DES MATIÈRES COMMUNES
+            // =========================================
+
+            generationExamens.placerMatieresCommunes(
+                planning
+            );
+
+
+            // =========================================
+            // PLACEMENT DES MATIÈRES SPÉCIFIQUES
+            // =========================================
+
+            generationExamens.placerMatieresSpecifiques(
+                planning
+            );
+
+
+            // =========================================
+            // AFFICHAGE
+            // =========================================
+
+            afficherPlanning(planning);
+
+
+            console.log(
+                "✓ Calendrier affiché."
+            );
+
+        }
+    );
+
+
+    // =================================================
+    // INITIALISATION
+    // =================================================
+
+    mettreAJourSessions();
+
+}
+
+
+// =====================================================
+// ATTENDRE LE CHARGEMENT DES DONNÉES
+// =====================================================
+
+if (window.donneesChargees) {
+
+    window.donneesChargees.then(function () {
+
+        initialiserFiltresCalendrierAdmin();
+
+    });
+
+} else {
+
+    console.error(
+        "❌ donneesChargees est introuvable."
+    );
+
+}
