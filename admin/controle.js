@@ -438,3 +438,150 @@ function verifierMatieresCommunes(planning) {
     return resultat;
 }
 
+// =====================================================
+// 4. Vérifier les créneaux successifs pour une filière
+// =====================================================
+
+function verifierCreneauxSuccessifs(planning) {
+
+    console.log("------------------------------------------");
+    console.log("CONTRÔLE DES CRÉNEAUX SUCCESSIFS");
+    console.log("------------------------------------------");
+
+    if (!planning) {
+
+        console.error("❌ Planning introuvable.");
+
+        return {
+            valide: false,
+            erreurs: []
+        };
+    }
+
+    const erreurs = [];
+
+    // -------------------------------------------------
+    // Parcourir toutes les filières
+    // -------------------------------------------------
+
+    planning.filieres.forEach(function (filiere) {
+
+        // -------------------------------------------------
+        // Regrouper les cellules par date
+        // -------------------------------------------------
+
+        const cellulesParDate = {};
+
+        filiere.cellules.forEach(function (cellule) {
+
+            if (!cellule.estOccupee) {
+                return;
+            }
+
+            if (!cellule.matiereLibelle) {
+                return;
+            }
+
+            const date = cellule.date;
+
+            if (!cellulesParDate[date]) {
+                cellulesParDate[date] = [];
+            }
+
+            cellulesParDate[date].push(cellule);
+
+        });
+
+        // -------------------------------------------------
+        // Vérifier les créneaux successifs
+        // -------------------------------------------------
+
+        Object.keys(cellulesParDate).forEach(function (date) {
+
+            const cellules =
+                cellulesParDate[date];
+
+            cellules.forEach(function (cellule) {
+
+                const creneauSuivant =
+                    cellules.find(function (autre) {
+
+                        return (
+                            autre.creneauOrdre ===
+                            cellule.creneauOrdre + 1
+                        );
+
+                    });
+
+                if (creneauSuivant) {
+
+                    erreurs.push({
+
+                        filiereCode:
+                            filiere.filiereCode,
+
+                        date:
+                            cellule.dateAffichage,
+
+                        matiere1:
+                            cellule.matiereLibelle,
+
+                        creneau1:
+                            cellule.creneauOrdre,
+
+                        matiere2:
+                            creneauSuivant.matiereLibelle,
+
+                        creneau2:
+                            creneauSuivant.creneauOrdre,
+
+                        erreur:
+                            "Deux examens sont placés dans des créneaux successifs le même jour."
+
+                    });
+
+                }
+
+            });
+
+        });
+
+    });
+
+    // -------------------------------------------------
+    // Résultat
+    // -------------------------------------------------
+
+    const resultat = {
+
+        valide:
+            erreurs.length === 0,
+
+        erreurs:
+            erreurs
+
+    };
+
+    console.log(
+        "Erreurs détectées :",
+        erreurs.length
+    );
+
+    if (resultat.valide) {
+
+        console.log(
+            "✓ Aucune filière n'a deux examens dans des créneaux successifs le même jour."
+        );
+
+    } else {
+
+        console.warn(
+            "⚠️ Créneaux successifs détectés :",
+            erreurs
+        );
+
+    }
+
+    return resultat;
+}
+
