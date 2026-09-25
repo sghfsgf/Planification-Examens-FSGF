@@ -104,80 +104,58 @@ async function chargerCollection(nomCollection) {
 async function chargerDonneesGeneration() {
 
     console.log("==========================================");
-
-    console.log(
-        "GÉNÉRATION - CHARGEMENT DES DONNÉES"
-    );
-
+    console.log("GÉNÉRATION - CHARGEMENT DES DONNÉES");
     console.log("==========================================");
-
 
     try {
 
-        console.log(
-            "→ Chargement des matières..."
-        );
+        // -------------------------------------------------
+        // Attendre que data.js ait terminé le chargement Excel
+        // -------------------------------------------------
 
+        await donneesChargees;
+
+        // -------------------------------------------------
+        // Utiliser les données déjà chargées par data.js
+        // -------------------------------------------------
 
         donneesGeneration.matieres =
-            await chargerCollection("matieres");
+            donneesExamens.matieres || [];
 
+        donneesGeneration.sessions =
+            donneesExamens.sessions || [];
+
+        donneesGeneration.creneaux =
+            donneesExamens.creneaux || [];
+
+        donneesGeneration.sallesAmphis =
+            donneesRessources.sallesAmphis || [];
+
+        // -------------------------------------------------
+        // Diagnostic
+        // -------------------------------------------------
 
         console.log(
             "✓ Matières :",
             donneesGeneration.matieres.length
         );
 
-
-        console.log(
-            "→ Chargement des sessions..."
-        );
-
-
-        donneesGeneration.sessions =
-            await chargerCollection("sessions");
-
-
         console.log(
             "✓ Sessions :",
             donneesGeneration.sessions.length
         );
-
-
-        console.log(
-            "→ Chargement des créneaux..."
-        );
-
-
-        donneesGeneration.creneaux =
-            await chargerCollection("creneaux");
-
 
         console.log(
             "✓ Créneaux :",
             donneesGeneration.creneaux.length
         );
 
-
-        console.log(
-            "→ Chargement des salles / amphis..."
-        );
-
-
-        donneesGeneration.sallesAmphis =
-            await chargerCollection(
-                "salles_amphis"
-            );
-
-
         console.log(
             "✓ Salles / amphis :",
             donneesGeneration.sallesAmphis.length
         );
 
-
         generationChargee = true;
-
 
         console.log(
             "------------------------------------------"
@@ -191,9 +169,7 @@ async function chargerDonneesGeneration() {
             "------------------------------------------"
         );
 
-
         return true;
-
 
     } catch (erreur) {
 
@@ -202,14 +178,10 @@ async function chargerDonneesGeneration() {
             erreur
         );
 
-
         generationChargee = false;
 
-
         return false;
-
     }
-
 }
 
 
