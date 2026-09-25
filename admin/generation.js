@@ -1870,17 +1870,17 @@ function placerMatieresSpecifiques(planning) {
     console.log("PLACEMENT DES MATIÈRES SPÉCIFIQUES");
     console.log("------------------------------------------");
 
-    if (!planning || !planning.structure) {
+    if (!planning) {
 
-        console.error(
-            "❌ Planning ou structure de planning introuvable."
-        );
+    console.error(
+        "❌ Planning introuvable."
+    );
 
-        return planning;
-    }
+    return planning;
+}
 
-    const matieresSpecifiques =
-        planning.structure.matieresSpecifiques || [];
+const matieresSpecifiques =
+    planning.matieresSpecifiques || [];
 
     if (matieresSpecifiques.length === 0) {
 
