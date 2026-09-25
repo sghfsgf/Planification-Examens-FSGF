@@ -691,3 +691,138 @@ function verifierEquilibrageCreneaux(planning) {
 
     return resultat;
 }
+// =====================================================
+// 6. Contrôle global du planning
+// =====================================================
+
+function verifierPlanningGlobal(planning) {
+
+    console.log("");
+    console.log("==========================================");
+    console.log("CONTRÔLE GLOBAL DU PLANNING");
+    console.log("==========================================");
+
+    if (!planning) {
+
+        console.error("❌ Planning introuvable.");
+
+        return {
+            valide: false
+        };
+    }
+
+    // -------------------------------------------------
+    // 1. Matières placées
+    // -------------------------------------------------
+
+    const controleMatieres =
+        verifierMatieresPlacees(planning);
+
+    // -------------------------------------------------
+    // 2. Doublons
+    // -------------------------------------------------
+
+    const controleDoublons =
+        verifierDoublonsMatieres(planning);
+
+    // -------------------------------------------------
+    // 3. Matières communes
+    // -------------------------------------------------
+
+    const controleCommunes =
+        verifierMatieresCommunes(planning);
+
+    // -------------------------------------------------
+    // 4. Créneaux successifs
+    // -------------------------------------------------
+
+    const controleSuccessifs =
+        verifierCreneauxSuccessifs(planning);
+
+    // -------------------------------------------------
+    // 5. Équilibrage
+    // -------------------------------------------------
+
+    const controleEquilibrage =
+        verifierEquilibrageCreneaux(planning);
+
+    // -------------------------------------------------
+    // Résultat global
+    // -------------------------------------------------
+
+    const valide =
+        controleMatieres.valide &&
+        controleDoublons.valide &&
+        controleCommunes.valide &&
+        controleSuccessifs.valide &&
+        controleEquilibrage.valide;
+
+    const resultat = {
+
+        valide: valide,
+
+        matieresPlacees:
+            controleMatieres.valide,
+
+        doublons:
+            controleDoublons.valide,
+
+        matieresCommunes:
+            controleCommunes.valide,
+
+        creneauxSuccessifs:
+            controleSuccessifs.valide,
+
+        equilibrage:
+            controleEquilibrage.valide
+    };
+
+    console.log("");
+    console.log("------------------------------------------");
+    console.log("RÉSULTAT DU CONTRÔLE GLOBAL");
+    console.log("------------------------------------------");
+
+    console.log(
+        "Matières placées :",
+        resultat.matieresPlacees ? "✅" : "❌"
+    );
+
+    console.log(
+        "Doublons :",
+        resultat.doublons ? "✅" : "❌"
+    );
+
+    console.log(
+        "Matières communes :",
+        resultat.matieresCommunes ? "✅" : "❌"
+    );
+
+    console.log(
+        "Créneaux successifs :",
+        resultat.creneauxSuccessifs ? "✅" : "❌"
+    );
+
+    console.log(
+        "Équilibrage :",
+        resultat.equilibrage ? "✅" : "❌"
+    );
+
+    console.log("------------------------------------------");
+
+    if (resultat.valide) {
+
+        console.log(
+            "✅ PLANNING VALIDE"
+        );
+
+    } else {
+
+        console.warn(
+            "⚠️ PLANNING NON VALIDE"
+        );
+    }
+
+    console.log("------------------------------------------");
+
+    return resultat;
+}
