@@ -1869,6 +1869,55 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     return positionChoisie;
 }
 // =====================================================
+// CALCULER LA CHARGE DES CRÉNEAUX DU NIVEAU
+// =====================================================
+
+function calculerChargeDesCreneaux(planning) {
+
+    const charges = {};
+
+    // Parcourir toutes les filières du niveau
+    planning.filieres.forEach(function (filiere) {
+
+        filiere.cellules.forEach(function (cellule) {
+
+            if (!cellule.estOccupee) {
+                return;
+            }
+
+            const creneau = cellule.creneauOrdre;
+
+            if (!charges[creneau]) {
+                charges[creneau] = 0;
+            }
+
+            charges[creneau]++;
+        });
+    });
+
+    // S'assurer que tous les créneaux existants apparaissent
+    planning.filieres.forEach(function (filiere) {
+
+        filiere.cellules.forEach(function (cellule) {
+
+            const creneau = cellule.creneauOrdre;
+
+            if (charges[creneau] === undefined) {
+                charges[creneau] = 0;
+            }
+        });
+    });
+
+    console.log("------------------------------------------");
+    console.log("CHARGE DES CRÉNEAUX");
+    console.log("------------------------------------------");
+
+    console.table(charges);
+
+    return charges;
+}
+
+// =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
 // =====================================================
 
@@ -2164,8 +2213,10 @@ window.generationExamens = {
         preparerMatieresPourSession,
     
      trouverPositionPourMatiereSpecifique:
-    trouverPositionPourMatiereSpecifique,
-
+         trouverPositionPourMatiereSpecifique,
+     calculerChargeDesCreneaux: 
+         calculerChargeDesCreneaux,
+    
     construireStructure:
         construireStructureGeneration,
 
