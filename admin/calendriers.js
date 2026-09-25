@@ -535,18 +535,12 @@ function initialiserFiltresCalendrierAdmin() {
 // ATTENDRE LE CHARGEMENT DES DONNÉES
 // =====================================================
 
-if (window.donneesChargees) {
+donneesChargees.then(function () {
 
-    window.donneesChargees.then(function () {
-
-        initialiserFiltresCalendrierAdmin();
-
-    });
-
-} else {
-
-    console.error(
-        "❌ donneesChargees est introuvable."
+    console.log(
+        "✓ Données chargées — initialisation des filtres calendrier."
     );
 
-}
+    initialiserFiltresCalendrierAdmin();
+
+});
