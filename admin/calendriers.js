@@ -16,47 +16,53 @@ function afficherPlanning(planning) {
         return;
     }
 
-    console.log(
-        "Niveau :",
-        planning.niveauCode
-    );
+    // -------------------------------------------------
+    // Construire le tableau
+    // -------------------------------------------------
 
-    console.log(
-        "Session :",
-        planning.sessionCode
-    );
+    const tableau =
+        construireTableauCalendrier(planning);
 
-    console.log(
-        "Filières :",
-        planning.filieres.map(function (filiere) {
-            return filiere.filiereCode;
-        })
-    );
+    if (!tableau) {
 
-    planning.filieres.forEach(function (filiere) {
-
-        console.log(
-            "Filière :",
-            filiere.filiereCode
+        console.error(
+            "❌ Impossible de construire le tableau."
         );
 
-        filiere.cellules.forEach(function (cellule) {
+        return;
+    }
 
-            if (!cellule.estOccupee) {
-                return;
-            }
+    // -------------------------------------------------
+    // Récupérer la zone d'affichage
+    // -------------------------------------------------
 
-            console.log(
-                cellule.dateAffichage,
-                "|",
-                cellule.heureDebutAffichage,
-                "-",
-                cellule.heureFinAffichage,
-                "|",
-                cellule.matiereLibelle
-            );
-        });
-    });
+    const zoneCalendrier =
+        document.querySelector(".bloc-calendrier");
+
+    if (!zoneCalendrier) {
+
+        console.error(
+            "❌ Zone .bloc-calendrier introuvable."
+        );
+
+        return;
+    }
+
+    // -------------------------------------------------
+    // Vider le contenu précédent
+    // -------------------------------------------------
+
+    zoneCalendrier.innerHTML = "";
+
+    // -------------------------------------------------
+    // Ajouter le tableau
+    // -------------------------------------------------
+
+    zoneCalendrier.appendChild(tableau);
+
+    console.log(
+        "✓ Calendrier inséré dans la page."
+    );
 }
 // =====================================================
 // Construire le tableau HTML du calendrier
