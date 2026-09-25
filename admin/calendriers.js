@@ -64,6 +64,45 @@ function afficherPlanning(planning) {
         "✓ Calendrier inséré dans la page."
     );
 }
+
+function formaterDateLongue(date) {
+
+    const jours = [
+        "Dimanche",
+        "Lundi",
+        "Mardi",
+        "Mercredi",
+        "Jeudi",
+        "Vendredi",
+        "Samedi"
+    ];
+
+    const mois = [
+        "janvier",
+        "février",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "août",
+        "septembre",
+        "octobre",
+        "novembre",
+        "décembre"
+    ];
+
+    return (
+        jours[date.getDay()] +
+        " " +
+        date.getDate() +
+        " " +
+        mois[date.getMonth()] +
+        " " +
+        date.getFullYear()
+    );
+}
+
 // =====================================================
 // Construire le tableau HTML du calendrier
 // =====================================================
@@ -149,8 +188,8 @@ function construireTableauCalendrier(planning) {
         const thDate = document.createElement("th");
 
         thDate.textContent =
-            cellulesDate[0].dateAffichage;
-
+           formaterDateLongue(cellulesDate[0].date);
+        
         thDate.colSpan =
             cellulesDate.length;
 
