@@ -312,6 +312,136 @@ function obtenirMatieresDeFiliere(
     );
 }
 
+function identifierMatieresCommunes(niveauCode) {
+
+    console.log("------------------------------------------");
+    console.log("IDENTIFICATION DES MATIÈRES COMMUNES");
+    console.log("Niveau :", niveauCode);
+    console.log("------------------------------------------");
+
+    const compteurMatieres = new Map();
+
+
+    // =================================================
+    // PARCOURIR LES MATIÈRES DU NIVEAU
+    // =================================================
+
+    donneesGeneration.matieres.forEach(function (matiere) {
+
+        if (matiere.niveauCode !== niveauCode) {
+            return;
+        }
+
+        const matiereLibelle = matiere.matiereLibelle;
+        const filiereCode = matiere.filiereCode;
+
+        if (!matiereLibelle || !filiereCode) {
+            return;
+        }
+
+
+        // =============================================
+        // CRÉER L'ENTRÉE DE LA MATIÈRE
+        // =============================================
+
+        if (!compteurMatieres.has(matiereLibelle)) {
+
+            compteurMatieres.set(
+                matiereLibelle,
+                new Set()
+            );
+
+        }
+
+
+        // =============================================
+        // AJOUTER LA FILIÈRE
+        // =============================================
+
+        compteurMatieres
+            .get(matiereLibelle)
+            .add(filiereCode);
+
+    });
+
+
+    // =================================================
+    // CONSERVER LES MATIÈRES PRÉSENTES
+    // DANS AU MOINS DEUX FILIÈRES
+    // =================================================
+
+    const matieresCommunes = [];
+
+
+    compteurMatieres.forEach(
+        function (filieres, matiereLibelle) {
+
+            if (filieres.size >= 2) {
+
+                matieresCommunes.push({
+
+                    matiereLibelle: matiereLibelle,
+
+                    filieres: Array.from(filieres),
+
+                    nombreFilieres: filieres.size
+
+                });
+
+            }
+
+        }
+    );
+
+
+    // =================================================
+    // TRI ALPHABÉTIQUE
+    // =================================================
+
+    matieresCommunes.sort(
+        function (a, b) {
+
+            return a.matiereLibelle.localeCompare(
+                b.matiereLibelle
+            );
+
+        }
+    );
+
+
+    // =================================================
+    // AFFICHAGE CONSOLE
+    // =================================================
+
+    console.log(
+        "Matières communes détectées :",
+        matieresCommunes.length
+    );
+
+
+    matieresCommunes.forEach(
+        function (matiere) {
+
+            console.log(
+                "✓",
+                matiere.matiereLibelle,
+                "→",
+                matiere.nombreFilieres,
+                "filières :",
+                matiere.filieres
+            );
+
+        }
+    );
+
+
+    console.log("------------------------------------------");
+
+
+    return matieresCommunes;
+}
+
+
 
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
