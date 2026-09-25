@@ -782,6 +782,118 @@ function preparerMatieresPourPlanification(niveauCode) {
 }
 
 // =====================================================
+// PRÉPARER LES MATIÈRES POUR UNE SESSION
+// =====================================================
+
+function preparerMatieresPourSession(niveauCode, sessionCode) {
+
+    console.log("------------------------------------------");
+    console.log("PRÉPARATION DES MATIÈRES POUR LA SESSION");
+    console.log("Niveau :", niveauCode);
+    console.log("Session :", sessionCode);
+    console.log("------------------------------------------");
+
+    const session = obtenirSession(sessionCode);
+
+    if (!session) {
+        console.error("❌ Session introuvable :", sessionCode);
+        return null;
+    }
+
+    const matieresNiveau = donneesGeneration.matieres.filter(function (matiere) {
+        return (
+            matiere.niveauCode === niveauCode &&
+            matiere.regimeCode === session.regimeCode &&
+            matiere.semestreCode === session.semestreCode
+        );
+    });
+
+    console.log("Régime :", session.regimeCode);
+    console.log("Semestre :", session.semestreCode);
+    console.log("Matières compatibles :", matieresNiveau.length);
+
+    // Regrouper les matières par libellé
+    const groupes = {};
+
+    matieresNiveau.forEach(function (matiere) {
+
+        const libelle = matiere.matiereLibelle;
+
+        if (!groupes[libelle]) {
+            groupes[libelle] = [];
+        }
+
+        groupes[libelle].push(matiere);
+    });
+
+    const matieresCommunes = [];
+    const matieresSpecifiques = [];
+
+    Object.keys(groupes).forEach(function (libelle) {
+
+        const groupe = groupes[libelle];
+
+        const filieres = [...new Set(
+            groupe.map(function (matiere) {
+                return matiere.filiereCode;
+            })
+        )];
+
+        const premiereMatiere = groupe[0];
+
+        if (filieres.length >= 2) {
+
+            matieresCommunes.push({
+                matiereLibelle: libelle,
+                filieres: filieres,
+                regimeCode: premiereMatiere.regimeCode,
+                semestreCode: premiereMatiere.semestreCode
+            });
+
+        } else {
+
+            matieresSpecifiques.push({
+                matiereLibelle: libelle,
+                filiereCode: filieres[0],
+                regimeCode: premiereMatiere.regimeCode,
+                semestreCode: premiereMatiere.semestreCode
+            });
+        }
+    });
+
+    console.log("→ Matières communes :", matieresCommunes.length);
+
+    matieresCommunes.forEach(function (matiere) {
+        console.log(
+            "  ",
+            matiere.matiereLibelle,
+            "|",
+            matiere.filieres.join(" / ")
+        );
+    });
+
+    console.log("→ Matières spécifiques :", matieresSpecifiques.length);
+
+    matieresSpecifiques.forEach(function (matiere) {
+        console.log(
+            "  ",
+            matiere.matiereLibelle,
+            "|",
+            matiere.filiereCode
+        );
+    });
+
+    return {
+        niveauCode: niveauCode,
+        sessionCode: sessionCode,
+        regimeCode: session.regimeCode,
+        semestreCode: session.semestreCode,
+        matieresCommunes: matieresCommunes,
+        matieresSpecifiques: matieresSpecifiques
+    };
+}
+
+// =====================================================
 // OBTENIR UNE SESSION
 // =====================================================
 
