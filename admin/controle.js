@@ -584,4 +584,110 @@ function verifierCreneauxSuccessifs(planning) {
 
     return resultat;
 }
+// =====================================================
+// 5. Vérifier l'équilibrage des charges des créneaux
+// =====================================================
 
+function verifierEquilibrageCreneaux(planning) {
+
+    console.log("------------------------------------------");
+    console.log("CONTRÔLE DE L'ÉQUILIBRAGE DES CRÉNEAUX");
+    console.log("------------------------------------------");
+
+    if (!planning) {
+
+        console.error("❌ Planning introuvable.");
+
+        return {
+            valide: false,
+            charges: {},
+            minimum: 0,
+            maximum: 0,
+            ecart: 0
+        };
+    }
+
+    const charges =
+        calculerChargeDesCreneaux(planning);
+
+    const valeurs =
+        Object.values(charges).map(function (charge) {
+            return Number(charge);
+        });
+
+    if (valeurs.length === 0) {
+
+        console.warn(
+            "⚠️ Aucun créneau trouvé."
+        );
+
+        return {
+            valide: false,
+            charges: charges,
+            minimum: 0,
+            maximum: 0,
+            ecart: 0
+        };
+    }
+
+    const minimum =
+        Math.min(...valeurs);
+
+    const maximum =
+        Math.max(...valeurs);
+
+    const ecart =
+        maximum - minimum;
+
+    const seuil = 2;
+
+    const resultat = {
+
+        valide: ecart <= seuil,
+
+        charges: charges,
+
+        minimum: minimum,
+
+        maximum: maximum,
+
+        ecart: ecart,
+
+        seuil: seuil
+    };
+
+    console.log(
+        "Charge minimale :",
+        minimum
+    );
+
+    console.log(
+        "Charge maximale :",
+        maximum
+    );
+
+    console.log(
+        "Écart MAX - MIN :",
+        ecart
+    );
+
+    console.log(
+        "Seuil autorisé :",
+        seuil
+    );
+
+    if (resultat.valide) {
+
+        console.log(
+            "✓ L'équilibrage des créneaux respecte la règle MAX - MIN ≤ 2."
+        );
+
+    } else {
+
+        console.warn(
+            "⚠️ L'équilibrage des créneaux ne respecte pas la règle MAX - MIN ≤ 2."
+        );
+    }
+
+    return resultat;
+}
