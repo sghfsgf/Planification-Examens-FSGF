@@ -1772,24 +1772,17 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     }
 
     // -------------------------------------------------
-    // Calcul du nombre de matières par créneau
+    // Charge globale du niveau
     // -------------------------------------------------
 
-    const chargesCreneaux = {};
+    const chargesCreneaux = calculerChargeDesCreneaux(planning);
 
-    filiere.cellules.forEach(function (cellule) {
-
-        if (cellule.estOccupee) {
-
-            const cle = cellule.creneauOrdre;
-
-            if (!chargesCreneaux[cle]) {
-                chargesCreneaux[cle] = 0;
-            }
-
-            chargesCreneaux[cle]++;
-        }
-    });
+    console.log(
+        "Charge globale utilisée pour",
+        filiereCode,
+        ":",
+        chargesCreneaux
+    );
 
     // -------------------------------------------------
     // Recherche des cellules libres
@@ -1840,7 +1833,7 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     }
 
     // -------------------------------------------------
-    // Choisir les créneaux les moins chargés
+    // Choisir le créneau globalement le moins chargé
     // -------------------------------------------------
 
     positionsPossibles.sort(function (a, b) {
@@ -1863,7 +1856,9 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         "|",
         positionChoisie.heureDebutAffichage,
         "-",
-        positionChoisie.heureFinAffichage
+        positionChoisie.heureFinAffichage,
+        "| Charge globale :",
+        chargesCreneaux[positionChoisie.creneauOrdre] || 0
     );
 
     return positionChoisie;
