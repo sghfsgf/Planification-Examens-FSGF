@@ -338,18 +338,18 @@ function initialiserFiltresCalendrierAdmin() {
 
 
         if (
-            !window.donneesExamens ||
-            !Array.isArray(window.donneesExamens.sessions)
+    !donneesExamens ||
+    !Array.isArray(donneesExamens.sessions)
         ) {
-            console.error(
-                "❌ Données des sessions indisponibles."
-            );
-            return;
-        }
+    console.error(
+        "❌ Données des sessions indisponibles."
+          );
+    return;
+          }
 
 
-        const sessionsDisponibles =
-            window.donneesExamens.sessions.filter(
+       const sessionsDisponibles =
+         donneesExamens.sessions.filter(
                 function (session) {
 
                     return (
