@@ -1863,6 +1863,108 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
 
     return positionChoisie;
 }
+
+function placerMatieresSpecifiques(planning) {
+
+    console.log("------------------------------------------");
+    console.log("PLACEMENT DES MATIÈRES SPÉCIFIQUES");
+    console.log("------------------------------------------");
+
+    if (!planning || !planning.structure) {
+
+        console.error(
+            "❌ Planning ou structure de planning introuvable."
+        );
+
+        return planning;
+    }
+
+    const matieresSpecifiques =
+        planning.structure.matieresSpecifiques || [];
+
+    if (matieresSpecifiques.length === 0) {
+
+        console.log(
+            "ℹ️ Aucune matière spécifique à placer."
+        );
+
+        return planning;
+    }
+
+    matieresSpecifiques.forEach(function (matiere) {
+
+        const filiereCode = matiere.filiereCode;
+
+        console.log(
+            "→ Placement :",
+            matiere.matiereLibelle,
+            "| Filière :",
+            filiereCode
+        );
+
+        const position =
+            trouverPositionPourMatiereSpecifique(
+                planning,
+                filiereCode
+            );
+
+        if (!position) {
+
+            console.warn(
+                "⚠️ Impossible de placer la matière :",
+                matiere.matiereLibelle,
+                "| Filière :",
+                filiereCode
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // Placer réellement la matière dans la cellule
+        // -------------------------------------------------
+
+        position.estOccupee = true;
+        position.matiereLibelle = matiere.matiereLibelle;
+        position.regimeCode = matiere.regimeCode;
+        position.semestreCode = matiere.semestreCode;
+        position.filiereCode = filiereCode;
+
+        console.log(
+            "✓ Matière spécifique placée :",
+            matiere.matiereLibelle
+        );
+
+        console.log(
+            "  Filière :",
+            filiereCode
+        );
+
+        console.log(
+            "  Date :",
+            position.dateAffichage
+        );
+
+        console.log(
+            "  Créneau :",
+            position.creneauOrdre,
+            "(",
+            position.heureDebutAffichage,
+            "-",
+            position.heureFinAffichage,
+            ")"
+        );
+    });
+
+    console.log("------------------------------------------");
+    console.log("✓ MATIÈRES SPÉCIFIQUES PLACÉES");
+    console.log("------------------------------------------");
+
+    return planning;
+}
+
+
+
 // =====================================================
 // CALCULER LA CHARGE DES CRÉNEAUX DU NIVEAU
 // =====================================================
@@ -2209,11 +2311,14 @@ window.generationExamens = {
     
      trouverPositionPourMatiereSpecifique:
          trouverPositionPourMatiereSpecifique,
+    
      calculerChargeDesCreneaux: 
          calculerChargeDesCreneaux,
-    
+
+    placerMatieresSpecifiques:
+        placerMatieresSpecifiques,
     construireStructure:
-        construireStructureGeneration,
+         construireStructureGeneration,
 
     preparer:
         preparerGeneration
