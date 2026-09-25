@@ -1258,6 +1258,150 @@ function construireGrilleSession(
 
 }
 
+function construireMatricePlanning(niveauCode, sessionCode) {
+
+    const structure = preparerMatieresPourPlanification(niveauCode);
+
+    const grille = construireGrilleSession(sessionCode);
+
+    if (!grille || grille.length === 0) {
+        console.error("❌ Impossible de construire la matrice : grille vide.");
+        return null;
+    }
+
+    const filieres = obtenirFilieresDuNiveau(niveauCode);
+
+    if (!filieres || filieres.length === 0) {
+        console.error(
+            "❌ Aucune filière trouvée pour le niveau :",
+            niveauCode
+        );
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Création de la matrice
+    // -------------------------------------------------
+
+    const planning = {
+        niveauCode: niveauCode,
+        sessionCode: sessionCode,
+        filieres: []
+    };
+
+    filieres.forEach(function (filiereCode) {
+
+        const ligneFiliere = {
+            filiereCode: filiereCode,
+            amphis: [],
+            cellules: []
+        };
+
+        grille.forEach(function (position) {
+
+            ligneFiliere.cellules.push({
+
+                date: position.date,
+                dateAffichage: position.dateAffichage,
+
+                creneauOrdre: position.creneauOrdre,
+
+                heureDebut: position.heureDebut,
+                heureFin: position.heureFin,
+
+                heureDebutAffichage:
+                    position.heureDebutAffichage || "",
+
+                heureFinAffichage:
+                    position.heureFinAffichage || "",
+
+                // -------------------------------------------------
+                // Aucune matière n'est encore affectée
+                // -------------------------------------------------
+
+                matiereLibelle: "",
+                regimeCode: "",
+                semestreCode: "",
+
+                // -------------------------------------------------
+                // Informations qui seront utilisées plus tard
+                // -------------------------------------------------
+
+                estOccupee: false,
+                estCommune: false
+
+            });
+
+        });
+
+        planning.filieres.push(ligneFiliere);
+    });
+
+    // -------------------------------------------------
+    // Informations générales
+    // -------------------------------------------------
+
+    planning.matieresCommunes = structure.matieresCommunes;
+    planning.matieresSpecifiques = structure.matieresSpecifiques;
+
+    // -------------------------------------------------
+    // Diagnostic
+    // -------------------------------------------------
+
+    console.log(
+        "MATRICE DU PLANNING CONSTRUITE"
+    );
+
+    console.log(
+        "Niveau :",
+        niveauCode
+    );
+
+    console.log(
+        "Session :",
+        sessionCode
+    );
+
+    console.log(
+        "Filières :",
+        planning.filieres.map(function (filiere) {
+            return filiere.filiereCode;
+        })
+    );
+
+    console.log(
+        "Nombre de positions par filière :",
+        grille.length
+    );
+
+    console.log(
+        "Matières communes disponibles :",
+        planning.matieresCommunes.length
+    );
+
+    console.log(
+        "Matières spécifiques disponibles :",
+        planning.matieresSpecifiques.length
+    );
+
+    // -------------------------------------------------
+    // Vérification visuelle des lignes
+    // -------------------------------------------------
+
+    planning.filieres.forEach(function (filiere) {
+
+        console.log(
+            "Filière :",
+            filiere.filiereCode,
+            "→",
+            filiere.cellules.length,
+            "cellules"
+        );
+
+    });
+
+    return planning;
+}
 
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
