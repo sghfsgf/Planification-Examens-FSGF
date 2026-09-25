@@ -608,7 +608,7 @@ function verifierEquilibrageCreneaux(planning) {
     }
 
     const charges =
-        calculerChargeDesCreneaux(planning);
+    generationExamens.calculerChargeDesCreneaux(planning);
 
     const valeurs =
         Object.values(charges).map(function (charge) {
