@@ -1,19 +1,31 @@
+
 // =====================================================
 // GENERATION.JS
 // Planification des examens - FSGF
 // =====================================================
-// Rôle de cette première version :
+// Rôle actuel :
 // 1. Lire les données depuis Firestore
 // 2. Vérifier les données nécessaires
 // 3. Regrouper les matières par niveau
 // 4. Regrouper ensuite par filière
-// 5. Afficher la structure préparée dans la console
+// 5. Identifier les matières communes
+// 6. Construire la grille Dates × Créneaux
 //
 // IMPORTANT :
 // Cette version ne génère pas encore les examens.
 // Les règles de planification seront ajoutées
 // progressivement dans les prochaines étapes.
+//
+// RÈGLES MÉTIER À CONSERVER :
+// - 1 niveau = 1 calendrier
+// - matière commune = présente dans au moins 2 filières
+// - éviter deux matières successives d'une même filière
+//   le même jour
+// - équilibrer les matières entre les créneaux
+// - écart maximum entre créneau le plus chargé
+//   et créneau le moins chargé : 2
 // =====================================================
+
 
 import { app } from "../firebase-config.js";
 
@@ -36,10 +48,15 @@ const db = getFirestore(app);
 // =====================================================
 
 let donneesGeneration = {
+
     matieres: [],
+
     sessions: [],
+
     creneaux: [],
+
     sallesAmphis: []
+
 };
 
 
@@ -62,14 +79,19 @@ async function chargerCollection(nomCollection) {
 
     const donnees = [];
 
+
     snapshot.forEach(function (document) {
 
         donnees.push({
+
             id: document.id,
+
             ...document.data()
+
         });
 
     });
+
 
     return donnees;
 }
@@ -82,15 +104,24 @@ async function chargerCollection(nomCollection) {
 async function chargerDonneesGeneration() {
 
     console.log("==========================================");
-    console.log("GÉNÉRATION - CHARGEMENT DES DONNÉES");
+
+    console.log(
+        "GÉNÉRATION - CHARGEMENT DES DONNÉES"
+    );
+
     console.log("==========================================");
+
 
     try {
 
-        console.log("→ Chargement des matières...");
+        console.log(
+            "→ Chargement des matières..."
+        );
+
 
         donneesGeneration.matieres =
             await chargerCollection("matieres");
+
 
         console.log(
             "✓ Matières :",
@@ -98,10 +129,14 @@ async function chargerDonneesGeneration() {
         );
 
 
-        console.log("→ Chargement des sessions...");
+        console.log(
+            "→ Chargement des sessions..."
+        );
+
 
         donneesGeneration.sessions =
             await chargerCollection("sessions");
+
 
         console.log(
             "✓ Sessions :",
@@ -109,10 +144,14 @@ async function chargerDonneesGeneration() {
         );
 
 
-        console.log("→ Chargement des créneaux...");
+        console.log(
+            "→ Chargement des créneaux..."
+        );
+
 
         donneesGeneration.creneaux =
             await chargerCollection("creneaux");
+
 
         console.log(
             "✓ Créneaux :",
@@ -120,10 +159,16 @@ async function chargerDonneesGeneration() {
         );
 
 
-        console.log("→ Chargement des salles / amphis...");
+        console.log(
+            "→ Chargement des salles / amphis..."
+        );
+
 
         donneesGeneration.sallesAmphis =
-            await chargerCollection("salles_amphis");
+            await chargerCollection(
+                "salles_amphis"
+            );
+
 
         console.log(
             "✓ Salles / amphis :",
@@ -134,12 +179,21 @@ async function chargerDonneesGeneration() {
         generationChargee = true;
 
 
-        console.log("------------------------------------------");
-        console.log("✓ DONNÉES DE GÉNÉRATION CHARGÉES");
-        console.log("------------------------------------------");
+        console.log(
+            "------------------------------------------"
+        );
+
+        console.log(
+            "✓ DONNÉES DE GÉNÉRATION CHARGÉES"
+        );
+
+        console.log(
+            "------------------------------------------"
+        );
 
 
         return true;
+
 
     } catch (erreur) {
 
@@ -148,10 +202,14 @@ async function chargerDonneesGeneration() {
             erreur
         );
 
+
         generationChargee = false;
 
+
         return false;
+
     }
+
 }
 
 
@@ -161,62 +219,103 @@ async function chargerDonneesGeneration() {
 
 function verifierDonneesGeneration() {
 
-    console.log("==========================================");
-    console.log("VÉRIFICATION DES DONNÉES");
-    console.log("==========================================");
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "VÉRIFICATION DES DONNÉES"
+    );
+
+    console.log(
+        "=========================================="
+    );
 
 
-    if (donneesGeneration.matieres.length === 0) {
+    if (
+        donneesGeneration.matieres.length === 0
+    ) {
 
         console.error(
             "❌ Aucune matière disponible."
         );
 
         return false;
+
     }
 
 
-    if (donneesGeneration.sessions.length === 0) {
+    if (
+        donneesGeneration.sessions.length === 0
+    ) {
 
         console.error(
             "❌ Aucune session disponible."
         );
 
         return false;
+
     }
 
 
-    if (donneesGeneration.creneaux.length === 0) {
+    if (
+        donneesGeneration.creneaux.length === 0
+    ) {
 
         console.error(
             "❌ Aucun créneau disponible."
         );
 
         return false;
+
     }
 
 
-    if (donneesGeneration.sallesAmphis.length === 0) {
+    if (
+        donneesGeneration.sallesAmphis.length === 0
+    ) {
 
         console.error(
             "❌ Aucune salle / amphi disponible."
         );
 
         return false;
+
     }
 
 
-    console.log("✓ Matières disponibles");
-    console.log("✓ Sessions disponibles");
-    console.log("✓ Créneaux disponibles");
-    console.log("✓ Salles / amphis disponibles");
+    console.log(
+        "✓ Matières disponibles"
+    );
 
-    console.log("------------------------------------------");
-    console.log("✓ VÉRIFICATION TERMINÉE");
-    console.log("------------------------------------------");
+    console.log(
+        "✓ Sessions disponibles"
+    );
+
+    console.log(
+        "✓ Créneaux disponibles"
+    );
+
+    console.log(
+        "✓ Salles / amphis disponibles"
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "✓ VÉRIFICATION TERMINÉE"
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
 
 
     return true;
+
 }
 
 
@@ -229,27 +328,35 @@ function obtenirNiveaux() {
     const niveaux = [];
 
 
-    donneesGeneration.matieres.forEach(function (matiere) {
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
 
-        const niveau = matiere.niveauCode;
+            const niveau =
+                matiere.niveauCode;
 
-        if (!niveau) {
-            return;
+
+            if (!niveau) {
+
+                return;
+
+            }
+
+
+            if (!niveaux.includes(niveau)) {
+
+                niveaux.push(niveau);
+
+            }
+
         }
-
-
-        if (!niveaux.includes(niveau)) {
-
-            niveaux.push(niveau);
-        }
-
-    });
+    );
 
 
     niveaux.sort();
 
 
     return niveaux;
+
 }
 
 
@@ -257,37 +364,52 @@ function obtenirNiveaux() {
 // OBTENIR LES FILIÈRES D'UN NIVEAU
 // =====================================================
 
-function obtenirFilieresDuNiveau(niveauCode) {
+function obtenirFilieresDuNiveau(
+    niveauCode
+) {
 
     const filieres = [];
 
 
-    donneesGeneration.matieres.forEach(function (matiere) {
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
 
-        if (matiere.niveauCode !== niveauCode) {
-            return;
+            if (
+                matiere.niveauCode !==
+                niveauCode
+            ) {
+
+                return;
+
+            }
+
+
+            const filiere =
+                matiere.filiereCode;
+
+
+            if (!filiere) {
+
+                return;
+
+            }
+
+
+            if (!filieres.includes(filiere)) {
+
+                filieres.push(filiere);
+
+            }
+
         }
-
-
-        const filiere = matiere.filiereCode;
-
-        if (!filiere) {
-            return;
-        }
-
-
-        if (!filieres.includes(filiere)) {
-
-            filieres.push(filiere);
-        }
-
-    });
+    );
 
 
     filieres.sort();
 
 
     return filieres;
+
 }
 
 
@@ -304,65 +426,123 @@ function obtenirMatieresDeFiliere(
         function (matiere) {
 
             return (
-                matiere.niveauCode === niveauCode &&
-                matiere.filiereCode === filiereCode
+
+                matiere.niveauCode ===
+                niveauCode
+
+                &&
+
+                matiere.filiereCode ===
+                filiereCode
+
             );
 
         }
     );
+
 }
 
-function identifierMatieresCommunes(niveauCode) {
 
-    console.log("------------------------------------------");
-    console.log("IDENTIFICATION DES MATIÈRES COMMUNES");
-    console.log("Niveau :", niveauCode);
-    console.log("------------------------------------------");
+// =====================================================
+// IDENTIFIER LES MATIÈRES COMMUNES
+// =====================================================
+// RÈGLE :
+// Une matière est commune si elle existe
+// dans au moins deux filières du même niveau.
+// =====================================================
 
-    const compteurMatieres = new Map();
+function identifierMatieresCommunes(
+    niveauCode
+) {
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "IDENTIFICATION DES MATIÈRES COMMUNES"
+    );
+
+    console.log(
+        "Niveau :",
+        niveauCode
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
+    const compteurMatieres =
+        new Map();
 
 
     // =================================================
     // PARCOURIR LES MATIÈRES DU NIVEAU
     // =================================================
 
-    donneesGeneration.matieres.forEach(function (matiere) {
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
 
-        if (matiere.niveauCode !== niveauCode) {
-            return;
+            if (
+                matiere.niveauCode !==
+                niveauCode
+            ) {
+
+                return;
+
+            }
+
+
+            const matiereLibelle =
+                matiere.matiereLibelle;
+
+
+            const filiereCode =
+                matiere.filiereCode;
+
+
+            if (
+                !matiereLibelle ||
+                !filiereCode
+            ) {
+
+                return;
+
+            }
+
+
+            // =========================================
+            // CRÉER L'ENTRÉE DE LA MATIÈRE
+            // =========================================
+
+            if (
+                !compteurMatieres.has(
+                    matiereLibelle
+                )
+            ) {
+
+                compteurMatieres.set(
+
+                    matiereLibelle,
+
+                    new Set()
+
+                );
+
+            }
+
+
+            // =========================================
+            // AJOUTER LA FILIÈRE
+            // =========================================
+
+            compteurMatieres
+                .get(matiereLibelle)
+                .add(filiereCode);
+
         }
-
-        const matiereLibelle = matiere.matiereLibelle;
-        const filiereCode = matiere.filiereCode;
-
-        if (!matiereLibelle || !filiereCode) {
-            return;
-        }
-
-
-        // =============================================
-        // CRÉER L'ENTRÉE DE LA MATIÈRE
-        // =============================================
-
-        if (!compteurMatieres.has(matiereLibelle)) {
-
-            compteurMatieres.set(
-                matiereLibelle,
-                new Set()
-            );
-
-        }
-
-
-        // =============================================
-        // AJOUTER LA FILIÈRE
-        // =============================================
-
-        compteurMatieres
-            .get(matiereLibelle)
-            .add(filiereCode);
-
-    });
+    );
 
 
     // =================================================
@@ -374,17 +554,27 @@ function identifierMatieresCommunes(niveauCode) {
 
 
     compteurMatieres.forEach(
-        function (filieres, matiereLibelle) {
+        function (
+            filieres,
+            matiereLibelle
+        ) {
 
-            if (filieres.size >= 2) {
+            if (
+                filieres.size >= 2
+            ) {
 
                 matieresCommunes.push({
 
-                    matiereLibelle: matiereLibelle,
+                    matiereLibelle:
+                        matiereLibelle,
 
-                    filieres: Array.from(filieres),
+                    filieres:
+                        Array.from(
+                            filieres
+                        ),
 
-                    nombreFilieres: filieres.size
+                    nombreFilieres:
+                        filieres.size
 
                 });
 
@@ -423,35 +613,525 @@ function identifierMatieresCommunes(niveauCode) {
         function (matiere) {
 
             console.log(
+
                 "✓",
+
                 matiere.matiereLibelle,
+
                 "→",
+
                 matiere.nombreFilieres,
+
                 "filières :",
+
                 matiere.filieres
+
             );
 
         }
     );
 
 
-    console.log("------------------------------------------");
+    console.log(
+        "------------------------------------------"
+    );
 
 
     return matieresCommunes;
+
 }
 
+
+// =====================================================
+// OBTENIR UNE SESSION
+// =====================================================
+
+function obtenirSession(sessionCode) {
+
+    return donneesGeneration.sessions.find(
+        function (session) {
+
+            return (
+                session.sessionCode ===
+                sessionCode
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// OBTENIR LES CRÉNEAUX D'UNE SESSION
+// =====================================================
+
+function obtenirCreneauxDeSession(
+    sessionCode
+) {
+
+    const creneaux =
+        donneesGeneration.creneaux.filter(
+            function (creneau) {
+
+                return (
+                    creneau.sessionCode ===
+                    sessionCode
+                );
+
+            }
+        );
+
+
+    creneaux.sort(
+        function (a, b) {
+
+            return Number(
+                a.creneauOrdre
+            ) - Number(
+                b.creneauOrdre
+            );
+
+        }
+    );
+
+
+    return creneaux;
+
+}
+
+
+// =====================================================
+// CONVERTIR UNE DATE EXCEL EN OBJET DATE
+// =====================================================
+
+function convertirDateExcelPourGeneration(
+    valeur
+) {
+
+    if (
+        valeur instanceof Date
+    ) {
+
+        return new Date(
+            valeur.getFullYear(),
+            valeur.getMonth(),
+            valeur.getDate()
+        );
+
+    }
+
+
+    if (
+        typeof valeur === "number"
+    ) {
+
+        const date =
+            new Date(
+                Date.UTC(
+                    1899,
+                    11,
+                    30
+                )
+            );
+
+
+        date.setUTCDate(
+            date.getUTCDate() +
+            valeur
+        );
+
+
+        return new Date(
+            date.getUTCFullYear(),
+            date.getUTCMonth(),
+            date.getUTCDate()
+        );
+
+    }
+
+
+    if (
+        typeof valeur === "string" &&
+        valeur.trim() !== ""
+    ) {
+
+        const date =
+            new Date(valeur);
+
+
+        if (
+            !isNaN(date.getTime())
+        ) {
+
+            return new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate()
+            );
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+// =====================================================
+// FORMATER UNE DATE
+// =====================================================
+
+function formaterDateGeneration(
+    date
+) {
+
+    const jour =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
+
+
+    const mois =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+
+
+    const annee =
+        date.getFullYear();
+
+
+    return (
+        jour +
+        "/" +
+        mois +
+        "/" +
+        annee
+    );
+
+}
+
+
+// =====================================================
+// GÉNÉRER LA LISTE DES DATES
+// =====================================================
+
+function genererListeDates(
+    dateDebut,
+    dateFin
+) {
+
+    const dates = [];
+
+
+    const debut =
+        convertirDateExcelPourGeneration(
+            dateDebut
+        );
+
+
+    const fin =
+        convertirDateExcelPourGeneration(
+            dateFin
+        );
+
+
+    if (
+        !debut ||
+        !fin
+    ) {
+
+        console.error(
+            "❌ Dates de session invalides."
+        );
+
+        return dates;
+
+    }
+
+
+    if (
+        debut > fin
+    ) {
+
+        console.error(
+            "❌ La date de début est après la date de fin."
+        );
+
+        return dates;
+
+    }
+
+
+    let dateCourante =
+        new Date(debut);
+
+
+    while (
+        dateCourante <= fin
+    ) {
+
+        dates.push({
+
+            date:
+                new Date(dateCourante),
+
+            dateAffichage:
+                formaterDateGeneration(
+                    dateCourante
+                )
+
+        });
+
+
+        dateCourante.setDate(
+            dateCourante.getDate() + 1
+        );
+
+    }
+
+
+    return dates;
+
+}
+
+
+// =====================================================
+// CONSTRUIRE LA GRILLE D'UNE SESSION
+// =====================================================
+// Structure :
+//
+// Session
+//   ↓
+// Date
+//   ↓
+// Créneaux disponibles
+//
+// Chaque élément de la grille représente
+// une combinaison Date + Créneau.
+// =====================================================
+
+function construireGrilleSession(
+    sessionCode
+) {
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "CONSTRUCTION DE LA GRILLE"
+    );
+
+    console.log(
+        "Session :",
+        sessionCode
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    const session =
+        obtenirSession(sessionCode);
+
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            sessionCode
+        );
+
+        return [];
+
+    }
+
+
+    const creneaux =
+        obtenirCreneauxDeSession(
+            sessionCode
+        );
+
+
+    if (
+        creneaux.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucun créneau trouvé pour :",
+            sessionCode
+        );
+
+        return [];
+
+    }
+
+
+    const dates =
+        genererListeDates(
+            session.dateDebut,
+            session.dateFin
+        );
+
+
+    if (
+        dates.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucune date disponible pour la session."
+        );
+
+        return [];
+
+    }
+
+
+    const grille = [];
+
+
+    // =================================================
+    // DATE → TOUS LES CRÉNEAUX
+    // =================================================
+
+    dates.forEach(
+        function (dateInfo) {
+
+            creneaux.forEach(
+                function (creneau) {
+
+                    grille.push({
+
+                        sessionCode:
+                            sessionCode,
+
+                        date:
+                            dateInfo.date,
+
+                        dateAffichage:
+                            dateInfo.dateAffichage,
+
+                        creneauOrdre:
+                            Number(
+                                creneau.creneauOrdre
+                            ),
+
+                        heureDebut:
+                            creneau.heureDebut,
+
+                        heureFin:
+                            creneau.heureFin,
+
+                        heureDebutAffichage:
+                            creneau.heureDebutAffichage ||
+                            "",
+
+                        heureFinAffichage:
+                            creneau.heureFinAffichage ||
+                            "",
+
+                        nombreMatieres:
+                            0
+
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    // =================================================
+    // AFFICHAGE DU RÉSULTAT
+    // =================================================
+
+    console.log(
+        "Dates disponibles :",
+        dates.length
+    );
+
+    console.log(
+        "Créneaux par jour :",
+        creneaux.length
+    );
+
+    console.log(
+        "Nombre total de positions :",
+        grille.length
+    );
+
+
+    console.table(
+        grille.map(
+            function (position) {
+
+                return {
+
+                    Date:
+                        position.dateAffichage,
+
+                    Créneau:
+                        position.creneauOrdre,
+
+                    Horaire:
+                        (
+                            position.heureDebutAffichage
+                            || ""
+                        )
+                        +
+                        " - "
+                        +
+                        (
+                            position.heureFinAffichage
+                            || ""
+                        ),
+
+                    Matieres:
+                        position.nombreMatieres
+
+                };
+
+            }
+        )
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "✓ GRILLE CONSTRUITE"
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
+    return grille;
+
+}
 
 
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
 // =====================================================
 
-function construireStructureNiveau(niveauCode) {
+function construireStructureNiveau(
+    niveauCode
+) {
 
     const structure = {
 
-        niveauCode: niveauCode,
+        niveauCode:
+            niveauCode,
 
         filieres: []
 
@@ -459,30 +1139,40 @@ function construireStructureNiveau(niveauCode) {
 
 
     const filieres =
-        obtenirFilieresDuNiveau(niveauCode);
+        obtenirFilieresDuNiveau(
+            niveauCode
+        );
 
 
-    filieres.forEach(function (filiereCode) {
+    filieres.forEach(
+        function (filiereCode) {
 
-        const matieres =
-            obtenirMatieresDeFiliere(
-                niveauCode,
-                filiereCode
-            );
+            const matieres =
+                obtenirMatieresDeFiliere(
+
+                    niveauCode,
+
+                    filiereCode
+
+                );
 
 
-        structure.filieres.push({
+            structure.filieres.push({
 
-            filiereCode: filiereCode,
+                filiereCode:
+                    filiereCode,
 
-            matieres: matieres
+                matieres:
+                    matieres
 
-        });
+            });
 
-    });
+        }
+    );
 
 
     return structure;
+
 }
 
 
@@ -492,12 +1182,21 @@ function construireStructureNiveau(niveauCode) {
 
 function construireStructureGeneration() {
 
-    console.log("==========================================");
-    console.log("STRUCTURE DE PLANIFICATION");
-    console.log("==========================================");
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "STRUCTURE DE PLANIFICATION"
+    );
+
+    console.log(
+        "=========================================="
+    );
 
 
-    const niveaux = obtenirNiveaux();
+    const niveaux =
+        obtenirNiveaux();
 
 
     console.log(
@@ -509,63 +1208,93 @@ function construireStructureGeneration() {
     const structure = [];
 
 
-    niveaux.forEach(function (niveauCode) {
+    niveaux.forEach(
+        function (niveauCode) {
 
-        const niveau =
-            construireStructureNiveau(
+            const niveau =
+                construireStructureNiveau(
+                    niveauCode
+                );
+
+
+            structure.push(
+                niveau
+            );
+
+
+            console.log(
+                "------------------------------------------"
+            );
+
+
+            console.log(
+                "Niveau :",
                 niveauCode
             );
 
 
-        structure.push(niveau);
+            console.log(
+                "Filières :",
+                niveau.filieres.map(
+                    function (filiere) {
+
+                        return filiere.filiereCode;
+
+                    }
+                )
+            );
 
 
-        console.log("------------------------------------------");
-
-        console.log(
-            "Niveau :",
-            niveauCode
-        );
-
-        console.log(
-            "Filières :",
-            niveau.filieres.map(
+            niveau.filieres.forEach(
                 function (filiere) {
-                    return filiere.filiereCode;
+
+                    console.log(
+
+                        "  Filière :",
+
+                        filiere.filiereCode
+
+                    );
+
+
+                    console.log(
+
+                        "  Matières :",
+
+                        filiere.matieres.map(
+                            function (matiere) {
+
+                                return (
+                                    matiere.matiereLibelle
+                                );
+
+                            }
+                        )
+
+                    );
+
                 }
-            )
-        );
+            );
+
+        }
+    );
 
 
-        niveau.filieres.forEach(
-            function (filiere) {
+    console.log(
+        "------------------------------------------"
+    );
 
-                console.log(
-                    "  Filière :",
-                    filiere.filiereCode
-                );
+    console.log(
+        "✓ STRUCTURE CONSTRUITE"
+    );
 
-                console.log(
-                    "  Matières :",
-                    filiere.matieres.map(
-                        function (matiere) {
-                            return matiere.matiereLibelle;
-                        }
-                    )
-                );
-
-            }
-        );
-
-    });
-
-
-    console.log("------------------------------------------");
-    console.log("✓ STRUCTURE CONSTRUITE");
-    console.log("------------------------------------------");
+    console.log(
+        "------------------------------------------"
+    );
 
 
     return structure;
+
 }
 
 
@@ -576,9 +1305,18 @@ function construireStructureGeneration() {
 async function preparerGeneration() {
 
     console.log("");
-    console.log("==========================================");
-    console.log("MOTEUR DE GÉNÉRATION DES EXAMENS");
-    console.log("==========================================");
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "MOTEUR DE GÉNÉRATION DES EXAMENS"
+    );
+
+    console.log(
+        "=========================================="
+    );
 
 
     const chargement =
@@ -592,6 +1330,7 @@ async function preparerGeneration() {
         );
 
         return null;
+
     }
 
 
@@ -606,6 +1345,7 @@ async function preparerGeneration() {
         );
 
         return null;
+
     }
 
 
@@ -614,16 +1354,23 @@ async function preparerGeneration() {
 
 
     console.log("");
-    console.log("✓ MOTEUR PRÊT");
-    console.log("==========================================");
+
+    console.log(
+        "✓ MOTEUR PRÊT"
+    );
+
+    console.log(
+        "=========================================="
+    );
 
 
     return structure;
+
 }
 
 
 // =====================================================
-// EXPOSER LES FONCTIONS POUR LES AUTRES MODULES
+// EXPOSER LES FONCTIONS
 // =====================================================
 
 window.generationExamens = {
@@ -643,8 +1390,21 @@ window.generationExamens = {
     obtenirMatieres:
         obtenirMatieresDeFiliere,
 
-     identifierMatieresCommunes:
+    identifierMatieresCommunes:
         identifierMatieresCommunes,
+
+    obtenirSession:
+        obtenirSession,
+
+    obtenirCreneauxDeSession:
+        obtenirCreneauxDeSession,
+
+    genererListeDates:
+        genererListeDates,
+
+    construireGrilleSession:
+        construireGrilleSession,
+
     construireStructure:
         construireStructureGeneration,
 
@@ -666,7 +1426,9 @@ document.addEventListener(
             "✓ generation.js chargé."
         );
 
+
         await preparerGeneration();
 
     }
 );
+
