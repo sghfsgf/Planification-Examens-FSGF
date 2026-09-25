@@ -137,3 +137,113 @@ function verifierMatieresPlacees(planning) {
 
     return resultat;
 }
+// =====================================================
+// 2. Vérifier les doublons de matières par filière
+// =====================================================
+
+function verifierDoublonsMatieres(planning) {
+
+    console.log("------------------------------------------");
+    console.log("CONTRÔLE DES DOUBLONS DE MATIÈRES");
+    console.log("------------------------------------------");
+
+    if (!planning) {
+
+        console.error("❌ Planning introuvable.");
+
+        return {
+            valide: false,
+            doublons: []
+        };
+    }
+
+    const occurrences = {};
+    const doublons = [];
+
+    // -------------------------------------------------
+    // Parcourir toutes les filières et toutes les cellules
+    // -------------------------------------------------
+
+    planning.filieres.forEach(function (filiere) {
+
+        filiere.cellules.forEach(function (cellule) {
+
+            if (!cellule.estOccupee) {
+                return;
+            }
+
+            if (!cellule.matiereLibelle) {
+                return;
+            }
+
+            const cle =
+                filiere.filiereCode +
+                "|" +
+                cellule.matiereLibelle;
+
+            if (!occurrences[cle]) {
+
+                occurrences[cle] = {
+                    filiereCode: filiere.filiereCode,
+                    matiereLibelle: cellule.matiereLibelle,
+                    nombre: 0
+                };
+            }
+
+            occurrences[cle].nombre++;
+
+        });
+
+    });
+
+    // -------------------------------------------------
+    // Rechercher les matières présentes plusieurs fois
+    // dans une même filière
+    // -------------------------------------------------
+
+    Object.keys(occurrences).forEach(function (cle) {
+
+        const occurrence = occurrences[cle];
+
+        if (occurrence.nombre > 1) {
+
+            doublons.push(occurrence);
+
+        }
+
+    });
+
+    // -------------------------------------------------
+    // Résultat
+    // -------------------------------------------------
+
+    const resultat = {
+
+        valide: doublons.length === 0,
+
+        doublons: doublons
+
+    };
+
+    console.log(
+        "Doublons détectés :",
+        doublons.length
+    );
+
+    if (resultat.valide) {
+
+        console.log(
+            "✓ Aucun doublon de matière dans une même filière."
+        );
+
+    } else {
+
+        console.warn(
+            "⚠️ Doublons détectés :",
+            doublons
+        );
+
+    }
+
+    return resultat;
+}
