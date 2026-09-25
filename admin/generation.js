@@ -2045,6 +2045,10 @@ window.generationExamens = {
         construireMatricePlanning,
     placerMatieresCommunes: 
         placerMatieresCommunes,
+
+    preparerMatieresPourSession: 
+        preparerMatieresPourSession,
+    
     construireStructure:
         construireStructureGeneration,
 
