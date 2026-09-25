@@ -1690,6 +1690,9 @@ window.generationExamens = {
     construireGrilleSession:
         construireGrilleSession,
 
+    construireMatricePlanning:
+        construireMatricePlanning,
+    
     construireStructure:
         construireStructureGeneration,
 
