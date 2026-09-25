@@ -32,7 +32,10 @@ import { app } from "../firebase-config.js";
 import {
     getFirestore,
     collection,
-    getDocs
+    getDocs,
+    doc,
+    setDoc,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 
@@ -2236,6 +2239,300 @@ async function preparerGeneration() {
 
 
 // =====================================================
+// ENREGISTRER UN CALENDRIER DANS FIRESTORE
+// =====================================================
+// Un document = un calendrier complet
+//
+// ID dynamique :
+// calendrier_2025-2026_L2_S2_CC_DS_S2
+//
+// Le calendrier est enregistré comme brouillon.
+// =====================================================
+
+async function enregistrerCalendrier(planning) {
+
+    console.log("==========================================");
+    console.log("ENREGISTREMENT DU CALENDRIER");
+    console.log("==========================================");
+
+    // -------------------------------------------------
+    // Vérifier le planning
+    // -------------------------------------------------
+
+    if (!planning) {
+
+        console.error(
+            "❌ Aucun planning à enregistrer."
+        );
+
+        return null;
+    }
+
+    if (!planning.niveauCode) {
+
+        console.error(
+            "❌ Niveau du planning absent."
+        );
+
+        return null;
+    }
+
+    if (!planning.sessionCode) {
+
+        console.error(
+            "❌ Session du planning absente."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer la session
+    // -------------------------------------------------
+
+    const session =
+        obtenirSession(
+            planning.sessionCode
+        );
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            planning.sessionCode
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer l'année universitaire
+    // -------------------------------------------------
+
+    const anneeUniversitaire =
+        session.anneeUniversitaire;
+
+    if (!anneeUniversitaire) {
+
+        console.error(
+            "❌ Année universitaire absente de la session."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer semestre et régime
+    // -------------------------------------------------
+
+    const semestreCode =
+        session.semestreCode;
+
+    const regimeCode =
+        session.regimeCode;
+
+    if (!semestreCode || !regimeCode) {
+
+        console.error(
+            "❌ Semestre ou régime absent de la session."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Construire l'identifiant du calendrier
+    // -------------------------------------------------
+
+    const idCalendrier =
+        "calendrier_" +
+        anneeUniversitaire +
+        "_" +
+        planning.niveauCode +
+        "_" +
+        semestreCode +
+        "_" +
+        regimeCode +
+        "_" +
+        planning.sessionCode;
+
+    console.log(
+        "ID du calendrier :",
+        idCalendrier
+    );
+
+    // -------------------------------------------------
+    // Référence Firestore
+    // -------------------------------------------------
+
+    const referenceCalendrier =
+        doc(
+            db,
+            "calendriers",
+            idCalendrier
+        );
+
+    // -------------------------------------------------
+    // Construire le document
+    // -------------------------------------------------
+
+    const documentCalendrier = {
+
+        anneeUniversitaire:
+            anneeUniversitaire,
+
+        niveauCode:
+            planning.niveauCode,
+
+        semestreCode:
+            semestreCode,
+
+        regimeCode:
+            regimeCode,
+
+        sessionCode:
+            planning.sessionCode,
+
+        sessionLibelle:
+            session.sessionLibelle || "",
+
+        statut:
+            "brouillon",
+
+        version:
+            1,
+
+        creeLe:
+            serverTimestamp(),
+
+        modifieLe:
+            serverTimestamp(),
+
+        planning:
+            planning,
+
+        controle: {
+
+            valide:
+                false,
+
+            dateControle:
+                null,
+
+            matieresNonPlacees:
+                [],
+
+            doublons:
+                [],
+
+            erreursCommunes:
+                [],
+
+            erreursCreneauxSuccessifs:
+                [],
+
+            ecartEquilibrage:
+                null
+
+        }
+
+    };
+
+    // -------------------------------------------------
+    // Enregistrer dans Firestore
+    // -------------------------------------------------
+
+    try {
+
+        await setDoc(
+            referenceCalendrier,
+            documentCalendrier
+        );
+
+        console.log("------------------------------------------");
+
+        console.log(
+            "✓ CALENDRIER ENREGISTRÉ DANS FIRESTORE"
+        );
+
+        console.log(
+            "Collection : calendriers"
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Année universitaire :",
+            anneeUniversitaire
+        );
+
+        console.log(
+            "Niveau :",
+            planning.niveauCode
+        );
+
+        console.log(
+            "Semestre :",
+            semestreCode
+        );
+
+        console.log(
+            "Régime :",
+            regimeCode
+        );
+
+        console.log(
+            "Session :",
+            planning.sessionCode
+        );
+
+        console.log(
+            "Statut : brouillon"
+        );
+
+        console.log("------------------------------------------");
+
+        return {
+
+            id:
+                idCalendrier,
+
+            anneeUniversitaire:
+                anneeUniversitaire,
+
+            niveauCode:
+                planning.niveauCode,
+
+            semestreCode:
+                semestreCode,
+
+            regimeCode:
+                regimeCode,
+
+            sessionCode:
+                planning.sessionCode,
+
+            statut:
+                "brouillon"
+
+        };
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de l'enregistrement du calendrier :",
+            erreur
+        );
+
+        return null;
+    }
+
+}
+
+// =====================================================
 // EXPOSER LES FONCTIONS
 // =====================================================
 
@@ -2291,6 +2588,9 @@ window.generationExamens = {
         placerMatieresSpecifiques,
     construireStructure:
          construireStructureGeneration,
+
+        enregistrerCalendrier:
+        enregistrerCalendrier,
 
     preparer:
         preparerGeneration
