@@ -1753,7 +1753,121 @@ function placerMatieresCommunes(planning) {
     return planning;
 }
 
+// =====================================================
+// TROUVER UNE POSITION POUR UNE MATIÈRE SPÉCIFIQUE
+// =====================================================
 
+function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
+
+    const filiere = planning.filieres.find(function (f) {
+        return f.filiereCode === filiereCode;
+    });
+
+    if (!filiere) {
+        console.error(
+            "❌ Filière introuvable dans le planning :",
+            filiereCode
+        );
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Calcul du nombre de matières par créneau
+    // -------------------------------------------------
+
+    const chargesCreneaux = {};
+
+    filiere.cellules.forEach(function (cellule) {
+
+        if (cellule.estOccupee) {
+
+            const cle = cellule.creneauOrdre;
+
+            if (!chargesCreneaux[cle]) {
+                chargesCreneaux[cle] = 0;
+            }
+
+            chargesCreneaux[cle]++;
+        }
+    });
+
+    // -------------------------------------------------
+    // Recherche des cellules libres
+    // -------------------------------------------------
+
+    const positionsPossibles = filiere.cellules.filter(function (cellule) {
+
+        // 1. La cellule doit être libre
+        if (cellule.estOccupee) {
+            return false;
+        }
+
+        // -------------------------------------------------
+        // 2. Vérifier les créneaux successifs du même jour
+        // -------------------------------------------------
+
+        const cellulesMemeJour = filiere.cellules.filter(function (autre) {
+            return autre.dateAffichage === cellule.dateAffichage;
+        });
+
+        const cellulePrecedente = cellulesMemeJour.find(function (autre) {
+            return autre.creneauOrdre === cellule.creneauOrdre - 1;
+        });
+
+        const celluleSuivante = cellulesMemeJour.find(function (autre) {
+            return autre.creneauOrdre === cellule.creneauOrdre + 1;
+        });
+
+        if (cellulePrecedente && cellulePrecedente.estOccupee) {
+            return false;
+        }
+
+        if (celluleSuivante && celluleSuivante.estOccupee) {
+            return false;
+        }
+
+        return true;
+    });
+
+    if (positionsPossibles.length === 0) {
+
+        console.warn(
+            "⚠️ Aucune position disponible pour la filière :",
+            filiereCode
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Choisir les créneaux les moins chargés
+    // -------------------------------------------------
+
+    positionsPossibles.sort(function (a, b) {
+
+        const chargeA = chargesCreneaux[a.creneauOrdre] || 0;
+        const chargeB = chargesCreneaux[b.creneauOrdre] || 0;
+
+        return chargeA - chargeB;
+    });
+
+    const positionChoisie = positionsPossibles[0];
+
+    console.log(
+        "✓ Position trouvée :",
+        filiereCode,
+        "|",
+        positionChoisie.dateAffichage,
+        "| Créneau",
+        positionChoisie.creneauOrdre,
+        "|",
+        positionChoisie.heureDebutAffichage,
+        "-",
+        positionChoisie.heureFinAffichage
+    );
+
+    return positionChoisie;
+}
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
 // =====================================================
@@ -2049,6 +2163,9 @@ window.generationExamens = {
     preparerMatieresPourSession: 
         preparerMatieresPourSession,
     
+     trouverPositionPourMatiereSpecifique:
+    trouverPositionPourMatiereSpecifique,
+
     construireStructure:
         construireStructureGeneration,
 
