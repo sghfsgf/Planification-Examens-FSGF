@@ -511,13 +511,50 @@ function initialiserFiltresCalendrierAdmin() {
             // AFFICHAGE
             // =========================================
 
-            afficherPlanning(planning);
+           // =========================================
+// AFFICHAGE
+// =========================================
+
+afficherPlanning(planning);
 
 
-            console.log(
-                "✓ Calendrier affiché."
-            );
+console.log(
+    "✓ Calendrier affiché."
+);
 
+
+// =========================================
+// ENREGISTREMENT DANS FIRESTORE
+// =========================================
+
+generationExamens.enregistrerCalendrier(
+    planning
+)
+.then(function (resultat) {
+
+    if (resultat) {
+
+        console.log(
+            "✓ Calendrier enregistré automatiquement."
+        );
+
+    } else {
+
+        console.error(
+            "❌ Échec de l'enregistrement du calendrier."
+        );
+
+    }
+
+})
+.catch(function (erreur) {
+
+    console.error(
+        "❌ Erreur lors de l'enregistrement :",
+        erreur
+    );
+
+});
         }
     );
 
