@@ -1372,7 +1372,7 @@ function construireGrilleSession(
 
 function construireMatricePlanning(niveauCode, sessionCode) {
 
-    const structure = preparerMatieresPourPlanification(niveauCode);
+    const structure = preparerMatieresPourSession(niveauCode, sessionCode);
 
     const grille = construireGrilleSession(sessionCode);
 
