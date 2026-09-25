@@ -1166,8 +1166,7 @@ function genererListeDates(
 // =====================================================
 
 function construireGrilleSession(
-    sessionCode,
-    creneauxTest = null
+    sessionCode
 ) {
 
     console.log(
@@ -1204,11 +1203,10 @@ function construireGrilleSession(
     }
 
 
-   const creneaux =
-    creneauxTest ||
-    obtenirCreneauxDeSession(
-        sessionCode
-    );
+    const creneaux =
+        obtenirCreneauxDeSession(
+            sessionCode
+        );
 
 
     if (
