@@ -640,7 +640,146 @@ function identifierMatieresCommunes(
     return matieresCommunes;
 
 }
+// =====================================================
+// PRÉPARATION DES MATIÈRES À PLANIFIER
+// =====================================================
+// Pour un niveau donné :
+// - les matières communes sont placées en premier
+// - puis les matières spécifiques à chaque filière
+//
+// Règle métier :
+// Une matière est commune lorsqu'elle existe
+// dans au moins deux filières du même niveau.
+// =====================================================
 
+function preparerMatieresPourPlanification(niveauCode) {
+
+    const matieresNiveau = donneesGeneration.matieres.filter(function (matiere) {
+        return matiere.niveauCode === niveauCode;
+    });
+
+    if (matieresNiveau.length === 0) {
+        console.warn(
+            "⚠️ Aucune matière trouvée pour le niveau :",
+            niveauCode
+        );
+        return {
+            niveauCode: niveauCode,
+            matieresCommunes: [],
+            matieresSpecifiques: []
+        };
+    }
+
+    // -------------------------------------------------
+    // Regrouper les matières par libellé
+    // -------------------------------------------------
+
+    const groupesMatieres = {};
+
+    matieresNiveau.forEach(function (matiere) {
+
+        const libelle = String(
+            matiere.matiereLibelle || ""
+        ).trim();
+
+        if (!libelle) {
+            return;
+        }
+
+        if (!groupesMatieres[libelle]) {
+            groupesMatieres[libelle] = [];
+        }
+
+        groupesMatieres[libelle].push(matiere);
+    });
+
+    // -------------------------------------------------
+    // Identifier communes / spécifiques
+    // -------------------------------------------------
+
+    const matieresCommunes = [];
+    const matieresSpecifiques = [];
+
+    Object.keys(groupesMatieres).forEach(function (libelle) {
+
+        const occurrences = groupesMatieres[libelle];
+
+        // Ensemble des filières concernées
+        const filieres = [];
+
+        occurrences.forEach(function (matiere) {
+
+            if (
+                matiere.filiereCode &&
+                !filieres.includes(matiere.filiereCode)
+            ) {
+                filieres.push(matiere.filiereCode);
+            }
+
+        });
+
+        const information = {
+            matiereLibelle: libelle,
+            filieres: filieres,
+            occurrences: occurrences
+        };
+
+        // Matière commune :
+        // présente dans au moins deux filières
+        if (filieres.length >= 2) {
+
+            matieresCommunes.push(information);
+
+        } else {
+
+            matieresSpecifiques.push(information);
+
+        }
+    });
+
+    // -------------------------------------------------
+    // Affichage diagnostic
+    // -------------------------------------------------
+
+    console.log(
+        "PRÉPARATION DES MATIÈRES POUR LE NIVEAU :",
+        niveauCode
+    );
+
+    console.log(
+        "→ Matières communes :",
+        matieresCommunes.length
+    );
+
+    console.table(
+        matieresCommunes.map(function (matiere) {
+            return {
+                Matiere: matiere.matiereLibelle,
+                Filieres: matiere.filieres.join(" / ")
+            };
+        })
+    );
+
+    console.log(
+        "→ Matières spécifiques :",
+        matieresSpecifiques.length
+    );
+
+    console.table(
+        matieresSpecifiques.map(function (matiere) {
+            return {
+                Matiere: matiere.matiereLibelle,
+                Filiere: matiere.filieres.join(" / ")
+            };
+        })
+    );
+
+    return {
+        niveauCode: niveauCode,
+        matieresCommunes: matieresCommunes,
+        matieresSpecifiques: matieresSpecifiques
+    };
+}
 
 // =====================================================
 // OBTENIR UNE SESSION
@@ -1392,6 +1531,8 @@ window.generationExamens = {
 
     identifierMatieresCommunes:
         identifierMatieresCommunes,
+    preparerMatieresPourPlanification: 
+        preparerMatieresPourPlanification,
 
     obtenirSession:
         obtenirSession,
