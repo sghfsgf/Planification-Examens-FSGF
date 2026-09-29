@@ -2696,7 +2696,22 @@ document.addEventListener(
                 niveauCode,
                 sessionCode
             );
+        // =================================================
+// PLACEMENT DES MATIÈRES COMMUNES
+// =================================================
 
+placerMatieresCommunes(
+    planning
+);
+
+console.log(
+    "✓ Matières communes placées."
+);
+
+console.log(
+    "Planning après placement des matières communes :",
+    planning
+);
 
         console.log(
             "✓ Matrice de planning construite :",
