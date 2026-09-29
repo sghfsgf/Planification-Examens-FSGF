@@ -33,6 +33,7 @@ import {
     getFirestore,
     collection,
     getDocs,
+    getDoc,
     doc,
     setDoc,
     serverTimestamp
