@@ -2372,6 +2372,25 @@ async function enregistrerCalendrier(planning) {
             "calendriers",
             idCalendrier
         );
+    const documentExistant =
+    await getDoc(
+        referenceCalendrier
+    );
+
+if (documentExistant.exists()) {
+
+    console.log(
+        "⚠️ Le calendrier existe déjà dans Firestore :",
+        idCalendrier
+    );
+
+} else {
+
+    console.log(
+        "✓ Aucun calendrier existant. Création du calendrier :",
+        idCalendrier
+    );
+}
 
     // -------------------------------------------------
     // Construire le document
