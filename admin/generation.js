@@ -2630,8 +2630,48 @@ document.addEventListener(
             "✓ generation.js chargé."
         );
 
-
         await preparerGeneration();
+
+        // -------------------------------------------------
+        // BOUTON : GÉNÉRER LE CALENDRIER
+        // -------------------------------------------------
+
+        const boutonGenerer =
+            document.getElementById(
+                "btnGenererCalendrier"
+            );
+
+        if (!boutonGenerer) {
+
+            console.error(
+                "❌ Bouton btnGenererCalendrier introuvable."
+            );
+
+            return;
+        }
+
+        boutonGenerer.addEventListener(
+            "click",
+            async function () {
+
+                console.log(
+                    "=========================================="
+                );
+
+                console.log(
+                    "🚀 BOUTON GÉNÉRER LE CALENDRIER"
+                );
+
+                console.log(
+                    "=========================================="
+                );
+
+            }
+        );
+
+        console.log(
+            "✓ Bouton Générer le calendrier connecté."
+        );
 
     }
 );
