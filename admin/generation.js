@@ -2713,6 +2713,23 @@ console.log(
     planning
 );
 
+  // =================================================
+// PLACEMENT DES MATIÈRES SPÉCIFIQUES
+// =================================================
+
+placerMatieresSpecifiques(
+    planning
+);
+
+console.log(
+    "✓ Matières spécifiques placées."
+);
+
+console.log(
+    "Planning après placement des matières spécifiques :",
+    planning
+);      
+
         console.log(
             "✓ Matrice de planning construite :",
             planning
