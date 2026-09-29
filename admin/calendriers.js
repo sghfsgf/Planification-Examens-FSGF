@@ -445,8 +445,8 @@ function initialiserFiltresCalendrierAdmin() {
     // =================================================
 
     bouton.addEventListener(
-        "click",
-        function () {
+    "click",
+    async function () {
 
             const niveau =
                 selectNiveau.value;
@@ -484,44 +484,83 @@ function initialiserFiltresCalendrierAdmin() {
             );
 
 
+                      // =========================================
+            // CHARGER OU CONSTRUIRE LE PLANNING
             // =========================================
-            // CONSTRUCTION DU PLANNING
-            // =========================================
 
-            let planning =
-                generationExamens.construireMatricePlanning(
-                    niveau,
-                    sessionCode
-                );
+            let planning = null;
 
+            try {
 
-            if (!planning) {
+                // -----------------------------------------
+                // 1. Chercher un calendrier déjà enregistré
+                // -----------------------------------------
+
+                planning =
+                    await generationExamens.chargerCalendrier(
+                        niveau,
+                        selectSemestre.value,
+                        selectRegime.value,
+                        sessionCode
+                    );
+
+                // -----------------------------------------
+                // 2. Aucun calendrier enregistré
+                // -----------------------------------------
+
+                if (!planning) {
+
+                    console.log(
+                        "ℹ️ Aucun calendrier enregistré."
+                    );
+
+                    console.log(
+                        "🚀 Construction d'un nouveau planning."
+                    );
+
+                    planning =
+                        generationExamens.construireMatricePlanning(
+                            niveau,
+                            sessionCode
+                        );
+
+                    if (!planning) {
+
+                        console.error(
+                            "❌ Impossible de construire le planning."
+                        );
+
+                        return;
+                    }
+
+                    generationExamens.placerMatieresCommunes(
+                        planning
+                    );
+
+                    generationExamens.placerMatieresSpecifiques(
+                        planning
+                    );
+
+                    console.log(
+                        "✓ Nouveau planning construit."
+                    );
+
+                } else {
+
+                    console.log(
+                        "✓ Planning chargé depuis Firestore."
+                    );
+                }
+
+            } catch (erreur) {
 
                 console.error(
-                    "❌ Impossible de construire le planning."
+                    "❌ Erreur lors du chargement du calendrier :",
+                    erreur
                 );
 
                 return;
             }
-
-
-            // =========================================
-            // PLACEMENT DES MATIÈRES COMMUNES
-            // =========================================
-
-            generationExamens.placerMatieresCommunes(
-                planning
-            );
-
-
-            // =========================================
-            // PLACEMENT DES MATIÈRES SPÉCIFIQUES
-            // =========================================
-
-            generationExamens.placerMatieresSpecifiques(
-                planning
-            );
-
 
 // =========================================
 // AFFICHAGE
