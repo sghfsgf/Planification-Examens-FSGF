@@ -826,3 +826,14 @@ function verifierPlanningGlobal(planning) {
 
     return resultat;
 }
+
+// =====================================================
+// API PUBLIQUE DU CONTRÔLE
+// =====================================================
+
+window.controleExamens = {
+
+    verifierPlanningGlobal:
+        verifierPlanningGlobal
+
+};
