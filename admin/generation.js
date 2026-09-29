@@ -2608,6 +2608,8 @@ window.generationExamens = {
         placerMatieresSpecifiques,
     construireStructure:
          construireStructureGeneration,
+    chargerCalendrier:
+        chargerCalendrier,
 
         enregistrerCalendrier:
         enregistrerCalendrier,
