@@ -2713,7 +2713,7 @@ console.log(
     planning
 );
 
-  // =================================================
+// =================================================
 // PLACEMENT DES MATIÈRES SPÉCIFIQUES
 // =================================================
 
@@ -2728,19 +2728,25 @@ console.log(
 console.log(
     "Planning après placement des matières spécifiques :",
     planning
-);      
+);
 
-        console.log(
-            "✓ Matrice de planning construite :",
-            planning
+// Contrôle global du planning
+const resultatControle =
+    controleExamens.verifierPlanningGlobal(
+        planning
+    );
+
+console.log(
+    "✓ Résultat du contrôle global :",
+    resultatControle
+);
+
+            }
         );
 
-    }
-);
         console.log(
             "✓ Bouton Générer le calendrier connecté."
         );
 
     }
 );
-
