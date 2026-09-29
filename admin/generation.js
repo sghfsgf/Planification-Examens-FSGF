@@ -2650,25 +2650,61 @@ document.addEventListener(
             return;
         }
 
-        boutonGenerer.addEventListener(
-            "click",
-            async function () {
+      boutonGenerer.addEventListener(
+    "click",
+    async function () {
 
-                console.log(
-                    "=========================================="
-                );
-
-                console.log(
-                    "🚀 BOUTON GÉNÉRER LE CALENDRIER"
-                );
-
-                console.log(
-                    "=========================================="
-                );
-
-            }
+        console.log(
+            "=========================================="
         );
 
+        console.log(
+            "🚀 BOUTON GÉNÉRER LE CALENDRIER"
+        );
+
+        console.log(
+            "=========================================="
+        );
+
+
+        // =================================================
+        // PARAMÈTRES DE TEST
+        // =================================================
+
+        const niveauCode = "L1";
+
+        const sessionCode = "PRINCIPALE_S1";
+
+
+        console.log(
+            "Niveau :",
+            niveauCode
+        );
+
+        console.log(
+            "Session :",
+            sessionCode
+        );
+
+
+        // =================================================
+        // CONSTRUCTION DE LA MATRICE
+        // =================================================
+
+        const planning =
+            construireMatricePlanning(
+                niveauCode,
+                sessionCode
+            );
+
+
+        console.log(
+            "✓ Matrice de planning construite :",
+            planning
+        );
+
+    }
+);
         console.log(
             "✓ Bouton Générer le calendrier connecté."
         );
