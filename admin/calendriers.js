@@ -255,13 +255,29 @@ function construireTableauCalendrier(planning) {
 
             if (cellule.estOccupee) {
 
-                td.textContent =
-                    cellule.matiereLibelle;
+    td.textContent =
+        cellule.matiereLibelle;
 
-            } else {
+} else {
 
-                td.textContent = "—";
-            }
+    td.textContent = "—";
+}
+
+// -------------------------------------------------
+// Préparer la cellule pour la modification à la souris
+// -------------------------------------------------
+
+td.dataset.filiere =
+    filiere.filiereCode;
+
+td.dataset.index =
+    filiere.cellules.indexOf(cellule);
+
+td.classList.add(
+    "cellule-calendrier-modifiable"
+);
+
+td.style.cursor = "pointer";
 
             ligne.appendChild(td);
         });
@@ -511,6 +527,7 @@ function initialiserFiltresCalendrierAdmin() {
 // AFFICHAGE
 // =========================================
 
+window.planningCalendrierAdmin = planning;            
 afficherPlanning(planning);
 
 console.log(
@@ -542,3 +559,182 @@ donneesChargees.then(function () {
     initialiserFiltresCalendrierAdmin();
 
 });
+
+// =====================================================
+// MODIFICATION MANUELLE DU CALENDRIER
+// Échange de deux cellules par clic
+// =====================================================
+
+let premiereCelluleSelectionnee = null;
+
+document.addEventListener(
+    "click",
+    function (evenement) {
+
+        const cellule =
+            evenement.target.closest(
+                ".cellule-calendrier-modifiable"
+            );
+
+        if (!cellule) {
+            return;
+        }
+
+        // ---------------------------------------------
+        // Premier clic
+        // ---------------------------------------------
+
+        if (!premiereCelluleSelectionnee) {
+
+            premiereCelluleSelectionnee = cellule;
+
+            cellule.style.outline =
+                "3px solid orange";
+
+            console.log(
+                "🟠 Première cellule sélectionnée :",
+                cellule.textContent
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------
+        // Deuxième clic
+        // ---------------------------------------------
+
+        const deuxiemeCelluleSelectionnee =
+            cellule;
+
+        if (
+            premiereCelluleSelectionnee ===
+            deuxiemeCelluleSelectionnee
+        ) {
+
+            premiereCelluleSelectionnee.style.outline =
+                "";
+
+            premiereCelluleSelectionnee = null;
+
+            return;
+        }
+
+        // ---------------------------------------------
+        // Identifier les cellules dans le planning
+        // ---------------------------------------------
+
+        const planning =
+            window.planningCalendrierAdmin;
+
+        if (!planning) {
+
+            console.error(
+                "❌ Planning administratif introuvable."
+            );
+
+            return;
+        }
+
+        const filiere1 =
+            planning.filieres.find(
+                function (filiere) {
+                    return (
+                        filiere.filiereCode ===
+                        premiereCelluleSelectionnee.dataset.filiere
+                    );
+                }
+            );
+
+        const filiere2 =
+            planning.filieres.find(
+                function (filiere) {
+                    return (
+                        filiere.filiereCode ===
+                        deuxiemeCelluleSelectionnee.dataset.filiere
+                    );
+                }
+            );
+
+        if (!filiere1 || !filiere2) {
+
+            console.error(
+                "❌ Filière introuvable."
+            );
+
+            return;
+        }
+
+        const index1 =
+            Number(
+                premiereCelluleSelectionnee.dataset.index
+            );
+
+        const index2 =
+            Number(
+                deuxiemeCelluleSelectionnee.dataset.index
+            );
+
+        const cellule1 =
+            filiere1.cellules[index1];
+
+        const cellule2 =
+            filiere2.cellules[index2];
+
+        if (!cellule1 || !cellule2) {
+
+            console.error(
+                "❌ Cellule de planning introuvable."
+            );
+
+            return;
+        }
+
+        // ---------------------------------------------
+        // ÉCHANGE DES MATIÈRES
+        // ---------------------------------------------
+
+        const matiereLibelle1 =
+            cellule1.matiereLibelle;
+
+        const estOccupee1 =
+            cellule1.estOccupee;
+
+        cellule1.matiereLibelle =
+            cellule2.matiereLibelle;
+
+        cellule1.estOccupee =
+            cellule2.estOccupee;
+
+        cellule2.matiereLibelle =
+            matiereLibelle1;
+
+        cellule2.estOccupee =
+            estOccupee1;
+
+        // ---------------------------------------------
+        // Réafficher le calendrier
+        // ---------------------------------------------
+
+        afficherPlanning(planning);
+
+        premiereCelluleSelectionnee = null;
+
+        console.log(
+            "🔄 Échange effectué."
+        );
+
+        // ---------------------------------------------
+        // Contrôle automatique
+        // ---------------------------------------------
+
+        const resultat =
+            controleExamens.verifierPlanningGlobal(
+                planning
+            );
+
+        console.log(
+            "✓ Contrôle après modification :",
+            resultat
+        );
+    }
+);
