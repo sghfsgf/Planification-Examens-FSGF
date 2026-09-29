@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="fr">
@@ -63,12 +62,14 @@
         ⚙️ Paramétrage
     </button>
 
+
     <button
-    type="button"
-    data-section="import-donnees"
->
-    📥 Import des données
-</button>
+        type="button"
+        data-section="import-donnees"
+    >
+        📥 Import des données
+    </button>
+
 
     <button
         type="button"
@@ -388,116 +389,114 @@
 
     </section>
 
-```
-<!-- =================================================
-     IMPORT DES DONNÉES
-================================================== -->
 
-<section
-    id="import-donnees"
-    class="section-admin"
->
+    <!-- =================================================
+         IMPORT DES DONNÉES
+    ================================================== -->
 
-    <div class="carte-admin">
+    <section
+        id="import-donnees"
+        class="section-admin"
+    >
 
-        <h2>
-            📥 IMPORT DES DONNÉES
-        </h2>
+        <div class="carte-admin">
 
-        <p>
-            Importation des fichiers Excel
-            utilisés pour la planification des examens.
-        </p>
-
-
-        <!-- -----------------------------------------
-             PARAMÉTRAGE DES EXAMENS
-        ------------------------------------------ -->
-
-        <div class="bloc-information">
-
-            <h3>
-                📊 Paramétrage des examens
-            </h3>
+            <h2>
+                📥 IMPORT DES DONNÉES
+            </h2>
 
             <p>
-                Fichier :
-                <strong>
-                    parametrage_examens.xlsx
-                </strong>
+                Importation des fichiers Excel
+                utilisés pour la planification des examens.
             </p>
 
-            <input
-                type="file"
-                id="fichierParametrage"
-                accept=".xlsx,.xls"
-            >
 
-            <button
-                type="button"
-                id="btnImporterParametrage"
-                class="btn-action"
-            >
-                📥 Importer le paramétrage
-            </button>
+            <!-- -----------------------------------------
+                 PARAMÉTRAGE DES EXAMENS
+            ------------------------------------------ -->
 
-            <div
-                id="statutImportParametrage"
-                class="statut-generation"
-            >
-                Aucun import effectué.
+            <div class="bloc-information">
+
+                <h3>
+                    📊 Paramétrage des examens
+                </h3>
+
+                <p>
+                    Fichier :
+                    <strong>
+                        parametrage_examens.xlsx
+                    </strong>
+                </p>
+
+                <input
+                    type="file"
+                    id="fichierParametrage"
+                    accept=".xlsx,.xls"
+                >
+
+                <button
+                    type="button"
+                    id="btnImporterParametrage"
+                    class="btn-action"
+                >
+                    📥 Importer le paramétrage
+                </button>
+
+                <div
+                    id="statutImportParametrage"
+                    class="statut-generation"
+                >
+                    Aucun import effectué.
+                </div>
+
+            </div>
+
+
+            <!-- -----------------------------------------
+                 SALLES / AMPHIS
+            ------------------------------------------ -->
+
+            <div class="bloc-information">
+
+                <h3>
+                    🏫 Salles / Amphis
+                </h3>
+
+                <p>
+                    Fichier :
+                    <strong>
+                        salles_amphis.xlsx
+                    </strong>
+                </p>
+
+                <input
+                    type="file"
+                    id="fichierSallesAmphis"
+                    accept=".xlsx,.xls"
+                >
+
+                <button
+                    type="button"
+                    id="btnImporterSallesAmphis"
+                    class="btn-action"
+                >
+                    📥 Importer les salles / amphis
+                </button>
+
+                <div
+                    id="statutImportSallesAmphis"
+                    class="statut-generation"
+                >
+                    Aucun import effectué.
+                </div>
+
             </div>
 
         </div>
 
-
-        <!-- -----------------------------------------
-             SALLES / AMPHIS
-        ------------------------------------------ -->
-
-        <div class="bloc-information">
-
-            <h3>
-                🏫 Salles / Amphis
-            </h3>
-
-            <p>
-                Fichier :
-                <strong>
-                    salles_amphis.xlsx
-                </strong>
-            </p>
-
-            <input
-                type="file"
-                id="fichierSallesAmphis"
-                accept=".xlsx,.xls"
-            >
-
-            <button
-                type="button"
-                id="btnImporterSallesAmphis"
-                class="btn-action"
-            >
-                📥 Importer les salles / amphis
-            </button>
-
-            <div
-                id="statutImportSallesAmphis"
-                class="statut-generation"
-            >
-                Aucun import effectué.
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-```
+    </section>
 
 
-    
     <!-- =================================================
          MATIÈRES
     ================================================== -->
@@ -692,117 +691,9 @@
     ================================================== -->
 
     <section
-    id="calendriers-admin"
-    class="section-admin"
->
-
-    <div class="carte-admin">
-
-        <h2>📊 CALENDRIERS</h2>
-
-        <p>
-            Consultation et modification manuelle
-            des calendriers générés.
-        </p>
-
-        <!-- =====================================================
-             FILTRES DU CALENDRIER
-        ====================================================== -->
-
-        <div class="filtres-calendrier-admin">
-
-            <div class="filtre-admin">
-
-                <label for="niveauCalendrierAdmin">
-                    Niveau :
-                </label>
-
-                <select id="niveauCalendrierAdmin">
-                    <option value="L1">L1</option>
-                    <option value="L2">L2</option>
-                    <option value="L3">L3</option>
-                    <option value="MP">MP</option>
-                    <option value="MR">MR</option>
-                </select>
-
-            </div>
-
-
-            <div class="filtre-admin">
-
-                <label for="semestreCalendrierAdmin">
-                    Semestre :
-                </label>
-
-                <select id="semestreCalendrierAdmin">
-                    <option value="S1">S1</option>
-                    <option value="S2">S2</option>
-                </select>
-
-            </div>
-
-
-            <div class="filtre-admin">
-
-                <label for="regimeCalendrierAdmin">
-                    Régime :
-                </label>
-
-                <select id="regimeCalendrierAdmin">
-                    <option value="CC">CC — DS</option>
-                    <option value="MX">MX — Sessions</option>
-                </select>
-
-            </div>
-
-
-            <div class="filtre-admin">
-
-                <label for="sessionCalendrierAdmin">
-                    Session :
-                </label>
-
-                <select id="sessionCalendrierAdmin">
-
-                    <option value="DS_S1">
-                        DS S1
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="filtre-admin action-calendrier-admin">
-
-                <button
-                    type="button"
-                    id="btnAfficherCalendrierAdmin"
-                >
-                    📅 Afficher le calendrier
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <!-- =====================================================
-             ZONE DU CALENDRIER
-        ====================================================== -->
-
-        <div class="bloc-calendrier">
-
-            <p>
-                Sélectionnez les paramètres puis cliquez sur
-                « Afficher le calendrier ».
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
+        id="calendriers-admin"
+        class="section-admin"
+    >
 
         <div class="carte-admin">
 
@@ -816,16 +707,127 @@
             </p>
 
 
+            <!-- =====================================================
+                 FILTRES DU CALENDRIER
+            ====================================================== -->
+
+            <div class="filtres-calendrier-admin">
+
+                <div class="filtre-admin">
+
+                    <label for="niveauCalendrierAdmin">
+                        Niveau :
+                    </label>
+
+                    <select id="niveauCalendrierAdmin">
+
+                        <option value="L1">
+                            L1
+                        </option>
+
+                        <option value="L2">
+                            L2
+                        </option>
+
+                        <option value="L3">
+                            L3
+                        </option>
+
+                        <option value="MP">
+                            MP
+                        </option>
+
+                        <option value="MR">
+                            MR
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="filtre-admin">
+
+                    <label for="semestreCalendrierAdmin">
+                        Semestre :
+                    </label>
+
+                    <select id="semestreCalendrierAdmin">
+
+                        <option value="S1">
+                            S1
+                        </option>
+
+                        <option value="S2">
+                            S2
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="filtre-admin">
+
+                    <label for="regimeCalendrierAdmin">
+                        Régime :
+                    </label>
+
+                    <select id="regimeCalendrierAdmin">
+
+                        <option value="CC">
+                            CC — DS
+                        </option>
+
+                        <option value="MX">
+                            MX — Sessions
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="filtre-admin">
+
+                    <label for="sessionCalendrierAdmin">
+                        Session :
+                    </label>
+
+                    <select id="sessionCalendrierAdmin">
+
+                        <option value="DS_S1">
+                            DS S1
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="filtre-admin action-calendrier-admin">
+
+                    <button
+                        type="button"
+                        id="btnAfficherCalendrierAdmin"
+                    >
+                        📅 Afficher le calendrier
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================================
+                 ZONE DU CALENDRIER
+            ====================================================== -->
+
             <div class="bloc-calendrier">
 
                 <p>
-                    Le calendrier généré apparaîtra ici.
-                </p>
-
-                <p>
-                    ✋ Les matières pourront ensuite
-                    être déplacées ou échangées
-                    manuellement.
+                    Sélectionnez les paramètres puis cliquez sur
+                    « Afficher le calendrier ».
                 </p>
 
             </div>
@@ -1024,20 +1026,25 @@
 
 <script src="../js/data.js"></script>
 
-    <script
+
+<script
     type="module"
     src="import-donnees.js"
 ></script>
 
-    <script
+
+<script
     type="module"
     src="generation.js"
 ></script>
 
-    <script src="controle.js"></script>
 
-    <script src="calendriers.js"></script>
-    
+<script src="controle.js"></script>
+
+
+<script src="calendriers.js"></script>
+
+
 <!-- =====================================================
      TEST FIREBASE / FIRESTORE
 ====================================================== -->
