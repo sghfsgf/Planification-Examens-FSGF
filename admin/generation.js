@@ -2238,6 +2238,79 @@ async function preparerGeneration() {
 
 }
 
+// =====================================================
+// CHARGER UN CALENDRIER DEPUIS FIRESTORE
+// =====================================================
+
+async function chargerCalendrier(
+    niveauCode,
+    semestreCode,
+    regimeCode,
+    sessionCode
+) {
+
+    const session =
+        obtenirSession(sessionCode);
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            sessionCode
+        );
+
+        return null;
+    }
+
+    const anneeUniversitaire =
+        session.anneeUniversitaire;
+
+    const idCalendrier =
+        "calendrier_" +
+        anneeUniversitaire + "_" +
+        niveauCode + "_" +
+        semestreCode + "_" +
+        regimeCode + "_" +
+        sessionCode;
+
+    console.log(
+        "🔎 Recherche du calendrier dans Firestore :",
+        idCalendrier
+    );
+
+    const referenceCalendrier =
+        doc(
+            db,
+            "calendriers",
+            idCalendrier
+        );
+
+    const documentCalendrier =
+        await getDoc(
+            referenceCalendrier
+        );
+
+    if (!documentCalendrier.exists()) {
+
+        console.log(
+            "ℹ️ Aucun calendrier enregistré pour :",
+            idCalendrier
+        );
+
+        return null;
+    }
+
+    const donnees =
+        documentCalendrier.data();
+
+    console.log(
+        "✓ Calendrier trouvé dans Firestore :",
+        idCalendrier
+    );
+
+    return donnees.planning;
+}
+
 
 // =====================================================
 // ENREGISTRER UN CALENDRIER DANS FIRESTORE
