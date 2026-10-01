@@ -262,16 +262,19 @@ cellules.forEach(function (cellule) {
 
     ligneDates.appendChild(thAmphis);
 
-    dates.forEach(function (date) {
+    dates.forEach(function (elementDate) {
 
-        const cellulesDate = cellules.filter(function (cellule) {
-            return cellule.date === date;
-        });
+    const date =
+        elementDate.date;
 
-        const thDate = document.createElement("th");
+    const cellulesDate = cellules.filter(function (cellule) {
+        return cellule.date === date;
+    });
 
-        thDate.textContent =
-           formaterDateLongue(cellulesDate[0].date);
+    const thDate = document.createElement("th");
+
+    thDate.textContent =
+        formaterDateLongue(date);
         
         thDate.colSpan =
             cellulesDate.length;
