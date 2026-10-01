@@ -112,29 +112,58 @@ async function chargerDonneesGeneration() {
     console.log("==========================================");
 
     try {
+    // -------------------------------------------------
+// Charger les données depuis Firestore
+// -------------------------------------------------
 
-        // -------------------------------------------------
-        // Attendre que data.js ait terminé le chargement Excel
-        // -------------------------------------------------
+console.log(
+    "📥 Chargement des données de génération depuis Firestore..."
+);
 
-        await donneesChargees;
 
-        // -------------------------------------------------
-        // Utiliser les données déjà chargées par data.js
-        // -------------------------------------------------
+// -------------------------------------------------
+// Matières
+// -------------------------------------------------
 
-        donneesGeneration.matieres =
-            donneesExamens.matieres || [];
+donneesGeneration.matieres =
+    await chargerCollection("matieres");
 
-        donneesGeneration.sessions =
-            donneesExamens.sessions || [];
 
-        donneesGeneration.creneaux =
-            donneesExamens.creneaux || [];
+// -------------------------------------------------
+// Sessions
+// -------------------------------------------------
 
-        donneesGeneration.sallesAmphis =
-            donneesRessources.sallesAmphis || [];
+donneesGeneration.sessions =
+    await chargerCollection("sessions");
 
+
+// -------------------------------------------------
+// Créneaux
+// -------------------------------------------------
+
+donneesGeneration.creneaux =
+    await chargerCollection("creneaux");
+
+
+// -------------------------------------------------
+// Salles / amphis
+// -------------------------------------------------
+
+donneesGeneration.sallesAmphis =
+    await chargerCollection("salles_amphis");
+
+
+// -------------------------------------------------
+// Diagnostic
+// -------------------------------------------------
+
+console.log(
+    "✓ Données Firestore chargées pour la génération."
+);
+
+
+
+        
         // -------------------------------------------------
         // Diagnostic
         // -------------------------------------------------
