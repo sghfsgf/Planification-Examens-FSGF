@@ -116,35 +116,140 @@ async function importerParametrage() {
 
     try {
 
-        // -------------------------------------------------
-        // Vérification du chargement Excel
-        // -------------------------------------------------
+   // -------------------------------------------------
+// Récupération du fichier choisi par l'Admin
+// -------------------------------------------------
 
-        if (
-            !donneesSontDisponibles()
-        ) {
+const fichier =
+    document.getElementById(
+        "fichierParametrage"
+    ).files[0];
 
-            throw new Error(
-                "Les données Excel ne sont pas encore disponibles."
-            );
 
+if (!fichier) {
+
+    throw new Error(
+        "Veuillez sélectionner le fichier parametrage_examens.xlsx."
+    );
+
+}
+
+
+// -------------------------------------------------
+// Vérification du nom du fichier
+// -------------------------------------------------
+
+console.log(
+    "Fichier sélectionné :",
+    fichier.name
+);
+
+
+// -------------------------------------------------
+// Lecture du fichier Excel sélectionné
+// -------------------------------------------------
+
+const tableau =
+    await fichier.arrayBuffer();
+
+
+const classeur =
+    XLSX.read(
+
+        tableau,
+
+        {
+            type: "array"
         }
 
-
-        // -------------------------------------------------
-        // Récupération des données Excel
-        // -------------------------------------------------
-
-        const matieres =
-            obtenirMatieres();
+    );
 
 
-        const sessions =
-            obtenirSessions();
+// -------------------------------------------------
+// Lecture des trois feuilles
+// -------------------------------------------------
+
+const matieres =
+    lireFeuille(
+
+        classeur,
+
+        "matieres"
+
+    );
 
 
-        const creneaux =
-            obtenirCreneaux();
+const sessionsBrutes =
+    lireFeuille(
+
+        classeur,
+
+        "sessions"
+
+    );
+
+
+const creneauxBruts =
+    lireFeuille(
+
+        classeur,
+
+        "creneaux"
+
+    );
+
+
+// -------------------------------------------------
+// Préparation des sessions
+// -------------------------------------------------
+
+const sessions =
+    sessionsBrutes.map(function (session) {
+
+        return {
+
+            ...session,
+
+            dateDebutAffichage:
+                formaterDate(
+                    session.dateDebut
+                ),
+
+            dateFinAffichage:
+                formaterDate(
+                    session.dateFin
+                )
+
+        };
+
+    });
+
+
+// -------------------------------------------------
+// Préparation des créneaux
+// -------------------------------------------------
+
+const creneaux =
+    creneauxBruts.map(function (creneau) {
+
+        return {
+
+            ...creneau,
+
+            heureDebutAffichage:
+                convertirHeureExcel(
+                    creneau.heureDebut
+                ),
+
+            heureFinAffichage:
+                convertirHeureExcel(
+                    creneau.heureFin
+                )
+
+        };
+
+    });     
+
 
 
         console.log(
