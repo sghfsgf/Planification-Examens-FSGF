@@ -325,7 +325,7 @@ function initialiserFiltresCalendrierAdmin() {
     document.getElementById("btnEnregistrerCalendrierAdmin");
 
     if (
-        !!selectNiveau ||
+        !selectNiveau ||
         !selectSemestre ||
         !selectRegime ||
         !selectSession ||
