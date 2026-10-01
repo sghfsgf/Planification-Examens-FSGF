@@ -325,11 +325,12 @@ function initialiserFiltresCalendrierAdmin() {
     document.getElementById("btnEnregistrerCalendrierAdmin");
 
     if (
-        !selectNiveau ||
+        !!selectNiveau ||
         !selectSemestre ||
         !selectRegime ||
         !selectSession ||
-        !bouton
+        !bouton ||
+        !boutonEnregistrer
     ) {
         console.error(
             "❌ Éléments des filtres du calendrier introuvables."
