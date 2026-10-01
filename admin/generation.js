@@ -2655,6 +2655,15 @@ if (documentExistant.exists()) {
 }
 
 // =====================================================
+// ACCÈS AUX DONNÉES CHARGÉES POUR LES AUTRES MODULES
+// =====================================================
+
+function obtenirDonneesGeneration() {
+
+    return donneesGeneration;
+
+}
+// =====================================================
 // EXPOSER LES FONCTIONS
 // =====================================================
 
@@ -2662,7 +2671,8 @@ window.generationExamens = {
 
     chargerDonnees:
         chargerDonneesGeneration,
-
+    obtenirDonnees:
+    obtenirDonneesGeneration,
     verifierDonnees:
         verifierDonneesGeneration,
 
