@@ -441,29 +441,41 @@ function initialiserFiltresCalendrierAdmin() {
         selectSession.innerHTML = "";
 
 
-        if (
-    !donneesExamens ||
-    !Array.isArray(donneesExamens.sessions)
-        ) {
+      // =================================================
+// RÉCUPÉRER LES SESSIONS DEPUIS FIRESTORE
+// =================================================
+
+const donneesGeneration =
+    generationExamens.obtenirDonnees();
+
+if (
+    !donneesGeneration ||
+    !Array.isArray(donneesGeneration.sessions)
+) {
+
     console.error(
-        "❌ Données des sessions indisponibles."
-          );
+        "❌ Sessions Firestore indisponibles."
+    );
+
     return;
-          }
+}
 
+const sessionsDisponibles =
+    donneesGeneration.sessions.filter(
+        function (session) {
 
-       const sessionsDisponibles =
-         donneesExamens.sessions.filter(
-                function (session) {
-
-                    return (
-                        session.semestreCode === semestre &&
-                        session.regimeCode === regime
-                    );
-
-                }
+            return (
+                session.semestreCode === semestre &&
+                session.regimeCode === regime
             );
 
+        }
+    );
+
+console.log(
+    "✓ Sessions Firestore disponibles :",
+    sessionsDisponibles.length
+);
 
         sessionsDisponibles.forEach(
             function (session) {
