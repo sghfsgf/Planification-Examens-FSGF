@@ -321,7 +321,8 @@ function initialiserFiltresCalendrierAdmin() {
 
     const bouton =
         document.getElementById("btnAfficherCalendrierAdmin");
-
+    const boutonEnregistrer =
+    document.getElementById("btnEnregistrerCalendrierAdmin");
 
     if (
         !selectNiveau ||
