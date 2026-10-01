@@ -570,6 +570,7 @@ function initialiserFiltresCalendrierAdmin() {
 
 window.planningCalendrierAdmin = planning;            
 afficherPlanning(planning);
+boutonEnregistrer.disabled = false;        
 
 console.log(
     "✓ Calendrier affiché."
