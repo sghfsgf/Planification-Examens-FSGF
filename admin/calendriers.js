@@ -847,6 +847,12 @@ document.addEventListener(
 
         const planning =
             window.planningCalendrierAdmin;
+        // ---------------------------------------------
+// Mémoriser le planning avant modification
+// ---------------------------------------------
+
+const planningAvantModification =
+    structuredClone(planning);
 
         if (!planning) {
 
