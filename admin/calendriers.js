@@ -185,16 +185,51 @@ function construireTableauCalendrier(planning) {
 
     const dates = [];
 
-    cellules.forEach(function (cellule) {
+cellules.forEach(function (cellule) {
 
-        const dateExiste = dates.some(function (date) {
-            return date === cellule.date;
+    let dateCellule = cellule.date;
+
+    // Timestamp Firestore → Date JavaScript
+    if (
+        dateCellule &&
+        typeof dateCellule.toDate === "function"
+    ) {
+        dateCellule = dateCellule.toDate();
+    }
+
+    // Autre format → Date JavaScript
+    else if (
+        !(dateCellule instanceof Date)
+    ) {
+        dateCellule = new Date(dateCellule);
+    }
+
+    const cleDate =
+        dateCellule.getFullYear() +
+        "-" +
+        String(
+            dateCellule.getMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+            dateCellule.getDate()
+        ).padStart(2, "0");
+
+    const dateExiste =
+        dates.some(function (date) {
+            return date.cle === cleDate;
         });
 
-        if (!dateExiste) {
-            dates.push(cellule.date);
-        }
-    });
+    if (!dateExiste) {
+
+        dates.push({
+            cle: cleDate,
+            date: dateCellule
+        });
+
+    }
+
+});
 
     // -------------------------------------------------
     // Créer le tableau
