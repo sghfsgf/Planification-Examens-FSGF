@@ -570,26 +570,70 @@ async function importerSallesAmphis() {
     try {
 
         // -------------------------------------------------
-        // Vérification du chargement Excel
+        // Récupération du fichier choisi par l'Admin
         // -------------------------------------------------
 
-        if (
-            !donneesSontDisponibles()
-        ) {
+const fichier =
+    document.getElementById(
+        "fichierSallesAmphis"
+    ).files[0];
 
-            throw new Error(
-                "Les données Excel ne sont pas encore disponibles."
-            );
 
+// -------------------------------------------------
+// Vérification du fichier
+// -------------------------------------------------
+
+if (!fichier) {
+
+    throw new Error(
+        "Veuillez sélectionner le fichier salles_amphis.xlsx."
+    );
+
+}
+
+
+// -------------------------------------------------
+// Affichage du fichier sélectionné
+// -------------------------------------------------
+
+console.log(
+    "Fichier salles / amphis sélectionné :",
+    fichier.name
+);
+
+
+// -------------------------------------------------
+// Lecture du fichier Excel sélectionné
+// -------------------------------------------------
+
+const tableau =
+    await fichier.arrayBuffer();
+
+
+const classeur =
+    XLSX.read(
+
+        tableau,
+
+        {
+            type: "array"
         }
 
+    );
 
-        // -------------------------------------------------
-        // Récupération des salles / amphis
-        // -------------------------------------------------
 
-        const sallesAmphis =
-            obtenirSallesAmphis();
+// -------------------------------------------------
+// Lecture de la feuille salles_amphis
+// -------------------------------------------------
+
+const sallesAmphis =
+    lireFeuille(
+
+        classeur,
+
+        "salles_amphis"
+
+    );
 
 
         console.log(
