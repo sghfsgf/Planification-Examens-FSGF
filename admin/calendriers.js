@@ -67,6 +67,48 @@ function afficherPlanning(planning) {
 
 function formaterDateLongue(date) {
 
+    // -------------------------------------------------
+    // Normaliser la date
+    // -------------------------------------------------
+
+    if (
+        date &&
+        typeof date.toDate === "function"
+    ) {
+
+        date = date.toDate();
+
+    } else if (
+        !(date instanceof Date)
+    ) {
+
+        date = new Date(date);
+
+    }
+
+
+    // -------------------------------------------------
+    // Vérification
+    // -------------------------------------------------
+
+    if (
+        !(date instanceof Date) ||
+        isNaN(date.getTime())
+    ) {
+
+        console.error(
+            "❌ Date invalide :",
+            date
+        );
+
+        return "Date invalide";
+    }
+
+
+    // -------------------------------------------------
+    // Jours
+    // -------------------------------------------------
+
     const jours = [
         "Dimanche",
         "Lundi",
@@ -76,6 +118,11 @@ function formaterDateLongue(date) {
         "Vendredi",
         "Samedi"
     ];
+
+
+    // -------------------------------------------------
+    // Mois
+    // -------------------------------------------------
 
     const mois = [
         "janvier",
@@ -91,6 +138,7 @@ function formaterDateLongue(date) {
         "novembre",
         "décembre"
     ];
+
 
     return (
         jours[date.getDay()] +
