@@ -578,6 +578,100 @@ console.log(
         }
     );
 
+     // =================================================
+    // ENREGISTRER LE CALENDRIER
+    // =================================================
+
+    boutonEnregistrer.addEventListener(
+        "click",
+        async function () {
+
+            console.log("------------------------------------------");
+            console.log("💾 ENREGISTREMENT DU CALENDRIER");
+            console.log("------------------------------------------");
+
+            const planning =
+                window.planningCalendrierAdmin;
+
+            // -----------------------------------------
+            // Vérifier qu'un planning existe
+            // -----------------------------------------
+
+            if (!planning) {
+
+                console.error(
+                    "❌ Aucun planning à enregistrer."
+                );
+
+                return;
+            }
+
+            // -----------------------------------------
+            // Contrôle global avant enregistrement
+            // -----------------------------------------
+
+            const resultatControle =
+                controleExamens.verifierPlanningGlobal(
+                    planning
+                );
+
+            console.log(
+                "Résultat du contrôle avant enregistrement :",
+                resultatControle
+            );
+
+            // -----------------------------------------
+            // Refuser si le planning n'est pas valide
+            // -----------------------------------------
+
+            if (
+                !resultatControle ||
+                !resultatControle.valide
+            ) {
+
+                console.warn(
+                    "⚠️ Planning non valide : enregistrement refusé."
+                );
+
+                return;
+            }
+
+            // -----------------------------------------
+            // Enregistrement Firestore
+            // -----------------------------------------
+
+            try {
+
+                const resultat =
+                    await generationExamens.enregistrerCalendrier(
+                        planning
+                    );
+
+                if (resultat) {
+
+                    console.log(
+                        "✓ Calendrier enregistré dans Firestore."
+                    );
+
+                } else {
+
+                    console.error(
+                        "❌ Échec de l'enregistrement du calendrier."
+                    );
+
+                }
+
+            } catch (erreur) {
+
+                console.error(
+                    "❌ Erreur lors de l'enregistrement :",
+                    erreur
+                );
+
+            }
+
+        }
+    );   
     // =================================================
     // INITIALISATION
     // =================================================
