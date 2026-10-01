@@ -389,12 +389,16 @@ function verifierMatieresCommunes(planning) {
 
         placements.forEach(function (placement) {
 
-            if (
-                placement.date !== premierPlacement.date ||
-                placement.creneauOrdre !==
-                    premierPlacement.creneauOrdre
-            ) {
-
+          if (
+    convertirDateControle(
+        placement.date
+    ).getTime() !==
+    convertirDateControle(
+        premierPlacement.date
+    ).getTime() ||
+    Number(placement.creneauOrdre) !==
+    Number(premierPlacement.creneauOrdre)
+) {
                 erreurs.push({
 
                     matiereLibelle:
