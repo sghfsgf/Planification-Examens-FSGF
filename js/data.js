@@ -554,7 +554,7 @@ async function chargerToutesLesDonnees() {
         // Salles / amphis
         // ---------------------------------------------
 
-        await chargerSallesAmphis();
+       // -------------- await chargerSallesAmphis ------------
 
 
         // ---------------------------------------------
