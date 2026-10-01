@@ -732,23 +732,168 @@ document.addEventListener(
         // ÉCHANGE DES MATIÈRES
         // ---------------------------------------------
 
-        const matiereLibelle1 =
-            cellule1.matiereLibelle;
+        // ---------------------------------------------
+// DÉPLACEMENT / ÉCHANGE DES MATIÈRES
+// ---------------------------------------------
 
-        const estOccupee1 =
-            cellule1.estOccupee;
+const matiereSource =
+    cellule1.matiereLibelle;
 
-        cellule1.matiereLibelle =
-            cellule2.matiereLibelle;
+const matiereCible =
+    cellule2.matiereLibelle;
 
-        cellule1.estOccupee =
-            cellule2.estOccupee;
+// ---------------------------------------------
+// Vérifier s'il s'agit d'une matière commune
+// ---------------------------------------------
 
-        cellule2.matiereLibelle =
-            matiereLibelle1;
+const filieresAvecMatiereSource =
+    planning.filieres.filter(
+        function (filiere) {
 
-        cellule2.estOccupee =
-            estOccupee1;
+            return filiere.cellules.some(
+                function (cellule) {
+
+                    return (
+                        cellule.estOccupee &&
+                        cellule.matiereLibelle ===
+                        matiereSource
+                    );
+
+                }
+            );
+
+        }
+    );
+
+const estMatiereCommune =
+    filieresAvecMatiereSource.length >= 2;
+
+// ---------------------------------------------
+// CAS 1 : MATIÈRE COMMUNE
+// ---------------------------------------------
+
+if (estMatiereCommune) {
+
+    console.log(
+        "🔗 Matière commune détectée :",
+        matiereSource
+    );
+
+    console.log(
+        "Filières concernées :",
+        filieresAvecMatiereSource.map(
+            function (filiere) {
+                return filiere.filiereCode;
+            }
+        )
+    );
+
+    // -----------------------------------------
+    // Le nouveau créneau doit être libre
+    // dans toutes les filières concernées
+    // -----------------------------------------
+
+    const cibleLibrePourToutes =
+        filieresAvecMatiereSource.every(
+            function (filiere) {
+
+                const celluleCible =
+                    filiere.cellules[index2];
+
+                return (
+                    !celluleCible.estOccupee ||
+                    celluleCible.matiereLibelle ===
+                    matiereSource
+                );
+
+            }
+        );
+
+    if (!cibleLibrePourToutes) {
+
+        console.warn(
+            "⚠️ Déplacement refusé : le créneau cible est occupé dans une filière concernée."
+        );
+
+        premiereCelluleSelectionnee.style.outline =
+            "";
+
+        premiereCelluleSelectionnee = null;
+
+        return;
+    }
+
+    // -----------------------------------------
+    // Déplacer la matière commune
+    // dans toutes les filières
+    // -----------------------------------------
+
+    filieresAvecMatiereSource.forEach(
+        function (filiere) {
+
+            const celluleSource =
+                filiere.cellules.find(
+                    function (cellule) {
+
+                        return (
+                            cellule.estOccupee &&
+                            cellule.matiereLibelle ===
+                            matiereSource
+                        );
+
+                    }
+                );
+
+            const celluleCible =
+                filiere.cellules[index2];
+
+            if (celluleSource) {
+
+                celluleSource.matiereLibelle = "";
+                celluleSource.estOccupee = false;
+
+                celluleCible.matiereLibelle =
+                    matiereSource;
+
+                celluleCible.estOccupee = true;
+
+            }
+
+        }
+    );
+
+    console.log(
+        "🔗 Matière commune déplacée simultanément."
+    );
+
+} else {
+
+    // -----------------------------------------
+    // CAS 2 : MATIÈRE SPÉCIFIQUE
+    // -----------------------------------------
+
+    const matiereLibelle1 =
+        cellule1.matiereLibelle;
+
+    const estOccupee1 =
+        cellule1.estOccupee;
+
+    cellule1.matiereLibelle =
+        cellule2.matiereLibelle;
+
+    cellule1.estOccupee =
+        cellule2.estOccupee;
+
+    cellule2.matiereLibelle =
+        matiereLibelle1;
+
+    cellule2.estOccupee =
+        estOccupee1;
+
+    console.log(
+        "🔄 Matière spécifique échangée."
+    );
+}
 
         // ---------------------------------------------
         // Réafficher le calendrier
