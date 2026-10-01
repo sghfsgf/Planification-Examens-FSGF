@@ -1101,13 +1101,70 @@ if (estMatiereCommune) {
         // ---------------------------------------------
 
         const resultat =
-            controleExamens.verifierPlanningGlobal(
-                planning
-            );
+    controleExamens.verifierPlanningGlobal(
+        planning
+    );
 
-        console.log(
-            "✓ Contrôle après modification :",
-            resultat
+console.log(
+    "✓ Contrôle après modification :",
+    resultat
+);
+
+
+// ---------------------------------------------
+// Vérifier si le déplacement est autorisé
+// ---------------------------------------------
+
+if (
+    !resultat ||
+    !resultat.valide
+) {
+
+    // -----------------------------------------
+    // Restaurer le planning avant modification
+    // -----------------------------------------
+
+    window.planningCalendrierAdmin =
+        structuredClone(
+            planningAvantModification
         );
+
+    // -----------------------------------------
+    // Réafficher le planning initial
+    // -----------------------------------------
+
+    afficherPlanning(
+        window.planningCalendrierAdmin
+    );
+
+    // -----------------------------------------
+    // Réinitialiser la sélection
+    // -----------------------------------------
+
+    premiereCelluleSelectionnee = null;
+
+    // -----------------------------------------
+    // Informer l'utilisateur
+    // -----------------------------------------
+
+    alert(
+        "Vous ne pouvez pas faire ce déplacement."
+    );
+
+    console.warn(
+        "⚠️ Déplacement annulé : le planning devient non valide."
+    );
+
+    return;
+}
+
+
+// ---------------------------------------------
+// Déplacement accepté
+// ---------------------------------------------
+
+console.log(
+    "✅ Déplacement accepté : PLANNING VALIDE."
+);
     }
 );
