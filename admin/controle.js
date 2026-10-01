@@ -253,6 +253,29 @@ function verifierDoublonsMatieres(planning) {
 // 3. Vérifier le placement des matières communes
 // =====================================================
 
+// =====================================================
+// CONVERSION DES DATES POUR LE CONTRÔLE
+// =====================================================
+
+function convertirDateControle(date) {
+
+    // Timestamp Firestore
+    if (
+        date &&
+        typeof date.toDate === "function"
+    ) {
+        return date.toDate();
+    }
+
+    // Date JavaScript
+    if (date instanceof Date) {
+        return date;
+    }
+
+    // Autre format
+    return new Date(date);
+}
+
 function verifierMatieresCommunes(planning) {
 
     console.log("------------------------------------------");
