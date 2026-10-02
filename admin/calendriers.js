@@ -1060,6 +1060,12 @@ initialiserCalendriersApresFirestore();
 // Échange de deux cellules par clic
 // =====================================================
 
+
+// =====================================================
+// MODIFICATION MANUELLE DU CALENDRIER
+// Échange / déplacement de deux cellules par clic
+// =====================================================
+
 let premiereCelluleSelectionnee = null;
 
 document.addEventListener(
@@ -1071,17 +1077,22 @@ document.addEventListener(
                 ".cellule-calendrier-modifiable"
             );
 
+        // -------------------------------------------------
+        // Clic en dehors d'une cellule du calendrier
+        // -------------------------------------------------
+
         if (!cellule) {
             return;
         }
 
-        // ---------------------------------------------
-        // Premier clic
-        // ---------------------------------------------
+        // =================================================
+        // PREMIER CLIC
+        // =================================================
 
         if (!premiereCelluleSelectionnee) {
 
-            premiereCelluleSelectionnee = cellule;
+            premiereCelluleSelectionnee =
+                cellule;
 
             cellule.style.outline =
                 "3px solid orange";
@@ -1094,12 +1105,16 @@ document.addEventListener(
             return;
         }
 
-        // ---------------------------------------------
-        // Deuxième clic
-        // ---------------------------------------------
+        // =================================================
+        // DEUXIÈME CLIC
+        // =================================================
 
         const deuxiemeCelluleSelectionnee =
             cellule;
+
+        // -------------------------------------------------
+        // Même cellule
+        // -------------------------------------------------
 
         if (
             premiereCelluleSelectionnee ===
@@ -1109,23 +1124,22 @@ document.addEventListener(
             premiereCelluleSelectionnee.style.outline =
                 "";
 
-            premiereCelluleSelectionnee = null;
+            premiereCelluleSelectionnee =
+                null;
+
+            console.log(
+                "↩️ Sélection annulée."
+            );
 
             return;
         }
 
-        // ---------------------------------------------
-        // Identifier les cellules dans le planning
-        // ---------------------------------------------
+        // =================================================
+        // RÉCUPÉRER LE PLANNING
+        // =================================================
 
         const planning =
             window.planningCalendrierAdmin;
-        // ---------------------------------------------
-// Mémoriser le planning avant modification
-// ---------------------------------------------
-
-const planningAvantModification =
-    structuredClone(planning);
 
         if (!planning) {
 
@@ -1133,26 +1147,44 @@ const planningAvantModification =
                 "❌ Planning administratif introuvable."
             );
 
+            premiereCelluleSelectionnee =
+                null;
+
             return;
         }
+
+        // =================================================
+        // SAUVEGARDER L'ÉTAT AVANT MODIFICATION
+        // =================================================
+
+        const planningAvantModification =
+            structuredClone(planning);
+
+        // =================================================
+        // IDENTIFIER LES DEUX FILIÈRES
+        // =================================================
 
         const filiere1 =
             planning.filieres.find(
                 function (filiere) {
+
                     return (
                         filiere.filiereCode ===
                         premiereCelluleSelectionnee.dataset.filiere
                     );
+
                 }
             );
 
         const filiere2 =
             planning.filieres.find(
                 function (filiere) {
+
                     return (
                         filiere.filiereCode ===
                         deuxiemeCelluleSelectionnee.dataset.filiere
                     );
+
                 }
             );
 
@@ -1162,8 +1194,18 @@ const planningAvantModification =
                 "❌ Filière introuvable."
             );
 
+            premiereCelluleSelectionnee.style.outline =
+                "";
+
+            premiereCelluleSelectionnee =
+                null;
+
             return;
         }
+
+        // =================================================
+        // IDENTIFIER LES INDEX
+        // =================================================
 
         const index1 =
             Number(
@@ -1187,257 +1229,305 @@ const planningAvantModification =
                 "❌ Cellule de planning introuvable."
             );
 
+            premiereCelluleSelectionnee.style.outline =
+                "";
+
+            premiereCelluleSelectionnee =
+                null;
+
             return;
         }
 
-        // ---------------------------------------------
-        // ÉCHANGE DES MATIÈRES
-        // ---------------------------------------------
+        console.log(
+            "Cellule 1 :",
+            filiere1.filiereCode,
+            index1,
+            cellule1
+        );
 
-        // ---------------------------------------------
-// DÉPLACEMENT / ÉCHANGE DES MATIÈRES
-// ---------------------------------------------
+        console.log(
+            "Cellule 2 :",
+            filiere2.filiereCode,
+            index2,
+            cellule2
+        );
 
-const matiereSource =
-    cellule1.matiereLibelle;
+        // =================================================
+        // IDENTIFIER LA MATIÈRE SOURCE
+        // =================================================
 
-const matiereCible =
-    cellule2.matiereLibelle;
+        const matiereSource =
+            cellule1.matiereLibelle || "";
 
-// ---------------------------------------------
-// Vérifier s'il s'agit d'une matière commune
-// ---------------------------------------------
+        const matiereCible =
+            cellule2.matiereLibelle || "";
 
-const filieresAvecMatiereSource =
-    planning.filieres.filter(
-        function (filiere) {
+        // =================================================
+        // RECHERCHER LES FILIÈRES DE LA MATIÈRE SOURCE
+        // =================================================
 
-            return filiere.cellules.some(
-                function (cellule) {
+        const filieresAvecMatiereSource =
+            planning.filieres.filter(
+                function (filiere) {
 
-                    return (
-                        cellule.estOccupee &&
-                        cellule.matiereLibelle ===
-                        matiereSource
+                    return filiere.cellules.some(
+                        function (cellule) {
+
+                            return (
+                                cellule.estOccupee &&
+                                cellule.matiereLibelle ===
+                                matiereSource
+                            );
+
+                        }
                     );
 
                 }
             );
 
-        }
-    );
+        const estMatiereCommune =
+            matiereSource !== "" &&
+            filieresAvecMatiereSource.length >= 2;
 
-const estMatiereCommune =
-    filieresAvecMatiereSource.length >= 2;
+        // =================================================
+        // CAS 1 : MATIÈRE COMMUNE
+        // =================================================
 
-// ---------------------------------------------
-// CAS 1 : MATIÈRE COMMUNE
-// ---------------------------------------------
+        if (estMatiereCommune) {
 
-if (estMatiereCommune) {
+            console.log(
+                "🔗 Matière commune détectée :",
+                matiereSource
+            );
 
-    console.log(
-        "🔗 Matière commune détectée :",
-        matiereSource
-    );
+            console.log(
+                "Filières concernées :",
+                filieresAvecMatiereSource.map(
+                    function (filiere) {
+                        return filiere.filiereCode;
+                    }
+                )
+            );
 
-    console.log(
-        "Filières concernées :",
-        filieresAvecMatiereSource.map(
-            function (filiere) {
-                return filiere.filiereCode;
-            }
-        )
-    );
+            // -------------------------------------------------
+            // Vérifier que le créneau cible est libre
+            // dans toutes les filières concernées
+            // -------------------------------------------------
 
-    // -----------------------------------------
-    // Le nouveau créneau doit être libre
-    // dans toutes les filières concernées
-    // -----------------------------------------
+            const cibleLibrePourToutes =
+                filieresAvecMatiereSource.every(
+                    function (filiere) {
 
-    const cibleLibrePourToutes =
-        filieresAvecMatiereSource.every(
-            function (filiere) {
-
-                const celluleCible =
-                    filiere.cellules[index2];
-
-                return (
-                    !celluleCible.estOccupee ||
-                    celluleCible.matiereLibelle ===
-                    matiereSource
-                );
-
-            }
-        );
-
-    if (!cibleLibrePourToutes) {
-
-        console.warn(
-            "⚠️ Déplacement refusé : le créneau cible est occupé dans une filière concernée."
-        );
-
-        premiereCelluleSelectionnee.style.outline =
-            "";
-
-        premiereCelluleSelectionnee = null;
-
-        return;
-    }
-
-    // -----------------------------------------
-    // Déplacer la matière commune
-    // dans toutes les filières
-    // -----------------------------------------
-
-    filieresAvecMatiereSource.forEach(
-        function (filiere) {
-
-            const celluleSource =
-                filiere.cellules.find(
-                    function (cellule) {
+                        const celluleCible =
+                            filiere.cellules[index2];
 
                         return (
-                            cellule.estOccupee &&
-                            cellule.matiereLibelle ===
-                            matiereSource
+                            celluleCible &&
+                            (
+                                !celluleCible.estOccupee ||
+                                celluleCible.matiereLibelle ===
+                                matiereSource
+                            )
                         );
 
                     }
                 );
 
-            const celluleCible =
-                filiere.cellules[index2];
+            if (!cibleLibrePourToutes) {
 
-            if (celluleSource) {
+                console.warn(
+                    "⚠️ Déplacement refusé : le créneau cible est occupé dans une filière concernée."
+                );
 
-                celluleSource.matiereLibelle = "";
-                celluleSource.estOccupee = false;
+                premiereCelluleSelectionnee.style.outline =
+                    "";
 
-                celluleCible.matiereLibelle =
-                    matiereSource;
+                premiereCelluleSelectionnee =
+                    null;
 
-                celluleCible.estOccupee = true;
+                alert(
+                    "Déplacement impossible : le créneau cible est déjà occupé dans une filière concernée."
+                );
 
+                return;
             }
 
+            // -------------------------------------------------
+            // Déplacer la matière commune
+            // dans toutes les filières concernées
+            // -------------------------------------------------
+
+            filieresAvecMatiereSource.forEach(
+                function (filiere) {
+
+                    const celluleSource =
+                        filiere.cellules.find(
+                            function (cellule) {
+
+                                return (
+                                    cellule.estOccupee &&
+                                    cellule.matiereLibelle ===
+                                    matiereSource
+                                );
+
+                            }
+                        );
+
+                    const celluleCible =
+                        filiere.cellules[index2];
+
+                    if (
+                        celluleSource &&
+                        celluleCible
+                    ) {
+
+                        celluleSource.matiereLibelle =
+                            "";
+
+                        celluleSource.estOccupee =
+                            false;
+
+                        celluleCible.matiereLibelle =
+                            matiereSource;
+
+                        celluleCible.estOccupee =
+                            true;
+                    }
+
+                }
+            );
+
+            console.log(
+                "🔗 Matière commune déplacée simultanément."
+            );
+
         }
-    );
 
-    console.log(
-        "🔗 Matière commune déplacée simultanément."
-    );
+        // =================================================
+        // CAS 2 : MATIÈRE SPÉCIFIQUE
+        // =================================================
 
-} else {
+        else {
 
-    // -----------------------------------------
-    // CAS 2 : MATIÈRE SPÉCIFIQUE
-    // -----------------------------------------
+            console.log(
+                "📘 Matière spécifique : échange des cellules."
+            );
 
-    const matiereLibelle1 =
-        cellule1.matiereLibelle;
+            const matiereLibelle1 =
+                cellule1.matiereLibelle;
 
-    const estOccupee1 =
-        cellule1.estOccupee;
+            const estOccupee1 =
+                cellule1.estOccupee;
 
-    cellule1.matiereLibelle =
-        cellule2.matiereLibelle;
+            cellule1.matiereLibelle =
+                cellule2.matiereLibelle;
 
-    cellule1.estOccupee =
-        cellule2.estOccupee;
+            cellule1.estOccupee =
+                cellule2.estOccupee;
 
-    cellule2.matiereLibelle =
-        matiereLibelle1;
+            cellule2.matiereLibelle =
+                matiereLibelle1;
 
-    cellule2.estOccupee =
-        estOccupee1;
+            cellule2.estOccupee =
+                estOccupee1;
 
-    console.log(
-        "🔄 Matière spécifique échangée."
-    );
-}
+            console.log(
+                "🔄 Matière spécifique échangée."
+            );
+        }
 
-        // ---------------------------------------------
-        // Réafficher le calendrier
-        // ---------------------------------------------
-
-        afficherPlanning(planning);
-
-        premiereCelluleSelectionnee = null;
+        // =================================================
+        // CONTRÔLE DU PLANNING MODIFIÉ
+        // =================================================
 
         console.log(
-            "🔄 Échange effectué."
+            "🔎 Contrôle du planning après modification..."
         );
-
-        // ---------------------------------------------
-        // Contrôle automatique
-        // ---------------------------------------------
 
         const resultat =
-    controleExamens.verifierPlanningGlobal(
-        planning
-    );
+            controleExamens.verifierPlanningGlobal(
+                planning
+            );
 
-console.log(
-    "✓ Contrôle après modification :",
-    resultat
-);
-
-
-// ---------------------------------------------
-// Vérifier si le déplacement est autorisé
-// ---------------------------------------------
-
-if (
-    !resultat ||
-    !resultat.valide
-) {
-
-    // -----------------------------------------
-    // Restaurer le planning avant modification
-    // -----------------------------------------
-
-    window.planningCalendrierAdmin =
-        structuredClone(
-            planningAvantModification
+        console.log(
+            "Résultat du contrôle :",
+            resultat
         );
 
-    // -----------------------------------------
-    // Réafficher le planning initial
-    // -----------------------------------------
+        // =================================================
+        // MODIFICATION REFUSÉE
+        // =================================================
 
-    afficherPlanning(
-        window.planningCalendrierAdmin
-    );
+        if (
+            !resultat ||
+            !resultat.valide
+        ) {
 
-    // -----------------------------------------
-    // Réinitialiser la sélection
-    // -----------------------------------------
+            console.warn(
+                "⚠️ Modification annulée : planning non valide."
+            );
 
-    premiereCelluleSelectionnee = null;
+            // -------------------------------------------------
+            // Restaurer exactement l'ancien planning
+            // -------------------------------------------------
 
-    // -----------------------------------------
-    // Informer l'utilisateur
-    // -----------------------------------------
+            window.planningCalendrierAdmin =
+                structuredClone(
+                    planningAvantModification
+                );
 
-    alert(
-        "Vous ne pouvez pas faire ce déplacement."
-    );
+            // -------------------------------------------------
+            // Réafficher l'ancien calendrier
+            // -------------------------------------------------
 
-    console.warn(
-        "⚠️ Déplacement annulé : le planning devient non valide."
-    );
+            afficherPlanning(
+                window.planningCalendrierAdmin
+            );
 
-    return;
-}
+            // -------------------------------------------------
+            // Réinitialiser la sélection
+            // -------------------------------------------------
 
+            premiereCelluleSelectionnee =
+                null;
 
-// ---------------------------------------------
-// Déplacement accepté
-// ---------------------------------------------
+            alert(
+                "Vous ne pouvez pas faire ce déplacement : le planning deviendrait non valide."
+            );
 
-console.log(
-    "✅ Déplacement accepté : PLANNING VALIDE."
-);
+            return;
+        }
+
+        // =================================================
+        // MODIFICATION ACCEPTÉE
+        // =================================================
+
+        window.planningCalendrierAdmin =
+            planning;
+
+        console.log(
+            "✅ Modification acceptée : planning valide."
+        );
+
+        // =================================================
+        // RÉAFFICHER LE CALENDRIER
+        // =================================================
+
+        afficherPlanning(
+            window.planningCalendrierAdmin
+        );
+
+        // =================================================
+        // RÉINITIALISER LA SÉLECTION
+        // =================================================
+
+        premiereCelluleSelectionnee =
+            null;
+
+        console.log(
+            "✓ Calendrier mis à jour après modification."
+        );
     }
 );
+
+
