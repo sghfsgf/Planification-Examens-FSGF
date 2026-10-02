@@ -2839,6 +2839,10 @@ window.generationExamens = {
         enregistrerCalendrier:
         enregistrerCalendrier,
 
+
+    publierCalendrier:
+    publierCalendrier,
+    
     preparer:
         preparerGeneration
 
