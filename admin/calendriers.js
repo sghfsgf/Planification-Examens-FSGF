@@ -679,7 +679,115 @@ console.log(
 
         }
     );
+// =================================================
+// RÉGÉNÉRER LE CALENDRIER
+// =================================================
 
+boutonRegenerer.addEventListener(
+    "click",
+    async function () {
+
+        const niveau =
+            selectNiveau.value;
+
+        const sessionCode =
+            selectSession.value;
+
+        if (!niveau || !sessionCode) {
+
+            console.error(
+                "❌ Niveau ou session invalide."
+            );
+
+            return;
+        }
+
+        console.log("------------------------------------------");
+        console.log("RÉGÉNÉRATION DU CALENDRIER ADMIN");
+        console.log("------------------------------------------");
+
+        console.log("Niveau :", niveau);
+        console.log(
+            "Semestre :",
+            selectSemestre.value
+        );
+        console.log(
+            "Régime :",
+            selectRegime.value
+        );
+        console.log(
+            "Session :",
+            sessionCode
+        );
+
+        try {
+
+            // -----------------------------------------
+            // CONSTRUIRE UN NOUVEAU PLANNING
+            // -----------------------------------------
+
+            let planning =
+                generationExamens.construireMatricePlanning(
+                    niveau,
+                    sessionCode
+                );
+
+            if (!planning) {
+
+                console.error(
+                    "❌ Impossible de construire le planning."
+                );
+
+                return;
+            }
+
+            // -----------------------------------------
+            // PLACER LES MATIÈRES COMMUNES
+            // -----------------------------------------
+
+            generationExamens.placerMatieresCommunes(
+                planning
+            );
+
+            // -----------------------------------------
+            // PLACER LES MATIÈRES SPÉCIFIQUES
+            // -----------------------------------------
+
+            generationExamens.placerMatieresSpecifiques(
+                planning
+            );
+
+            console.log(
+                "✓ Nouveau planning construit."
+            );
+
+            // -----------------------------------------
+            // REMPLACER LE PLANNING ACTUEL
+            // -----------------------------------------
+
+            window.planningCalendrierAdmin =
+                planning;
+
+            afficherPlanning(planning);
+
+            boutonEnregistrer.disabled = false;
+
+            console.log(
+                "✓ Nouveau calendrier affiché."
+            );
+
+        } catch (erreur) {
+
+            console.error(
+                "❌ Erreur lors de la régénération :",
+                erreur
+            );
+
+        }
+
+    }
+);
+    
      // =================================================
     // ENREGISTRER LE CALENDRIER
     // =================================================
