@@ -792,15 +792,42 @@ console.log(
 async function initialiserCalendriersApresFirestore() {
 
     console.log(
-        "⏳ Attente des données Firestore pour les calendriers..."
+        "⏳ Attente du moteur de génération..."
     );
 
     const maximumTentatives = 100;
 
-    for (let tentative = 0; tentative < maximumTentatives; tentative++) {
+    for (
+        let tentative = 0;
+        tentative < maximumTentatives;
+        tentative++
+    ) {
+
+        // -----------------------------------------
+        // 1. Vérifier que generationExamens existe
+        // -----------------------------------------
+
+        if (
+            typeof generationExamens === "undefined"
+        ) {
+
+            await new Promise(function (resolve) {
+                setTimeout(resolve, 100);
+            });
+
+            continue;
+        }
+
+        // -----------------------------------------
+        // 2. Récupérer les données Firestore
+        // -----------------------------------------
 
         const donneesGeneration =
             generationExamens.obtenirDonnees();
+
+        // -----------------------------------------
+        // 3. Vérifier que les sessions sont chargées
+        // -----------------------------------------
 
         if (
             donneesGeneration &&
