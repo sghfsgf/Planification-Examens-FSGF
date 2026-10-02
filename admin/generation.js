@@ -2521,9 +2521,6 @@ if (documentExistant.exists()) {
         statut:
             "brouillon",
 
-        version:
-            1,
-
         creeLe:
             serverTimestamp(),
 
