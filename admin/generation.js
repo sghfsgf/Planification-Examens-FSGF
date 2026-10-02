@@ -2829,6 +2829,27 @@ console.log(
     resultatControle
 );
 
+// Enregistrement du calendrier après contrôle
+if (!resultatControle || !resultatControle.valide) {
+    console.warn(
+        "⚠️ Le planning n'est pas valide. Enregistrement annulé."
+    );
+    return;
+}
+
+const calendrierEnregistre =
+    await enregistrerCalendrier(planning);
+
+if (calendrierEnregistre) {
+    console.log(
+        "✅ CALENDRIER ENREGISTRÉ COMME BROUILLON"
+    );
+} else {
+    console.error(
+        "❌ Échec de l'enregistrement du calendrier."
+    );
+}
+        
             }
         );
 
