@@ -2628,6 +2628,145 @@ if (documentExistant.exists()) {
 
 }
 
+
+// =====================================================
+// PUBLIER UN CALENDRIER DANS FIRESTORE
+// =====================================================
+
+async function publierCalendrier(idCalendrier) {
+
+    console.log("==========================================");
+    console.log("📢 PUBLICATION DU CALENDRIER");
+    console.log("==========================================");
+
+    if (!idCalendrier) {
+
+        console.error(
+            "❌ Aucun calendrier à publier."
+        );
+
+        return false;
+    }
+
+    console.log(
+        "ID du calendrier à publier :",
+        idCalendrier
+    );
+
+    try {
+
+        // -------------------------------------------------
+        // Référence du calendrier
+        // -------------------------------------------------
+
+        const referenceCalendrier =
+            doc(
+                db,
+                "calendriers",
+                idCalendrier
+            );
+
+        // -------------------------------------------------
+        // Lire le calendrier existant
+        // -------------------------------------------------
+
+        const documentCalendrier =
+            await getDoc(
+                referenceCalendrier
+            );
+
+        if (!documentCalendrier.exists()) {
+
+            console.error(
+                "❌ Calendrier introuvable :",
+                idCalendrier
+            );
+
+            return false;
+        }
+
+        const donneesCalendrier =
+            documentCalendrier.data();
+
+        console.log(
+            "✓ Calendrier trouvé :",
+            idCalendrier
+        );
+
+        console.log(
+            "Statut actuel :",
+            donneesCalendrier.statut
+        );
+
+        // -------------------------------------------------
+        // Vérifier qu'il s'agit bien d'un brouillon
+        // -------------------------------------------------
+
+        if (
+            donneesCalendrier.statut !==
+            "brouillon"
+        ) {
+
+            console.warn(
+                "⚠️ Le calendrier n'est pas un brouillon."
+            );
+
+            console.warn(
+                "Statut actuel :",
+                donneesCalendrier.statut
+            );
+
+            return false;
+        }
+
+        // -------------------------------------------------
+        // Publier
+        // -------------------------------------------------
+
+        await setDoc(
+            referenceCalendrier,
+            {
+                statut: "publie",
+                modifieLe: serverTimestamp()
+            },
+            {
+                merge: true
+            }
+        );
+
+        console.log(
+            "------------------------------------------"
+        );
+
+        console.log(
+            "✅ CALENDRIER PUBLIÉ DANS FIRESTORE"
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Statut : publie"
+        );
+
+        console.log(
+            "------------------------------------------"
+        );
+
+        return true;
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de la publication :",
+            erreur
+        );
+
+        return false;
+    }
+}
 // =====================================================
 // ACCÈS AUX DONNÉES CHARGÉES POUR LES AUTRES MODULES
 // =====================================================
