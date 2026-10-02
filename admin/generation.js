@@ -2871,10 +2871,11 @@ document.addEventListener(
             document.getElementById(
                 "btnGenererCalendrier"
             );
+
         console.log(
-    "🔎 Bouton trouvé :",
-    boutonGenerer
-);
+            "🔎 Bouton trouvé :",
+            boutonGenerer
+        );
 
         if (!boutonGenerer) {
 
@@ -2885,118 +2886,162 @@ document.addEventListener(
             return;
         }
 
-      boutonGenerer.addEventListener(
-    "click",
-    async function () {
+        boutonGenerer.addEventListener(
+            "click",
+            async function () {
 
-        console.log(
-            "=========================================="
-        );
+                console.log(
+                    "=========================================="
+                );
 
-        console.log(
-            "🚀 BOUTON GÉNÉRER LE CALENDRIER"
-        );
+                console.log(
+                    "🚀 BOUTON GÉNÉRER LE CALENDRIER"
+                );
 
-        console.log(
-            "=========================================="
-        );
+                console.log(
+                    "=========================================="
+                );
 
+                // =================================================
+                // PARAMÈTRES DE TEST
+                // =================================================
 
-        // =================================================
-        // PARAMÈTRES DE TEST
-        // =================================================
+                const niveauCode = "L1";
 
-        const niveauCode = "L1";
+                const sessionCode = "PRINCIPALE_S1";
 
-        const sessionCode = "PRINCIPALE_S1";
+                console.log(
+                    "Niveau :",
+                    niveauCode
+                );
 
+                console.log(
+                    "Session :",
+                    sessionCode
+                );
 
-        console.log(
-            "Niveau :",
-            niveauCode
-        );
+                // =================================================
+                // CONSTRUCTION DE LA MATRICE
+                // =================================================
 
-        console.log(
-            "Session :",
-            sessionCode
-        );
+                const planning =
+                    construireMatricePlanning(
+                        niveauCode,
+                        sessionCode
+                    );
 
+                // =================================================
+                // PLACEMENT DES MATIÈRES COMMUNES
+                // =================================================
 
-        // =================================================
-        // CONSTRUCTION DE LA MATRICE
-        // =================================================
+                placerMatieresCommunes(
+                    planning
+                );
 
-        const planning =
-            construireMatricePlanning(
-                niveauCode,
-                sessionCode
-            );
-        // =================================================
-// PLACEMENT DES MATIÈRES COMMUNES
-// =================================================
+                console.log(
+                    "✓ Matières communes placées."
+                );
 
-placerMatieresCommunes(
-    planning
-);
+                console.log(
+                    "Planning après placement des matières communes :",
+                    planning
+                );
 
-console.log(
-    "✓ Matières communes placées."
-);
+                // =================================================
+                // PLACEMENT DES MATIÈRES SPÉCIFIQUES
+                // =================================================
 
-console.log(
-    "Planning après placement des matières communes :",
-    planning
-);
+                placerMatieresSpecifiques(
+                    planning
+                );
 
-// =================================================
-// PLACEMENT DES MATIÈRES SPÉCIFIQUES
-// =================================================
+                console.log(
+                    "✓ Matières spécifiques placées."
+                );
 
-placerMatieresSpecifiques(
-    planning
-);
+                console.log(
+                    "Planning après placement des matières spécifiques :",
+                    planning
+                );
 
-console.log(
-    "✓ Matières spécifiques placées."
-);
+                // =================================================
+                // CONTRÔLE GLOBAL DU PLANNING
+                // =================================================
 
-console.log(
-    "Planning après placement des matières spécifiques :",
-    planning
-);
+                const resultatControle =
+                    controleExamens.verifierPlanningGlobal(
+                        planning
+                    );
 
-// Contrôle global du planning
-const resultatControle =
-    controleExamens.verifierPlanningGlobal(
-        planning
-    );
+                console.log(
+                    "✓ Résultat du contrôle global :",
+                    resultatControle
+                );
 
-console.log(
-    "✓ Résultat du contrôle global :",
-    resultatControle
-);
+                // =================================================
+                // VÉRIFIER QUE LE PLANNING EST VALIDE
+                // =================================================
 
-// Enregistrement du calendrier après contrôle
-if (!resultatControle || !resultatControle.valide) {
-    console.warn(
-        "⚠️ Le planning n'est pas valide. Enregistrement annulé."
-    );
-    return;
-}
+                if (
+                    !resultatControle ||
+                    !resultatControle.valide
+                ) {
 
-const calendrierEnregistre =
-    await enregistrerCalendrier(planning);
+                    console.warn(
+                        "⚠️ Le planning n'est pas valide. Enregistrement annulé."
+                    );
 
-if (calendrierEnregistre) {
-    console.log(
-        "✅ CALENDRIER ENREGISTRÉ COMME BROUILLON"
-    );
-} else {
-    console.error(
-        "❌ Échec de l'enregistrement du calendrier."
-    );
-}
-        
+                    return;
+                }
+
+                // =================================================
+                // ENREGISTRER LE CALENDRIER
+                // =================================================
+
+                const calendrierEnregistre =
+                    await enregistrerCalendrier(
+                        planning
+                    );
+
+                if (calendrierEnregistre) {
+
+                    dernierCalendrierEnregistre =
+                        calendrierEnregistre.id;
+
+                    console.log(
+                        "✅ CALENDRIER ENREGISTRÉ COMME BROUILLON"
+                    );
+
+                    console.log(
+                        "📌 Dernier calendrier enregistré :",
+                        dernierCalendrierEnregistre
+                    );
+
+                    // -------------------------------------------------
+                    // ACTIVER LE BOUTON PUBLIER
+                    // -------------------------------------------------
+
+                    const boutonPublier =
+                        document.getElementById(
+                            "btnPublierCalendrierAdmin"
+                        );
+
+                    if (boutonPublier) {
+
+                        boutonPublier.disabled = false;
+
+                        console.log(
+                            "✓ Bouton Publier activé."
+                        );
+                    }
+
+                } else {
+
+                    console.error(
+                        "❌ Échec de l'enregistrement du calendrier."
+                    );
+                }
+
             }
         );
 
@@ -3004,5 +3049,86 @@ if (calendrierEnregistre) {
             "✓ Bouton Générer le calendrier connecté."
         );
 
+
+        // =================================================
+        // BOUTON : PUBLIER LE CALENDRIER
+        // =================================================
+
+        const boutonPublier =
+            document.getElementById(
+                "btnPublierCalendrierAdmin"
+            );
+
+        console.log(
+            "🔎 Bouton Publier trouvé :",
+            boutonPublier
+        );
+
+        if (boutonPublier) {
+
+            boutonPublier.addEventListener(
+                "click",
+                async function () {
+
+                    console.log(
+                        "=========================================="
+                    );
+
+                    console.log(
+                        "📢 BOUTON PUBLIER LE CALENDRIER"
+                    );
+
+                    console.log(
+                        "=========================================="
+                    );
+
+                    // -------------------------------------------------
+                    // Vérifier qu'un calendrier existe
+                    // -------------------------------------------------
+
+                    if (!dernierCalendrierEnregistre) {
+
+                        console.error(
+                            "❌ Aucun calendrier enregistré à publier."
+                        );
+
+                        return;
+                    }
+
+                    // -------------------------------------------------
+                    // Publier
+                    // -------------------------------------------------
+
+                    const publicationOK =
+                        await publierCalendrier(
+                            dernierCalendrierEnregistre
+                        );
+
+                    if (publicationOK) {
+
+                        console.log(
+                            "🎉 PUBLICATION TERMINÉE AVEC SUCCÈS."
+                        );
+
+                        boutonPublier.disabled = true;
+
+                    } else {
+
+                        console.error(
+                            "❌ La publication a échoué."
+                        );
+                    }
+
+                }
+            );
+
+            console.log(
+                "✓ Bouton Publier connecté."
+            );
+        }
+
     }
+);
+
+
 );
