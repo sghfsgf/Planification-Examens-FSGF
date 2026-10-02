@@ -153,9 +153,7 @@ function formaterDateLongue(date) {
 
 // =====================================================
 // Construire le tableau HTML du calendrier
-// =====================================================
-
-```js
+// ===================================================
 function construireTableauCalendrier(planning) {
 
     console.log("------------------------------------------");
@@ -811,15 +809,54 @@ console.log(
 // ATTENDRE LE CHARGEMENT DES DONNÉES
 // =====================================================
 
-donneesChargees.then(function () {
+// =====================================================
+// ATTENDRE LE CHARGEMENT DES DONNÉES FIRESTORE
+// =====================================================
+
+async function initialiserCalendriersApresFirestore() {
 
     console.log(
-        "✓ Données chargées — initialisation des filtres calendrier."
+        "⏳ Attente des données Firestore pour les calendriers..."
     );
 
-    initialiserFiltresCalendrierAdmin();
+    const maximumTentatives = 100;
 
-});
+    for (let tentative = 0; tentative < maximumTentatives; tentative++) {
+
+        const donneesGeneration =
+            generationExamens.obtenirDonnees();
+
+        if (
+            donneesGeneration &&
+            Array.isArray(donneesGeneration.sessions) &&
+            donneesGeneration.sessions.length > 0
+        ) {
+
+            console.log(
+                "✓ Sessions Firestore prêtes :",
+                donneesGeneration.sessions.length
+            );
+
+            initialiserFiltresCalendrierAdmin();
+
+            console.log(
+                "✓ Filtres du calendrier initialisés."
+            );
+
+            return;
+        }
+
+        await new Promise(function (resolve) {
+            setTimeout(resolve, 100);
+        });
+    }
+
+    console.error(
+        "❌ Les données Firestore ne sont pas disponibles après attente."
+    );
+}
+
+initialiserCalendriersApresFirestore();
 
 // =====================================================
 // MODIFICATION MANUELLE DU CALENDRIER
