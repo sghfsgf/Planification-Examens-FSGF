@@ -154,31 +154,38 @@ function formaterDateLongue(date) {
 // =====================================================
 // Construire le tableau HTML du calendrier
 // ===================================================
+
 function construireTableauCalendrier(planning) {
 
     console.log("------------------------------------------");
     console.log("CONSTRUCTION DU TABLEAU DU CALENDRIER");
     console.log("------------------------------------------");
 
-    if (!planning || !planning.filieres || planning.filieres.length === 0) {
-        console.error("❌ Planning ou filières absents.");
+    if (!planning) {
+        console.error("❌ Aucun planning fourni.");
         return null;
     }
 
+    // -------------------------------------------------
+    // Récupérer toutes les cellules de référence
+    // -------------------------------------------------
+
     const premiereFiliere = planning.filieres[0];
 
-    if (!premiereFiliere.cellules || premiereFiliere.cellules.length === 0) {
+    if (!premiereFiliere || premiereFiliere.cellules.length === 0) {
         console.error("❌ Aucune cellule disponible.");
         return null;
     }
 
+    const cellules = premiereFiliere.cellules;
+
     // -------------------------------------------------
-    // 1. Construire la structure DATE → CELLULES
+    // Regrouper les cellules par date
     // -------------------------------------------------
 
-    const groupesDates = {};
+    const dates = [];
 
-    premiereFiliere.cellules.forEach(function (cellule) {
+    cellules.forEach(function (cellule) {
 
         let dateCellule = cellule.date;
 
@@ -191,46 +198,41 @@ function construireTableauCalendrier(planning) {
         }
 
         // Autre format → Date JavaScript
-        else if (!(dateCellule instanceof Date)) {
+        else if (
+            !(dateCellule instanceof Date)
+        ) {
             dateCellule = new Date(dateCellule);
-        }
-
-        if (isNaN(dateCellule.getTime())) {
-            console.error("❌ Date invalide :", cellule.date);
-            return;
         }
 
         const cleDate =
             dateCellule.getFullYear() +
             "-" +
-            String(dateCellule.getMonth() + 1).padStart(2, "0") +
+            String(
+                dateCellule.getMonth() + 1
+            ).padStart(2, "0") +
             "-" +
-            String(dateCellule.getDate()).padStart(2, "0");
+            String(
+                dateCellule.getDate()
+            ).padStart(2, "0");
 
-        if (!groupesDates[cleDate]) {
-            groupesDates[cleDate] = {
-                date: dateCellule,
-                cellules: []
-            };
+        const dateExiste =
+            dates.some(function (date) {
+                return date.cle === cleDate;
+            });
+
+        if (!dateExiste) {
+
+            dates.push({
+                cle: cleDate,
+                date: dateCellule
+            });
+
         }
 
-        groupesDates[cleDate].cellules.push(cellule);
     });
 
     // -------------------------------------------------
-    // 2. Transformer en tableau de dates
-    // -------------------------------------------------
-
-    const dates = Object.keys(groupesDates)
-        .sort()
-        .map(function (cleDate) {
-            return groupesDates[cleDate];
-        });
-
-    console.log("Dates regroupées :", dates.length);
-
-    // -------------------------------------------------
-    // 3. Créer le tableau
+    // Créer le tableau
     // -------------------------------------------------
 
     const tableau = document.createElement("table");
@@ -238,15 +240,12 @@ function construireTableauCalendrier(planning) {
     tableau.className = "tableau-calendrier";
 
     // -------------------------------------------------
-    // 4. THEAD
+    // THEAD
     // -------------------------------------------------
 
     const thead = document.createElement("thead");
 
-    // =================================================
-    // Première ligne : DATES
-    // =================================================
-
+    // Première ligne : dates
     const ligneDates = document.createElement("tr");
 
     const thFiliere = document.createElement("th");
@@ -263,41 +262,45 @@ function construireTableauCalendrier(planning) {
 
     ligneDates.appendChild(thAmphis);
 
-    dates.forEach(function (groupeDate) {
+    dates.forEach(function (elementDate) {
+
+        const date =
+            elementDate.date;
+
+        const cellulesDate = cellules.filter(function (cellule) {
+            return cellule.date === date;
+        });
 
         const thDate = document.createElement("th");
 
         thDate.textContent =
-            formaterDateLongue(groupeDate.date);
+            formaterDateLongue(date);
 
         thDate.colSpan =
-            groupeDate.cellules.length;
+            cellulesDate.length;
 
         ligneDates.appendChild(thDate);
     });
 
     thead.appendChild(ligneDates);
 
-    // =================================================
-    // Deuxième ligne : CRÉNEAUX
-    // =================================================
+    // -------------------------------------------------
+    // Deuxième ligne : créneaux
+    // -------------------------------------------------
 
     const ligneCreneaux = document.createElement("tr");
 
-    dates.forEach(function (groupeDate) {
+    cellules.forEach(function (cellule) {
 
-        groupeDate.cellules.forEach(function (cellule) {
+        const thCreneau =
+            document.createElement("th");
 
-            const thCreneau =
-                document.createElement("th");
+        thCreneau.textContent =
+            cellule.heureDebutAffichage +
+            " - " +
+            cellule.heureFinAffichage;
 
-            thCreneau.textContent =
-                cellule.heureDebutAffichage +
-                " - " +
-                cellule.heureFinAffichage;
-
-            ligneCreneaux.appendChild(thCreneau);
-        });
+        ligneCreneaux.appendChild(thCreneau);
     });
 
     thead.appendChild(ligneCreneaux);
@@ -305,7 +308,7 @@ function construireTableauCalendrier(planning) {
     tableau.appendChild(thead);
 
     // -------------------------------------------------
-    // 5. TBODY
+    // TBODY
     // -------------------------------------------------
 
     const tbody = document.createElement("tbody");
@@ -314,10 +317,7 @@ function construireTableauCalendrier(planning) {
 
         const ligne = document.createElement("tr");
 
-        // ---------------------------------------------
         // Filière
-        // ---------------------------------------------
-
         const celluleFiliere =
             document.createElement("td");
 
@@ -326,10 +326,7 @@ function construireTableauCalendrier(planning) {
 
         ligne.appendChild(celluleFiliere);
 
-        // ---------------------------------------------
         // Amphis
-        // ---------------------------------------------
-
         const celluleAmphis =
             document.createElement("td");
 
@@ -337,61 +334,44 @@ function construireTableauCalendrier(planning) {
 
         ligne.appendChild(celluleAmphis);
 
-        // ---------------------------------------------
         // Matières
-        // ---------------------------------------------
+        filiere.cellules.forEach(function (cellule) {
 
-        dates.forEach(function (groupeDate) {
+            const td = document.createElement("td");
 
-            groupeDate.cellules.forEach(function (celluleReference) {
+            if (cellule.estOccupee) {
 
-                const index =
-                    premiereFiliere.cellules.indexOf(celluleReference);
+                td.textContent =
+                    cellule.matiereLibelle;
 
-                const cellule =
-                    filiere.cellules[index];
+            } else {
 
-                const td =
-                    document.createElement("td");
+                td.textContent = "—";
+            }
 
-                if (cellule && cellule.estOccupee) {
+            // -------------------------------------------------
+            // Préparer la cellule pour la modification à la souris
+            // -------------------------------------------------
 
-                    td.textContent =
-                        cellule.matiereLibelle;
+            td.dataset.filiere =
+                filiere.filiereCode;
 
-                } else {
+            td.dataset.index =
+                filiere.cellules.indexOf(cellule);
 
-                    td.textContent = "—";
-                }
+            td.classList.add(
+                "cellule-calendrier-modifiable"
+            );
 
-                // -------------------------------------
-                // Modification à la souris
-                // -------------------------------------
+            td.style.cursor = "pointer";
 
-                td.dataset.filiere =
-                    filiere.filiereCode;
-
-                td.dataset.index =
-                    index;
-
-                td.classList.add(
-                    "cellule-calendrier-modifiable"
-                );
-
-                td.style.cursor = "pointer";
-
-                ligne.appendChild(td);
-            });
+            ligne.appendChild(td);
         });
 
         tbody.appendChild(ligne);
     });
 
     tableau.appendChild(tbody);
-
-    // -------------------------------------------------
-    // 6. LOGS
-    // -------------------------------------------------
 
     console.log("✓ Tableau du calendrier construit.");
 
@@ -407,10 +387,6 @@ function construireTableauCalendrier(planning) {
 
     return tableau;
 }
-```
-
-
-
 
 // =====================================================
 // FILTRES DU CALENDRIER ADMIN
