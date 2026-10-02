@@ -157,638 +157,596 @@ document.addEventListener("DOMContentLoaded", function () {
         // -------------------------------------------------
         // Récupération des données chargées par data.js
         // -------------------------------------------------
+ 
+// =================================================
+// CONSTRUIRE LE CALENDRIER
+// =================================================
 
-        if (
-            typeof donneesExamens === "undefined" ||
-            !donneesExamens
-        ) {
+async function construireCalendrier() {
 
-            console.error(
-                "Calendrier : donneesExamens introuvable."
-            );
+    console.log("====================================");
+    console.log("AFFICHAGE DU CALENDRIER FIRESTORE");
+    console.log("====================================");
 
-            return;
-        }
+    // -------------------------------------------------
+    // Vérification du tableau
+    // -------------------------------------------------
 
+    if (!tableau) {
 
-        const matieres =
-            donneesExamens.matieres || [];
-
-        const sessions =
-            donneesExamens.sessions || [];
-
-        const creneaux =
-            donneesExamens.creneaux || [];
-
-        const sallesAmphis =
-          (typeof donneesRessources !== "undefined" &&
-            donneesRessources)
-              ? (donneesRessources.sallesAmphis || [])
-        : [];
-
-        console.log(
-            "Matières :",
-            matieres
+        console.error(
+            "Calendrier : tableauCalendrier introuvable."
         );
 
-        console.log(
-            "Sessions :",
-            sessions
+        return;
+    }
+
+    // -------------------------------------------------
+    // Nettoyage du tableau
+    // -------------------------------------------------
+
+    const thead =
+        tableau.querySelector("thead");
+
+    const tbody =
+        tableau.querySelector("tbody");
+
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    // -------------------------------------------------
+    // Récupération des paramètres sélectionnés
+    // -------------------------------------------------
+
+    const niveau =
+        niveauCalendrier
+            ? niveauCalendrier.textContent.trim()
+            : "";
+
+    const semestre =
+        selectSemestre
+            ? selectSemestre.value
+            : "";
+
+    const regime =
+        selectRegime
+            ? selectRegime.value
+            : "";
+
+    const sessionCode =
+        selectSession
+            ? selectSession.value
+            : "";
+
+    console.log("Niveau :", niveau);
+    console.log("Semestre :", semestre);
+    console.log("Régime :", regime);
+    console.log("Session :", sessionCode);
+
+    // -------------------------------------------------
+    // Vérification des filtres
+    // -------------------------------------------------
+
+    if (
+        !niveau ||
+        !semestre ||
+        !regime ||
+        !sessionCode
+    ) {
+
+        console.warn(
+            "⚠️ Tous les filtres ne sont pas sélectionnés."
         );
 
-        console.log(
-            "Créneaux :",
-            creneaux
-        );
+        return;
+    }
 
-        console.log(
-            "Salles / amphis :",
-            sallesAmphis
-        );
+    // -------------------------------------------------
+    // Année universitaire
+    // -------------------------------------------------
 
+    const anneeUniversitaire =
+        "2025-2026";
 
-        // -------------------------------------------------
-        // Nettoyage du tableau
-        // -------------------------------------------------
+    // -------------------------------------------------
+    // LECTURE DU CALENDRIER PUBLIÉ DANS FIRESTORE
+    // -------------------------------------------------
 
-        const thead =
-            tableau.querySelector("thead");
-
-        const tbody =
-            tableau.querySelector("tbody");
-
-
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
-
-
-        // -------------------------------------------------
-        // Niveau actuellement affiché
-        // -------------------------------------------------
-
-        const niveau =
-            niveauCalendrier.textContent.trim();
-
-
-        // -------------------------------------------------
-        // Paramètres sélectionnés
-        // -------------------------------------------------
-
-        const semestre =
-            selectSemestre
-                ? selectSemestre.value
-                : "";
-
-        const regime =
-            selectRegime
-                ? selectRegime.value
-                : "";
-
-        const sessionCode =
-            selectSession
-                ? selectSession.value
-                : "";
-// -------------------------------------------------
-// Lecture du calendrier publié depuis Firestore
-// -------------------------------------------------
-
-const anneeUniversitaire = "2025-2026";
-
-const calendrierFirestore =
-    await chargerCalendrierFirestore(
-        anneeUniversitaire,
-        niveau,
-        semestre,
-        regime,
-        sessionCode
-    );
-
-console.log(
-    "📦 Calendrier récupéré depuis Firestore :",
-    calendrierFirestore
-);
-
-        console.log(
-            "Niveau :",
-            niveau
-        );
-
-        console.log(
-            "Semestre :",
-            semestre
-        );
-
-        console.log(
-            "Régime :",
-            regime
-        );
-
-        console.log(
-            "Session sélectionnée :",
+    const calendrierFirestore =
+        await chargerCalendrierFirestore(
+            anneeUniversitaire,
+            niveau,
+            semestre,
+            regime,
             sessionCode
         );
 
+    console.log(
+        "📦 Calendrier Firestore :",
+        calendrierFirestore
+    );
 
-        // -------------------------------------------------
-        // Vérification des données
-        // -------------------------------------------------
+    // -------------------------------------------------
+    // Aucun calendrier publié
+    // -------------------------------------------------
 
-        if (matieres.length === 0) {
+    if (!calendrierFirestore) {
 
-            console.warn(
-                "Calendrier : aucune matière disponible."
-            );
-
-        }
-
-
-        if (sessions.length === 0) {
-
-            console.warn(
-                "Calendrier : aucune session disponible."
-            );
-
-            return;
-        }
-
-
-        if (creneaux.length === 0) {
-
-            console.warn(
-                "Calendrier : aucun créneau disponible."
-            );
-
-            return;
-        }
-
-
-        // =================================================
-        // SESSION SÉLECTIONNÉE
-        // =================================================
-
-        const sessionSelectionnee =
-            sessions.find(function (session) {
-
-                return (
-                    session.sessionCode ===
-                    sessionCode
-                );
-
-            });
-
-
-        if (!sessionSelectionnee) {
-
-            console.warn(
-                "Calendrier : session introuvable :",
-                sessionCode
-            );
-
-            return;
-        }
-
-
-        // -------------------------------------------------
-        // Vérification semestre / régime
-        // -------------------------------------------------
-
-        if (
-            sessionSelectionnee.semestreCode !==
-            semestre
-        ) {
-
-            console.warn(
-                "Calendrier : la session ne correspond pas au semestre sélectionné."
-            );
-
-            return;
-        }
-
-
-        if (
-            sessionSelectionnee.regimeCode !==
-            regime
-        ) {
-
-            console.warn(
-                "Calendrier : la session ne correspond pas au régime sélectionné."
-            );
-
-            return;
-        }
-
-
-        console.log(
-            "Session trouvée :",
-            sessionSelectionnee
-        );
-
-
-        // =================================================
-        // CRÉNEAUX DE LA SESSION
-        // =================================================
-
-        const creneauxSession =
-            creneaux
-                .filter(function (creneau) {
-
-                    return (
-                        creneau.sessionCode ===
-                        sessionCode
-                    );
-
-                })
-                .sort(function (a, b) {
-
-                    return (
-                        Number(a.creneauOrdre) -
-                        Number(b.creneauOrdre)
-                    );
-
-                });
-
-
-        console.log(
-            "Créneaux de la session",
-            sessionCode,
-            ":",
-            creneauxSession
-        );
-
-
-        if (creneauxSession.length === 0) {
-
-            console.warn(
-                "Calendrier : aucun créneau pour la session sélectionnée."
-            );
-
-            return;
-        }
-
-
-        // =================================================
-        // MATIÈRES DU NIVEAU
-        // =================================================
-
-        const matieresNiveau =
-            matieres.filter(function (matiere) {
-
-                return (
-                    matiere.niveauCode ===
-                    niveau
-                );
-
-            });
-
-
-        console.log(
-            "Matières du niveau",
-            niveau,
-            ":",
-            matieresNiveau
-        );
-
-
-        // =================================================
-        // FILIÈRES DU NIVEAU
-        // =================================================
-
-        const filieres =
-            [
-                ...new Set(
-
-                    matieresNiveau
-                        .filter(function (matiere) {
-
-                            return (
-                                matiere.semestreCode ===
-                                semestre
-                            );
-
-                        })
-                        .filter(function (matiere) {
-
-                            return (
-                                matiere.regimeCode ===
-                                regime
-                            );
-
-                        })
-                        .map(function (matiere) {
-
-                            return matiere.filiereCode;
-
-                        })
-                        .filter(Boolean)
-
-                )
-            ];
-
-
-        console.log(
-            "Filières du niveau",
-            niveau,
-            ":",
-            filieres
-        );
-
-
-        // =================================================
-        // CONSTRUCTION DES DATES DE LA SESSION
-        // =================================================
-
-        const dateDebut =
-            convertirDateExcel(
-                sessionSelectionnee.dateDebut
-            );
-
-        const dateFin =
-            convertirDateExcel(
-                sessionSelectionnee.dateFin
-            );
-
-
-        if (!dateDebut || !dateFin) {
-
-            console.warn(
-                "Calendrier : dates de session invalides."
-            );
-
-            return;
-        }
-
-
-        console.log(
-            "Date début :",
-            formaterDate(
-                sessionSelectionnee.dateDebut
-            )
-        );
-
-        console.log(
-            "Date fin :",
-            formaterDate(
-                sessionSelectionnee.dateFin
-            )
-        );
-
-
-        // -------------------------------------------------
-        // Création de la liste des dates
-        // -------------------------------------------------
-
-        const datesSession = [];
-
-        const dateCourante =
-            new Date(dateDebut);
-
-
-        while (
-            dateCourante <= dateFin
-        ) {
-
-            datesSession.push(
-                new Date(dateCourante)
-            );
-
-            dateCourante.setDate(
-                dateCourante.getDate() + 1
-            );
-
-        }
-
-
-        console.log(
-            "Dates de la session :",
-            datesSession
-        );
-
-
-        // =================================================
-        // EN-TÊTE DU CALENDRIER
-        // =================================================
-
-        // -------------------------------------------------
-        // Ligne 1 : FILIÈRE + AMPHIS + DATES
-        // -------------------------------------------------
-
-        const ligneDates =
+        const ligne =
             document.createElement("tr");
 
+        const cellule =
+            document.createElement("td");
 
-        // -------------------------------------------------
-        // Colonne FILIÈRE
-        // -------------------------------------------------
+        cellule.colSpan = 2;
 
-        const thFiliere =
-            document.createElement("th");
+        cellule.textContent =
+            "Aucun calendrier publié pour cette sélection.";
 
-        thFiliere.textContent =
-            "FILIÈRE";
+        ligne.appendChild(cellule);
 
-        thFiliere.rowSpan = 2;
+        tbody.appendChild(ligne);
 
-        ligneDates.appendChild(
-            thFiliere
+        return;
+    }
+
+    // -------------------------------------------------
+    // Récupération du planning déjà préparé
+    // par l'Admin
+    // -------------------------------------------------
+
+    const planning =
+        calendrierFirestore.planning;
+
+    if (
+        !planning ||
+        !Array.isArray(planning.filieres)
+    ) {
+
+        console.error(
+            "❌ Le calendrier Firestore ne contient pas de planning exploitable."
         );
 
+        return;
+    }
 
-        // -------------------------------------------------
-        // Colonne AMPHIS
-        // -------------------------------------------------
+    console.log(
+        "✓ Planning récupéré depuis Firestore."
+    );
 
-        const thAmphis =
-            document.createElement("th");
+    console.log(
+        "📊 Filières du planning :",
+        planning.filieres
+    );
 
-        thAmphis.textContent =
-            "AMPHIS";
+    // =================================================
+    // CONSTRUCTION DES COLONNES À PARTIR DES CELLULES
+    // FIRESTORE
+    // =================================================
 
-        thAmphis.rowSpan = 2;
+    const colonnesMap =
+        new Map();
 
-        ligneDates.appendChild(
-            thAmphis
-        );
+    planning.filieres.forEach(
+        function (filiere) {
 
+            const cellules =
+                Array.isArray(filiere.cellules)
+                    ? filiere.cellules
+                    : [];
 
-        // -------------------------------------------------
-        // Dates
-        // -------------------------------------------------
+            cellules.forEach(
+                function (cellule) {
 
-        datesSession.forEach(
-            function (date) {
+                    const creneauOrdre =
+                        Number(
+                            cellule.creneauOrdre
+                        );
 
-                const thDate =
-                    document.createElement("th");
+                    let dateCle = "";
 
+                    if (
+                        cellule.date &&
+                        typeof cellule.date.toDate === "function"
+                    ) {
 
-                thDate.textContent =
-                    formaterDateDepuisObjet(
-                        date
-                    );
+                        const date =
+                            cellule.date.toDate();
 
+                        dateCle =
+                            date.toISOString()
+                                .substring(0, 10);
 
-                // Une date contient autant de colonnes
-                // qu'il existe de créneaux pour la session
+                    }
+                    else if (
+                        cellule.dateAffichage
+                    ) {
 
-                thDate.colSpan =
-                    creneauxSession.length;
+                        dateCle =
+                            cellule.dateAffichage;
+                    }
 
+                    const cle =
+                        dateCle +
+                        "_" +
+                        creneauOrdre;
 
-                ligneDates.appendChild(
-                    thDate
-                );
+                    if (!colonnesMap.has(cle)) {
 
-            }
-        );
-
-
-        thead.appendChild(
-            ligneDates
-        );
-
-
-        // =================================================
-        // LIGNE 2 : CRÉNEAUX
-        // =================================================
-
-        const ligneCreneaux =
-            document.createElement("tr");
-
-
-        datesSession.forEach(
-            function () {
-
-                creneauxSession.forEach(
-                    function (creneau) {
-
-                        const th =
-                            document.createElement("th");
-
-
-                        const heureDebut =
-                            creneau.heureDebutAffichage ||
-                            convertirHeureExcel(
-                                creneau.heureDebut
-                            );
-
-
-                        const heureFin =
-                            creneau.heureFinAffichage ||
-                            convertirHeureExcel(
-                                creneau.heureFin
-                            );
-
-
-                        th.innerHTML =
-                            heureDebut +
-                            "–" +
-                            heureFin;
-
-
-                        ligneCreneaux.appendChild(
-                            th
+                        colonnesMap.set(
+                            cle,
+                            {
+                                cle: cle,
+                                date: cellule.date,
+                                dateAffichage:
+                                    cellule.dateAffichage || dateCle,
+                                creneauOrdre:
+                                    creneauOrdre,
+                                heureDebutAffichage:
+                                    cellule.heureDebutAffichage || "",
+                                heureFinAffichage:
+                                    cellule.heureFinAffichage || ""
+                            }
                         );
 
                     }
-                );
+
+                }
+            );
+
+        }
+    );
+
+    // -------------------------------------------------
+    // Tri des colonnes
+    // -------------------------------------------------
+
+    const colonnes =
+        Array.from(
+            colonnesMap.values()
+        );
+
+    colonnes.sort(
+        function (a, b) {
+
+            if (
+                a.date &&
+                typeof a.date.toDate === "function" &&
+                b.date &&
+                typeof b.date.toDate === "function"
+            ) {
+
+                const dateA =
+                    a.date.toDate().getTime();
+
+                const dateB =
+                    b.date.toDate().getTime();
+
+                if (dateA !== dateB) {
+                    return dateA - dateB;
+                }
 
             }
+
+            return (
+                a.creneauOrdre -
+                b.creneauOrdre
+            );
+
+        }
+    );
+
+    console.log(
+        "📅 Colonnes du calendrier Firestore :",
+        colonnes
+    );
+
+    // =================================================
+    // EN-TÊTE : FILIÈRE + AMPHIS + DATES
+    // =================================================
+
+    const ligneDates =
+        document.createElement("tr");
+
+    const thFiliere =
+        document.createElement("th");
+
+    thFiliere.textContent =
+        "FILIÈRE";
+
+    thFiliere.rowSpan = 2;
+
+    ligneDates.appendChild(
+        thFiliere
+    );
+
+    const thAmphis =
+        document.createElement("th");
+
+    thAmphis.textContent =
+        "AMPHIS";
+
+    thAmphis.rowSpan = 2;
+
+    ligneDates.appendChild(
+        thAmphis
+    );
+
+    // -------------------------------------------------
+    // Regroupement des colonnes par date
+    // -------------------------------------------------
+
+    let indexColonne = 0;
+
+    while (
+        indexColonne < colonnes.length
+    ) {
+
+        const colonne =
+            colonnes[indexColonne];
+
+        const dateCle =
+            colonne.date &&
+            typeof colonne.date.toDate === "function"
+                ? colonne.date.toDate()
+                    .toISOString()
+                    .substring(0, 10)
+                : colonne.dateAffichage;
+
+        let nombreCreneaux = 1;
+
+        let j =
+            indexColonne + 1;
+
+        while (
+            j < colonnes.length
+        ) {
+
+            const autre =
+                colonnes[j];
+
+            const autreDateCle =
+                autre.date &&
+                typeof autre.date.toDate === "function"
+                    ? autre.date.toDate()
+                        .toISOString()
+                        .substring(0, 10)
+                    : autre.dateAffichage;
+
+            if (
+                autreDateCle !==
+                dateCle
+            ) {
+
+                break;
+            }
+
+            nombreCreneaux++;
+            j++;
+
+        }
+
+        const thDate =
+            document.createElement("th");
+
+        thDate.textContent =
+            colonne.dateAffichage ||
+            dateCle;
+
+        thDate.colSpan =
+            nombreCreneaux;
+
+        ligneDates.appendChild(
+            thDate
         );
 
+        indexColonne = j;
 
-        thead.appendChild(
-            ligneCreneaux
-        );
+    }
 
+    thead.appendChild(
+        ligneDates
+    );
 
-        // =================================================
-        // LIGNES DES FILIÈRES
-        // =================================================
+    // =================================================
+    // LIGNE DES HORAIRES
+    // =================================================
 
-        filieres.forEach(
-            function (filiere) {
+    const ligneCreneaux =
+        document.createElement("tr");
 
-                const ligne =
-                    document.createElement("tr");
+    colonnes.forEach(
+        function (colonne) {
 
+            const th =
+                document.createElement("th");
 
-                // -------------------------------------------------
-                // FILIÈRE
-                // -------------------------------------------------
+            const heureDebut =
+                colonne.heureDebutAffichage;
 
-                const celluleFiliere =
-                    document.createElement("td");
+            const heureFin =
+                colonne.heureFinAffichage;
 
-                celluleFiliere.textContent =
-                    filiere;
+            if (
+                heureDebut ||
+                heureFin
+            ) {
 
-                ligne.appendChild(
-                    celluleFiliere
-                );
+                th.textContent =
+                    heureDebut +
+                    "–" +
+                    heureFin;
 
+            }
+            else {
 
-                // -------------------------------------------------
-                // AMPHIS
-                // -------------------------------------------------
+                th.textContent =
+                    "Créneau " +
+                    colonne.creneauOrdre;
 
-                const celluleAmphis =
-                    document.createElement("td");
+            }
+
+            ligneCreneaux.appendChild(
+                th
+            );
+
+        }
+    );
+
+    thead.appendChild(
+        ligneCreneaux
+    );
+
+    // =================================================
+    // LIGNES DES FILIÈRES
+    // =================================================
+
+    planning.filieres.forEach(
+        function (filiere) {
+
+            const ligne =
+                document.createElement("tr");
+
+            // -------------------------------------------------
+            // FILIÈRE
+            // -------------------------------------------------
+
+            const celluleFiliere =
+                document.createElement("td");
+
+            celluleFiliere.textContent =
+                filiere.filiereCode || "";
+
+            ligne.appendChild(
+                celluleFiliere
+            );
+
+            // -------------------------------------------------
+            // AMPHIS
+            // -------------------------------------------------
+
+            const celluleAmphis =
+                document.createElement("td");
+
+            if (
+                Array.isArray(filiere.amphis)
+            ) {
 
                 celluleAmphis.textContent =
-                    "";
+                    filiere.amphis.join(", ");
 
-                ligne.appendChild(
-                    celluleAmphis
-                );
+            }
+            else {
 
+                celluleAmphis.textContent =
+                    filiere.amphis || "";
 
-                // =================================================
-                // CELLULES DATE × CRÉNEAU
-                // =================================================
+            }
 
-                datesSession.forEach(
-                    function () {
+            ligne.appendChild(
+                celluleAmphis
+            );
 
-                        creneauxSession.forEach(
-                            function () {
+            // -------------------------------------------------
+            // CELLULES DU PLANNING
+            // -------------------------------------------------
 
-                                const cellule =
-                                    document.createElement("td");
+            const cellules =
+                Array.isArray(filiere.cellules)
+                    ? filiere.cellules
+                    : [];
 
+            colonnes.forEach(
+                function (colonne) {
 
-                                // -------------------------------------------------
-                                // Pour le moment aucune matière n'est
-                                // affectée à une date/créneau.
-                                // -------------------------------------------------
+                    const celluleHTML =
+                        document.createElement("td");
 
-                                cellule.textContent =
-                                    "—";
+                    // Recherche de la cellule Firestore
+                    const celluleFirestore =
+                        cellules.find(
+                            function (cellule) {
 
-
-                                ligne.appendChild(
-                                    cellule
+                                return (
+                                    Number(
+                                        cellule.creneauOrdre
+                                    ) ===
+                                    colonne.creneauOrdre
+                                    &&
+                                    (
+                                        (
+                                            cellule.date &&
+                                            typeof cellule.date.toDate ===
+                                            "function"
+                                            &&
+                                            cellule.date
+                                                .toDate()
+                                                .toISOString()
+                                                .substring(0, 10)
+                                                ===
+                                            (
+                                                colonne.date &&
+                                                typeof colonne.date.toDate ===
+                                                "function"
+                                                    ? colonne.date
+                                                        .toDate()
+                                                        .toISOString()
+                                                        .substring(0, 10)
+                                                    : colonne.dateAffichage
+                                            )
+                                        )
+                                        ||
+                                        (
+                                            !cellule.date &&
+                                            cellule.dateAffichage ===
+                                            colonne.dateAffichage
+                                        )
+                                    )
                                 );
 
                             }
                         );
 
+                    // -------------------------------------------------
+                    // Affichage de la matière déjà enregistrée
+                    // -------------------------------------------------
+
+                    if (
+                        celluleFirestore &&
+                        celluleFirestore.matiereLibelle
+                    ) {
+
+                        celluleHTML.textContent =
+                            celluleFirestore.matiereLibelle;
+
                     }
-                );
+                    else {
 
+                        celluleHTML.textContent =
+                            "—";
 
-                tbody.appendChild(
-                    ligne
-                );
+                    }
 
-            }
-        );
+                    ligne.appendChild(
+                        celluleHTML
+                    );
 
+                }
+            );
 
-        console.log(
-            "✓ Calendrier construit."
-        );
+            tbody.appendChild(
+                ligne
+            );
 
-    }
+        }
+    );
+
+    console.log(
+        "✅ Calendrier publié affiché depuis Firestore."
+    );
+
+}
+
 
 
     // =====================================================
