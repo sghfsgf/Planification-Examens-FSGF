@@ -173,17 +173,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================================
 
     const selectSemestre = document.getElementById(
-        "semestre"
-    );
+    "selectSemestre"
+);
 
-    const selectRegime = document.getElementById(
-        "regime"
-    );
+const selectRegime = document.getElementById(
+    "selectRegime"
+);
 
-    const selectSession = document.getElementById(
-        "session"
-    );
-
+const selectSession = document.getElementById(
+    "selectSession"
+);
 
     // -----------------------------------------------------
     // Sessions disponibles selon semestre + régime
@@ -307,8 +306,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initialisation des sessions
     mettreAJourSessions();
+// =====================================================
+// 7. BOUTON AFFICHER LE CALENDRIER
+// =====================================================
 
+const btnAfficherCalendrier = document.getElementById(
+    "btnAfficherCalendrier"
+);
 
+if (btnAfficherCalendrier) {
+
+    btnAfficherCalendrier.addEventListener(
+        "click",
+        () => {
+
+            const niveau = selectNiveau
+                ? selectNiveau.value
+                : "";
+
+            const semestre = selectSemestre
+                ? selectSemestre.value
+                : "";
+
+            const regime = selectRegime
+                ? selectRegime.value
+                : "";
+
+            const sessionCode = selectSession
+                ? selectSession.value
+                : "";
+
+            console.log(
+                "📅 Demande d'affichage du calendrier :",
+                {
+                    niveau: niveau,
+                    semestre: semestre,
+                    regime: regime,
+                    sessionCode: sessionCode
+                }
+            );
+
+        }
+    );
+
+}
+
+    
     // =====================================================
     // 7. BOUTON GÉNÉRER
     // =====================================================
