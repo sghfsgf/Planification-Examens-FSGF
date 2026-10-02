@@ -83,8 +83,10 @@ document.addEventListener("DOMContentLoaded", function () {
             donneesExamens.creneaux || [];
 
         const sallesAmphis =
-            donneesExamens.sallesAmphis || [];
-
+          (typeof donneesRessources !== "undefined" &&
+            donneesRessources)
+              ? (donneesRessources.sallesAmphis || [])
+        : [];
 
         console.log(
             "Matières :",
