@@ -108,98 +108,74 @@ async function chargerCollection(nomCollection) {
 async function chargerDonneesGeneration() {
 
     console.log("==========================================");
-    console.log("GÉNÉRATION - CHARGEMENT DES DONNÉES");
+    console.log("CHARGEMENT DES DONNÉES POUR LA GÉNÉRATION");
     console.log("==========================================");
 
     try {
-    // -------------------------------------------------
-// Charger les données depuis Firestore
-// -------------------------------------------------
 
-console.log(
-    "📥 Chargement des données de génération depuis Firestore..."
-);
-
-
-// -------------------------------------------------
-// Matières
-// -------------------------------------------------
-
-donneesGeneration.matieres =
-    await chargerCollection("matieres");
-
-
-// -------------------------------------------------
-// Sessions
-// -------------------------------------------------
-
-donneesGeneration.sessions =
-    await chargerCollection("sessions");
-
-
-// -------------------------------------------------
-// Créneaux
-// -------------------------------------------------
-
-donneesGeneration.creneaux =
-    await chargerCollection("creneaux");
-
-
-// -------------------------------------------------
-// Salles / amphis
-// -------------------------------------------------
-
-donneesGeneration.sallesAmphis =
-    await chargerCollection("salles_amphis");
-
-
-// -------------------------------------------------
-// Diagnostic
-// -------------------------------------------------
-
-console.log(
-    "✓ Données Firestore chargées pour la génération."
-);
-
-
-
-        
         // -------------------------------------------------
-        // Diagnostic
+        // Attendre que data.js ait terminé le chargement
+        // -------------------------------------------------
+
+        if (!window.donneesChargees) {
+
+            throw new Error(
+                "Les données de data.js ne sont pas disponibles."
+            );
+        }
+
+        const chargementOK =
+            await window.donneesChargees;
+
+        if (!chargementOK) {
+
+            throw new Error(
+                "Le chargement des données Excel a échoué."
+            );
+        }
+
+        // -------------------------------------------------
+        // Récupérer les données déjà chargées par data.js
+        // -------------------------------------------------
+
+        donneesGeneration.matieres =
+            window.obtenirMatieres();
+
+        donneesGeneration.sessions =
+            window.obtenirSessions();
+
+        donneesGeneration.creneaux =
+            window.obtenirCreneaux();
+
+        donneesGeneration.sallesAmphis =
+            window.obtenirSallesAmphis();
+
+        // -------------------------------------------------
+        // Contrôle
         // -------------------------------------------------
 
         console.log(
-            "✓ Matières :",
+            "Matières :",
             donneesGeneration.matieres.length
         );
 
         console.log(
-            "✓ Sessions :",
+            "Sessions :",
             donneesGeneration.sessions.length
         );
 
         console.log(
-            "✓ Créneaux :",
+            "Créneaux :",
             donneesGeneration.creneaux.length
         );
 
         console.log(
-            "✓ Salles / amphis :",
+            "Salles / amphis :",
             donneesGeneration.sallesAmphis.length
         );
 
-        generationChargee = true;
-
         console.log(
-            "------------------------------------------"
-        );
-
-        console.log(
-            "✓ DONNÉES DE GÉNÉRATION CHARGÉES"
-        );
-
-        console.log(
-            "------------------------------------------"
+            "✓ Données de génération récupérées depuis data.js"
         );
 
         return true;
@@ -207,16 +183,13 @@ console.log(
     } catch (erreur) {
 
         console.error(
-            "❌ Erreur lors du chargement des données :",
+            "❌ Erreur lors du chargement des données de génération :",
             erreur
         );
-
-        generationChargee = false;
 
         return false;
     }
 }
-
 
 // =====================================================
 // VÉRIFIER LES DONNÉES
