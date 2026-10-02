@@ -118,45 +118,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const selectSession =
         document.getElementById("selectSession");
 
-
-    // =================================================
-    // CONSTRUIRE LE CALENDRIER
-    // =================================================
-
-    async function construireCalendrier() {
-        
-        console.log("====================================");
-        console.log("CONSTRUCTION DU CALENDRIER");
-        console.log("====================================");
-
-
-        // -------------------------------------------------
-        // Vérification des éléments HTML
-        // -------------------------------------------------
-
-        if (!tableau) {
-
-            console.error(
-                "Calendrier : tableauCalendrier introuvable."
-            );
-
-            return;
-        }
-
-
-        if (!niveauCalendrier) {
-
-            console.error(
-                "Calendrier : niveauCalendrier introuvable."
-            );
-
-            return;
-        }
-
-
-        // -------------------------------------------------
-        // Récupération des données chargées par data.js
-        // -------------------------------------------------
  
 // =================================================
 // CONSTRUIRE LE CALENDRIER
