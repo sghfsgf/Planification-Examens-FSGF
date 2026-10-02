@@ -2724,6 +2724,10 @@ document.addEventListener(
             document.getElementById(
                 "btnGenererCalendrier"
             );
+        console.log(
+    "🔎 Bouton trouvé :",
+    boutonGenerer
+);
 
         if (!boutonGenerer) {
 
