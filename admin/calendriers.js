@@ -410,6 +410,8 @@ function initialiserFiltresCalendrierAdmin() {
         document.getElementById("btnAfficherCalendrierAdmin");
     const boutonEnregistrer =
     document.getElementById("btnEnregistrerCalendrierAdmin");
+    const boutonRegenerer =
+    document.getElementById("btnRegenererCalendrierAdmin");
 
     if (
         !selectNiveau ||
