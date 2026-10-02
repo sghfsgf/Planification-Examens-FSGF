@@ -155,84 +155,84 @@ function formaterDateLongue(date) {
 // Construire le tableau HTML du calendrier
 // =====================================================
 
+```js
 function construireTableauCalendrier(planning) {
 
     console.log("------------------------------------------");
     console.log("CONSTRUCTION DU TABLEAU DU CALENDRIER");
     console.log("------------------------------------------");
 
-    if (!planning) {
-        console.error("❌ Aucun planning fourni.");
+    if (!planning || !planning.filieres || planning.filieres.length === 0) {
+        console.error("❌ Planning ou filières absents.");
         return null;
     }
 
-    // -------------------------------------------------
-    // Récupérer toutes les cellules de référence
-    // -------------------------------------------------
-
     const premiereFiliere = planning.filieres[0];
 
-    if (!premiereFiliere || premiereFiliere.cellules.length === 0) {
+    if (!premiereFiliere.cellules || premiereFiliere.cellules.length === 0) {
         console.error("❌ Aucune cellule disponible.");
         return null;
     }
 
-    const cellules = premiereFiliere.cellules;
-
     // -------------------------------------------------
-    // Regrouper les cellules par date
+    // 1. Construire la structure DATE → CELLULES
     // -------------------------------------------------
 
-    const dates = [];
+    const groupesDates = {};
 
-cellules.forEach(function (cellule) {
+    premiereFiliere.cellules.forEach(function (cellule) {
 
-    let dateCellule = cellule.date;
+        let dateCellule = cellule.date;
 
-    // Timestamp Firestore → Date JavaScript
-    if (
-        dateCellule &&
-        typeof dateCellule.toDate === "function"
-    ) {
-        dateCellule = dateCellule.toDate();
-    }
+        // Timestamp Firestore → Date JavaScript
+        if (
+            dateCellule &&
+            typeof dateCellule.toDate === "function"
+        ) {
+            dateCellule = dateCellule.toDate();
+        }
 
-    // Autre format → Date JavaScript
-    else if (
-        !(dateCellule instanceof Date)
-    ) {
-        dateCellule = new Date(dateCellule);
-    }
+        // Autre format → Date JavaScript
+        else if (!(dateCellule instanceof Date)) {
+            dateCellule = new Date(dateCellule);
+        }
 
-    const cleDate =
-        dateCellule.getFullYear() +
-        "-" +
-        String(
-            dateCellule.getMonth() + 1
-        ).padStart(2, "0") +
-        "-" +
-        String(
-            dateCellule.getDate()
-        ).padStart(2, "0");
+        if (isNaN(dateCellule.getTime())) {
+            console.error("❌ Date invalide :", cellule.date);
+            return;
+        }
 
-    const dateExiste =
-        dates.some(function (date) {
-            return date.cle === cleDate;
+        const cleDate =
+            dateCellule.getFullYear() +
+            "-" +
+            String(dateCellule.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(dateCellule.getDate()).padStart(2, "0");
+
+        if (!groupesDates[cleDate]) {
+            groupesDates[cleDate] = {
+                date: dateCellule,
+                cellules: []
+            };
+        }
+
+        groupesDates[cleDate].cellules.push(cellule);
+    });
+
+    // -------------------------------------------------
+    // 2. Transformer en tableau de dates
+    // -------------------------------------------------
+
+    const dates = Object.keys(groupesDates)
+        .sort()
+        .map(function (cleDate) {
+            return groupesDates[cleDate];
         });
 
-    if (!dateExiste) {
-
-        dates.push({
-            cle: cleDate,
-            date: dateCellule
-        });
-
-    }
-
-});
+    console.log("Dates regroupées :", dates.length);
 
     // -------------------------------------------------
-    // Créer le tableau
+    // 3. Créer le tableau
     // -------------------------------------------------
 
     const tableau = document.createElement("table");
@@ -240,12 +240,15 @@ cellules.forEach(function (cellule) {
     tableau.className = "tableau-calendrier";
 
     // -------------------------------------------------
-    // THEAD
+    // 4. THEAD
     // -------------------------------------------------
 
     const thead = document.createElement("thead");
 
-    // Première ligne : dates
+    // =================================================
+    // Première ligne : DATES
+    // =================================================
+
     const ligneDates = document.createElement("tr");
 
     const thFiliere = document.createElement("th");
@@ -262,45 +265,41 @@ cellules.forEach(function (cellule) {
 
     ligneDates.appendChild(thAmphis);
 
-    dates.forEach(function (elementDate) {
+    dates.forEach(function (groupeDate) {
 
-    const date =
-        elementDate.date;
+        const thDate = document.createElement("th");
 
-    const cellulesDate = cellules.filter(function (cellule) {
-        return cellule.date === date;
-    });
+        thDate.textContent =
+            formaterDateLongue(groupeDate.date);
 
-    const thDate = document.createElement("th");
-
-    thDate.textContent =
-        formaterDateLongue(date);
-        
         thDate.colSpan =
-            cellulesDate.length;
+            groupeDate.cellules.length;
 
         ligneDates.appendChild(thDate);
     });
 
     thead.appendChild(ligneDates);
 
-    // -------------------------------------------------
-    // Deuxième ligne : créneaux
-    // -------------------------------------------------
+    // =================================================
+    // Deuxième ligne : CRÉNEAUX
+    // =================================================
 
     const ligneCreneaux = document.createElement("tr");
 
-    cellules.forEach(function (cellule) {
+    dates.forEach(function (groupeDate) {
 
-        const thCreneau =
-            document.createElement("th");
+        groupeDate.cellules.forEach(function (cellule) {
 
-        thCreneau.textContent =
-            cellule.heureDebutAffichage +
-            " - " +
-            cellule.heureFinAffichage;
+            const thCreneau =
+                document.createElement("th");
 
-        ligneCreneaux.appendChild(thCreneau);
+            thCreneau.textContent =
+                cellule.heureDebutAffichage +
+                " - " +
+                cellule.heureFinAffichage;
+
+            ligneCreneaux.appendChild(thCreneau);
+        });
     });
 
     thead.appendChild(ligneCreneaux);
@@ -308,7 +307,7 @@ cellules.forEach(function (cellule) {
     tableau.appendChild(thead);
 
     // -------------------------------------------------
-    // TBODY
+    // 5. TBODY
     // -------------------------------------------------
 
     const tbody = document.createElement("tbody");
@@ -317,7 +316,10 @@ cellules.forEach(function (cellule) {
 
         const ligne = document.createElement("tr");
 
+        // ---------------------------------------------
         // Filière
+        // ---------------------------------------------
+
         const celluleFiliere =
             document.createElement("td");
 
@@ -326,7 +328,10 @@ cellules.forEach(function (cellule) {
 
         ligne.appendChild(celluleFiliere);
 
+        // ---------------------------------------------
         // Amphis
+        // ---------------------------------------------
+
         const celluleAmphis =
             document.createElement("td");
 
@@ -334,44 +339,61 @@ cellules.forEach(function (cellule) {
 
         ligne.appendChild(celluleAmphis);
 
+        // ---------------------------------------------
         // Matières
-        filiere.cellules.forEach(function (cellule) {
+        // ---------------------------------------------
 
-            const td = document.createElement("td");
+        dates.forEach(function (groupeDate) {
 
-            if (cellule.estOccupee) {
+            groupeDate.cellules.forEach(function (celluleReference) {
 
-    td.textContent =
-        cellule.matiereLibelle;
+                const index =
+                    premiereFiliere.cellules.indexOf(celluleReference);
 
-} else {
+                const cellule =
+                    filiere.cellules[index];
 
-    td.textContent = "—";
-}
+                const td =
+                    document.createElement("td");
 
-// -------------------------------------------------
-// Préparer la cellule pour la modification à la souris
-// -------------------------------------------------
+                if (cellule && cellule.estOccupee) {
 
-td.dataset.filiere =
-    filiere.filiereCode;
+                    td.textContent =
+                        cellule.matiereLibelle;
 
-td.dataset.index =
-    filiere.cellules.indexOf(cellule);
+                } else {
 
-td.classList.add(
-    "cellule-calendrier-modifiable"
-);
+                    td.textContent = "—";
+                }
 
-td.style.cursor = "pointer";
+                // -------------------------------------
+                // Modification à la souris
+                // -------------------------------------
 
-            ligne.appendChild(td);
+                td.dataset.filiere =
+                    filiere.filiereCode;
+
+                td.dataset.index =
+                    index;
+
+                td.classList.add(
+                    "cellule-calendrier-modifiable"
+                );
+
+                td.style.cursor = "pointer";
+
+                ligne.appendChild(td);
+            });
         });
 
         tbody.appendChild(ligne);
     });
 
     tableau.appendChild(tbody);
+
+    // -------------------------------------------------
+    // 6. LOGS
+    // -------------------------------------------------
 
     console.log("✓ Tableau du calendrier construit.");
 
@@ -387,6 +409,11 @@ td.style.cursor = "pointer";
 
     return tableau;
 }
+```
+
+
+
+
 // =====================================================
 // FILTRES DU CALENDRIER ADMIN
 // =====================================================
