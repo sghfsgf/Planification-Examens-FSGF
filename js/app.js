@@ -119,9 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. NIVEAU DU CALENDRIER
     // =====================================================
 
-    const selectNiveau = document.getElementById(
-        "niveau"
-    );
+  const selectNiveau = document.getElementById(
+    "selectNiveau"
+);
 
     const niveauCalendrier = document.getElementById(
         "niveauCalendrier"
