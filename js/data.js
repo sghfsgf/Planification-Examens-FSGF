@@ -662,6 +662,15 @@ function obtenirSallesAmphis() {
 
 }
 
+// =====================================================
+// API GLOBALE POUR LES AUTRES MODULES ADMIN
+// =====================================================
+
+window.obtenirMatieres = obtenirMatieres;
+window.obtenirSessions = obtenirSessions;
+window.obtenirCreneaux = obtenirCreneaux;
+window.obtenirSallesAmphis = obtenirSallesAmphis;
+window.donneesChargees = donneesChargees;
 
 // =====================================================
 // 10. ÉTAT DU CHARGEMENT
