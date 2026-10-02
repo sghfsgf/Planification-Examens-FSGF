@@ -70,7 +70,11 @@ let donneesGeneration = {
 
 let generationChargee = false;
 
+// =====================================================
+// DERNIER CALENDRIER ENREGISTRÉ
+// =====================================================
 
+let dernierCalendrierEnregistre = null;
 // =====================================================
 // CHARGER UNE COLLECTION FIRESTORE
 // =====================================================
