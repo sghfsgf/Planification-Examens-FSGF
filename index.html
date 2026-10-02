@@ -121,8 +121,23 @@
                     </span>
                 </h2>
 
-                <div class="filtres-calendrier">
+   <div class="filtres-calendrier">
 
+    <!-- NIVEAU -->
+    <label for="selectNiveau">
+        Niveau :
+    </label>
+
+    <select id="selectNiveau">
+        <option value="L1">L1</option>
+        <option value="L2">L2</option>
+        <option value="L3">L3</option>
+        <option value="MP">MP</option>
+        <option value="MR">MR</option>
+    </select>
+
+
+    <!-- SEMESTRE -->
     <label for="selectSemestre">
         Semestre :
     </label>
@@ -133,6 +148,7 @@
     </select>
 
 
+    <!-- RÉGIME -->
     <label for="selectRegime">
         Régime :
     </label>
@@ -143,6 +159,7 @@
     </select>
 
 
+    <!-- SESSION -->
     <label for="selectSession">
         Session :
     </label>
@@ -150,6 +167,15 @@
     <select id="selectSession">
         <option value="DS_S1">DS S1</option>
     </select>
+
+
+    <!-- AFFICHER -->
+    <button
+        type="button"
+        id="btnAfficherCalendrier"
+    >
+        📅 Afficher le calendrier
+    </button>
 
 </div>
 
