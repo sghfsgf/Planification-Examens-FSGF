@@ -17,6 +17,90 @@ import { app } from
 
 const db = getFirestore(app);
 
+// =====================================================
+// LECTURE DU DERNIER CALENDRIER PUBLIÉ DANS FIRESTORE
+// =====================================================
+
+async function chargerCalendrierFirestore(
+    anneeUniversitaire,
+    niveauCode,
+    semestreCode,
+    regimeCode,
+    sessionCode
+) {
+    try {
+        const { collection, getDocs } =
+            await import(
+                "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js"
+            );
+
+        const snapshot = await getDocs(
+            collection(db, "calendriers")
+        );
+
+        const calendriers = [];
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+
+            if (
+                data.anneeUniversitaire === anneeUniversitaire &&
+                data.niveauCode === niveauCode &&
+                data.semestreCode === semestreCode &&
+                data.regimeCode === regimeCode &&
+                data.sessionCode === sessionCode &&
+                data.statut === "publie"
+            ) {
+                calendriers.push({
+                    id: doc.id,
+                    ...data
+                });
+            }
+        });
+
+        if (calendriers.length === 0) {
+            console.log(
+                "ℹ️ Aucun calendrier publié trouvé dans Firestore."
+            );
+            return null;
+        }
+
+        // Dernière version selon modifieLe
+        calendriers.sort((a, b) => {
+            const dateA = a.modifieLe?.toMillis
+                ? a.modifieLe.toMillis()
+                : 0;
+
+            const dateB = b.modifieLe?.toMillis
+                ? b.modifieLe.toMillis()
+                : 0;
+
+            return dateB - dateA;
+        });
+
+        const calendrier = calendriers[0];
+
+        console.log(
+            "✓ Calendrier publié trouvé dans Firestore :",
+            calendrier.id
+        );
+
+        console.log(
+            "📅 Planning Firestore :",
+            calendrier.planning
+        );
+
+        return calendrier;
+
+    } catch (erreur) {
+        console.error(
+            "❌ Erreur lecture Firestore :",
+            erreur
+        );
+
+        return null;
+    }
+}
 
 document.addEventListener("DOMContentLoaded", function () {
     const tableau =
