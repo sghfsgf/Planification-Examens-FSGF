@@ -123,8 +123,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // CONSTRUIRE LE CALENDRIER
     // =================================================
 
-    function construireCalendrier() {
-
+    async function construireCalendrier() {
+        
         console.log("====================================");
         console.log("CONSTRUCTION DU CALENDRIER");
         console.log("====================================");
@@ -248,7 +248,25 @@ document.addEventListener("DOMContentLoaded", function () {
             selectSession
                 ? selectSession.value
                 : "";
+// -------------------------------------------------
+// Lecture du calendrier publié depuis Firestore
+// -------------------------------------------------
 
+const anneeUniversitaire = "2025-2026";
+
+const calendrierFirestore =
+    await chargerCalendrierFirestore(
+        anneeUniversitaire,
+        niveau,
+        semestre,
+        regime,
+        sessionCode
+    );
+
+console.log(
+    "📦 Calendrier récupéré depuis Firestore :",
+    calendrierFirestore
+);
 
         console.log(
             "Niveau :",
