@@ -3,8 +3,22 @@
 // Construction et affichage des calendriers
 // =====================================================
 
-document.addEventListener("DOMContentLoaded", function () {
+// =====================================================
+// CALENDRIERS.JS
+// Construction et affichage des calendriers
+// =====================================================
 
+import { getFirestore } from
+    "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+import { app } from
+    "../firebase-config.js";
+
+
+const db = getFirestore(app);
+
+
+document.addEventListener("DOMContentLoaded", function () {
     const tableau =
         document.getElementById("tableauCalendrier");
 
