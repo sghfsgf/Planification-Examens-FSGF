@@ -1003,6 +1003,12 @@ if (btnExportExcel) {
                                 sz: 11
                             },
 
+                            fill: {
+        fgColor: {
+            rgb: "99CCFF"
+        }
+    },
+
                             alignment: {
                                 horizontal: "center",
                                 vertical: "center",
