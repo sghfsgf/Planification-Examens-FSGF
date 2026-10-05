@@ -490,9 +490,24 @@ async function construireCalendrier() {
         const thDate =
             document.createElement("th");
 
-        thDate.textContent =
-            colonne.dateAffichage ||
-            dateCle;
+       if (
+    colonne.date &&
+    typeof colonne.date.toDate === "function"
+) {
+
+    thDate.textContent =
+        formaterDateDepuisObjet(
+            colonne.date.toDate()
+        );
+
+}
+else {
+
+    thDate.textContent =
+        colonne.dateAffichage ||
+        dateCle;
+
+}
 
         thDate.colSpan =
             nombreCreneaux;
