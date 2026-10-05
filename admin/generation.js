@@ -142,17 +142,72 @@ async function chargerDonneesGeneration() {
         // Récupérer les données déjà chargées par data.js
         // -------------------------------------------------
 
-        donneesGeneration.matieres =
-            window.obtenirMatieres();
+       // -------------------------------------------------
+// Récupérer les données actuelles depuis Firestore
+// -------------------------------------------------
 
-        donneesGeneration.sessions =
-            window.obtenirSessions();
+const snapshotMatieres =
+    await getDocs(
+        collection(
+            db,
+            "matieres"
+        )
+    );
 
-        donneesGeneration.creneaux =
-            window.obtenirCreneaux();
+donneesGeneration.matieres =
+    snapshotMatieres.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
 
-        donneesGeneration.sallesAmphis =
-            window.obtenirSallesAmphis();
+
+const snapshotSessions =
+    await getDocs(
+        collection(
+            db,
+            "sessions"
+        )
+    );
+
+donneesGeneration.sessions =
+    snapshotSessions.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
+
+const snapshotCreneaux =
+    await getDocs(
+        collection(
+            db,
+            "creneaux"
+        )
+    );
+
+donneesGeneration.creneaux =
+    snapshotCreneaux.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
+
+const snapshotSallesAmphis =
+    await getDocs(
+        collection(
+            db,
+            "salles_amphis"
+        )
+    );
+
+donneesGeneration.sallesAmphis =
+    snapshotSallesAmphis.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
 
         // -------------------------------------------------
         // Contrôle
