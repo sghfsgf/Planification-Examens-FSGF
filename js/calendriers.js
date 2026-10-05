@@ -622,8 +622,7 @@ async function construireCalendrier() {
 
                     const celluleHTML =
                         document.createElement("td");
-                    celluleHTML.className = "cellule-examen";
-
+                    
                     // Recherche de la cellule Firestore
                     const celluleFirestore =
                         cellules.find(
@@ -673,21 +672,24 @@ async function construireCalendrier() {
                     // Affichage de la matière déjà enregistrée
                     // -------------------------------------------------
 
-                    if (
-                        celluleFirestore &&
-                        celluleFirestore.matiereLibelle
-                    ) {
+                   if (
+    celluleFirestore &&
+    celluleFirestore.matiereLibelle
+) {
 
-                        celluleHTML.textContent =
-                            celluleFirestore.matiereLibelle;
+    celluleHTML.textContent =
+        celluleFirestore.matiereLibelle;
 
-                    }
-                    else {
+    celluleHTML.className =
+        "cellule-examen";
 
-                        celluleHTML.textContent =
-                            "—";
+}
+else {
 
-                    }
+    celluleHTML.textContent =
+        "—";
+
+}
 
                     ligne.appendChild(
                         celluleHTML
