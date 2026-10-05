@@ -622,6 +622,7 @@ async function construireCalendrier() {
 
                     const celluleHTML =
                         document.createElement("td");
+                    celluleHTML.className = "cellule-examen";
 
                     // Recherche de la cellule Firestore
                     const celluleFirestore =
