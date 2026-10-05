@@ -2779,8 +2779,22 @@ function obtenirDonneesGeneration() {
 // =====================================================
 // EXPOSER LES FONCTIONS
 // =====================================================
+function definirDernierCalendrierEnregistre(idCalendrier) {
+
+    dernierCalendrierEnregistre =
+        idCalendrier;
+
+    console.log(
+        "✓ Dernier calendrier enregistré défini :",
+        dernierCalendrierEnregistre
+    );
+}
+
 
 window.generationExamens = {
+
+    definirDernierCalendrierEnregistre:
+    definirDernierCalendrierEnregistre,
 
     chargerDonnees:
         chargerDonneesGeneration,
