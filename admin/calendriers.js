@@ -947,6 +947,19 @@ boutonRegenerer.addEventListener(
         "✓ Calendrier enregistré dans Firestore."
     );
 
+        // Mémoriser le calendrier pour la publication
+    if (
+        resultat.id &&
+        window.generationExamens &&
+        typeof window.generationExamens.definirDernierCalendrierEnregistre === "function"
+    ) {
+
+        window.generationExamens.definirDernierCalendrierEnregistre(
+            resultat.id
+        );
+
+    }               
+
     // -----------------------------------------
     // Activer le bouton Publier
     // -----------------------------------------
