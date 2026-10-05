@@ -983,13 +983,17 @@ boutonRegenerer.addEventListener(
 // ATTENDRE LE CHARGEMENT DES DONNÉES FIRESTORE
 // =====================================================
 
+// =====================================================
+// ATTENDRE LE CHARGEMENT DU MOTEUR DE GÉNÉRATION
+// =====================================================
+
 async function initialiserCalendriersApresFirestore() {
 
     console.log(
         "⏳ Attente du moteur de génération..."
     );
 
-    const maximumTentatives = 100;
+    const maximumTentatives = 150;
 
     for (
         let tentative = 0;
@@ -997,42 +1001,54 @@ async function initialiserCalendriersApresFirestore() {
         tentative++
     ) {
 
-        // -----------------------------------------
-        // 1. Vérifier que generationExamens existe
-        // -----------------------------------------
+        // -------------------------------------------------
+        // Vérifier que generationExamens existe
+        // -------------------------------------------------
 
         if (
-            typeof generationExamens === "undefined"
+            typeof window.generationExamens ===
+            "undefined"
         ) {
 
-            await new Promise(function (resolve) {
-                setTimeout(resolve, 100);
-            });
+            await new Promise(
+                function (resolve) {
+                    setTimeout(
+                        resolve,
+                        100
+                    );
+                }
+            );
 
             continue;
         }
 
-        // -----------------------------------------
-        // 2. Récupérer les données Firestore
-        // -----------------------------------------
+        // -------------------------------------------------
+        // Récupérer les données du moteur
+        // -------------------------------------------------
 
         const donneesGeneration =
-            generationExamens.obtenirDonnees();
+            window.generationExamens.obtenirDonnees();
 
-        // -----------------------------------------
-        // 3. Vérifier que les sessions sont chargées
-        // -----------------------------------------
+        // -------------------------------------------------
+        // Vérifier les sessions
+        // -------------------------------------------------
 
         if (
             donneesGeneration &&
-            Array.isArray(donneesGeneration.sessions) &&
+            Array.isArray(
+                donneesGeneration.sessions
+            ) &&
             donneesGeneration.sessions.length > 0
         ) {
 
             console.log(
-                "✓ Sessions Firestore prêtes :",
+                "✓ Sessions du moteur disponibles :",
                 donneesGeneration.sessions.length
             );
+
+            // -------------------------------------------------
+            // Initialiser les filtres
+            // -------------------------------------------------
 
             initialiserFiltresCalendrierAdmin();
 
@@ -1043,16 +1059,22 @@ async function initialiserCalendriersApresFirestore() {
             return;
         }
 
-        await new Promise(function (resolve) {
-            setTimeout(resolve, 100);
-        });
+        await new Promise(
+            function (resolve) {
+                setTimeout(
+                    resolve,
+                    100
+                );
+            }
+        );
     }
 
     console.error(
-        "❌ Les données Firestore ne sont pas disponibles après attente."
+        "❌ Le moteur de génération n'est pas disponible."
     );
-}
 
+}
+    
 initialiserCalendriersApresFirestore();
 
 // =====================================================
