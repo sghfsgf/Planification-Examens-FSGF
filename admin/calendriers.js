@@ -941,13 +941,32 @@ boutonRegenerer.addEventListener(
                         planning
                     );
 
-                if (resultat) {
+               if (resultat) {
 
-                    console.log(
-                        "✓ Calendrier enregistré dans Firestore."
-                    );
+    console.log(
+        "✓ Calendrier enregistré dans Firestore."
+    );
 
-                } else {
+    // -----------------------------------------
+    // Activer le bouton Publier
+    // -----------------------------------------
+
+    const boutonPublier =
+        document.getElementById(
+            "btnPublierCalendrierAdmin"
+        );
+
+    if (boutonPublier) {
+
+        boutonPublier.disabled = false;
+
+        console.log(
+            "✓ Bouton Publier activé."
+        );
+
+    }
+
+} else {
 
                     console.error(
                         "❌ Échec de l'enregistrement du calendrier."
