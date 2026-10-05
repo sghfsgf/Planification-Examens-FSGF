@@ -421,15 +421,14 @@ tbody tr:hover {
 ========================================================= */
 
 .cellule-examen {
-     background: rgb(153, 204, 255);
-     color: #000000;
-
-    font-weight: 700;
-
-    cursor: grab;
-
+    background: rgb(153, 204, 255);
+    color: #000000;
+    font-family: "Calibri Light", Calibri, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.25;
+    cursor: default;
     min-width: 120px;
-
     transition:
         transform 0.15s ease,
         box-shadow 0.15s ease;
