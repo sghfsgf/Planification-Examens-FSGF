@@ -717,33 +717,25 @@ else {
     // FORMATAGE D'UNE DATE JAVASCRIPT
     // =====================================================
 
-    function formaterDateDepuisObjet(date) {
+  function formaterDateDepuisObjet(date) {
 
-        const jour =
-            String(
-                date.getDate()
-            ).padStart(2, "0");
-
-
-        const mois =
-            String(
-                date.getMonth() + 1
-            ).padStart(2, "0");
-
-
-        const annee =
-            date.getFullYear();
-
-
-        return (
-            jour +
-            "/" +
-            mois +
-            "/" +
-            annee
+    const texte =
+        date.toLocaleDateString(
+            "fr-FR",
+            {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            }
         );
 
-    }
+    return (
+        texte.charAt(0).toUpperCase() +
+        texte.slice(1)
+    );
+
+}
 
 
     // =====================================================
