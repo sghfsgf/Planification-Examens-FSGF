@@ -310,31 +310,36 @@ const selectSession = document.getElementById(
 // 7. BOUTON AFFICHER LE CALENDRIER
 // =====================================================
 
-const btnAfficherCalendrier = document.getElementById(
-    "btnAfficherCalendrier"
-);
+const btnAfficherCalendrier =
+    document.getElementById(
+        "btnAfficherCalendrier"
+    );
 
 if (btnAfficherCalendrier) {
 
     btnAfficherCalendrier.addEventListener(
         "click",
-        () => {
+        async function () {
 
-            const niveau = selectNiveau
-                ? selectNiveau.value
-                : "";
+            const niveau =
+                selectNiveau
+                    ? selectNiveau.value
+                    : "";
 
-            const semestre = selectSemestre
-                ? selectSemestre.value
-                : "";
+            const semestre =
+                selectSemestre
+                    ? selectSemestre.value
+                    : "";
 
-            const regime = selectRegime
-                ? selectRegime.value
-                : "";
+            const regime =
+                selectRegime
+                    ? selectRegime.value
+                    : "";
 
-            const sessionCode = selectSession
-                ? selectSession.value
-                : "";
+            const sessionCode =
+                selectSession
+                    ? selectSession.value
+                    : "";
 
             console.log(
                 "📅 Demande d'affichage du calendrier :",
@@ -346,11 +351,60 @@ if (btnAfficherCalendrier) {
                 }
             );
 
+            // ---------------------------------------------
+            // Vérification des paramètres
+            // ---------------------------------------------
+
+            if (
+                !niveau ||
+                !semestre ||
+                !regime ||
+                !sessionCode
+            ) {
+
+                console.warn(
+                    "⚠️ Paramètres du calendrier incomplets."
+                );
+
+                return;
+            }
+
+            // ---------------------------------------------
+            // Afficher le niveau
+            // ---------------------------------------------
+
+            if (niveauCalendrier) {
+
+                niveauCalendrier.textContent =
+                    niveau;
+
+            }
+
+            // ---------------------------------------------
+            // Construire le calendrier
+            // depuis Firestore
+            // ---------------------------------------------
+
+            if (
+                typeof window.construireCalendrier ===
+                "function"
+            ) {
+
+                await window.construireCalendrier();
+
+            }
+            else {
+
+                console.error(
+                    "❌ construireCalendrier() est introuvable."
+                );
+
+            }
+
         }
     );
 
 }
-
     
     // =====================================================
     // 7. BOUTON GÉNÉRER
