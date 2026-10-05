@@ -234,8 +234,8 @@ donneesGeneration.sallesAmphis =
         );
 
         console.log(
-            "✓ Données de génération récupérées depuis data.js"
-        );
+    "✓ Données de génération récupérées depuis Firestore"
+);
 
         return true;
 
