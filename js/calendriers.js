@@ -921,7 +921,81 @@ async function construireCalendrier() {
         );
 
     }
+// =====================================================
+// EXPORT EXCEL DU CALENDRIER
+// =====================================================
 
+const btnExportExcel =
+    document.getElementById("btnExportExcel");
+
+if (btnExportExcel) {
+
+    btnExportExcel.addEventListener(
+        "click",
+        function () {
+
+            const tableauExcel =
+                document.getElementById("tableauCalendrier");
+
+            if (!tableauExcel) {
+
+                console.error(
+                    "❌ Tableau du calendrier introuvable."
+                );
+
+                return;
+            }
+
+            const workbook =
+                XLSX.utils.table_to_book(
+                    tableauExcel,
+                    {
+                        sheet: "Calendrier"
+                    }
+                );
+
+            const niveau =
+                niveauCalendrier
+                    ? niveauCalendrier.textContent.trim()
+                    : "Niveau";
+
+            const semestre =
+                selectSemestre
+                    ? selectSemestre.value
+                    : "Semestre";
+
+            const regime =
+                selectRegime
+                    ? selectRegime.value
+                    : "Regime";
+
+            const session =
+                selectSession
+                    ? selectSession.value
+                    : "Session";
+
+            const nomFichier =
+                "Calendrier_" +
+                niveau + "_" +
+                semestre + "_" +
+                regime + "_" +
+                session +
+                ".xlsx";
+
+            XLSX.writeFile(
+                workbook,
+                nomFichier
+            );
+
+            console.log(
+                "✓ Calendrier exporté en Excel :",
+                nomFichier
+            );
+
+        }
+    );
+
+}
 
     // =====================================================
     // EXPOSITION POUR LES AUTRES FICHIERS
