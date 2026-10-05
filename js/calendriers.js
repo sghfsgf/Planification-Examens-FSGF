@@ -948,13 +948,118 @@ if (btnExportExcel) {
                 return;
             }
 
+            // -------------------------------------------------
+            // Création du classeur Excel
+            // -------------------------------------------------
+
             const workbook =
-                XLSX.utils.table_to_book(
+                XLSX.utils.book_new();
+
+            const feuille =
+                XLSX.utils.table_to_sheet(
                     tableauExcel,
                     {
-                        sheet: "Calendrier"
+                        raw: true
                     }
                 );
+
+            // -------------------------------------------------
+            // Style général des cellules
+            // -------------------------------------------------
+
+            if (feuille["!ref"]) {
+
+                const plage =
+                    XLSX.utils.decode_range(
+                        feuille["!ref"]
+                    );
+
+                for (
+                    let ligne = plage.s.r;
+                    ligne <= plage.e.r;
+                    ligne++
+                ) {
+
+                    for (
+                        let colonne = plage.s.c;
+                        colonne <= plage.e.c;
+                        colonne++
+                    ) {
+
+                        const adresse =
+                            XLSX.utils.encode_cell({
+                                r: ligne,
+                                c: colonne
+                            });
+
+                        if (!feuille[adresse]) {
+                            continue;
+                        }
+
+                        feuille[adresse].s = {
+
+                            font: {
+                                name: "Arial",
+                                sz: 11
+                            },
+
+                            alignment: {
+                                horizontal: "center",
+                                vertical: "center",
+                                wrapText: true
+                            },
+
+                            border: {
+                                top: {
+                                    style: "thin",
+                                    color: {
+                                        rgb: "000000"
+                                    }
+                                },
+
+                                bottom: {
+                                    style: "thin",
+                                    color: {
+                                        rgb: "000000"
+                                    }
+                                },
+
+                                left: {
+                                    style: "thin",
+                                    color: {
+                                        rgb: "000000"
+                                    }
+                                },
+
+                                right: {
+                                    style: "thin",
+                                    color: {
+                                        rgb: "000000"
+                                    }
+                                }
+                            }
+
+                        };
+
+                    }
+
+                }
+
+            }
+
+            // -------------------------------------------------
+            // Ajout de la feuille au classeur
+            // -------------------------------------------------
+
+            XLSX.utils.book_append_sheet(
+                workbook,
+                feuille,
+                "Calendrier"
+            );
+
+            // -------------------------------------------------
+            // Nom du fichier
+            // -------------------------------------------------
 
             const niveau =
                 niveauCalendrier
@@ -984,6 +1089,10 @@ if (btnExportExcel) {
                 session +
                 ".xlsx";
 
+            // -------------------------------------------------
+            // Export
+            // -------------------------------------------------
+
             XLSX.writeFile(
                 workbook,
                 nomFichier
@@ -998,7 +1107,6 @@ if (btnExportExcel) {
     );
 
 }
-
     // =====================================================
     // EXPOSITION POUR LES AUTRES FICHIERS
     // =====================================================
