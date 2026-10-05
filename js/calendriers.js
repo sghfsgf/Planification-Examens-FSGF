@@ -967,91 +967,136 @@ if (btnExportExcel) {
             // Style général des cellules
             // -------------------------------------------------
 
-            if (feuille["!ref"]) {
+           if (feuille["!ref"]) {
 
-                const plage =
-                    XLSX.utils.decode_range(
-                        feuille["!ref"]
-                    );
+    const plage =
+        XLSX.utils.decode_range(
+            feuille["!ref"]
+        );
 
-                for (
-                    let ligne = plage.s.r;
-                    ligne <= plage.e.r;
-                    ligne++
-                ) {
+    // -------------------------------------------------
+    // Récupération des matières présentes dans le tableau
+    // -------------------------------------------------
 
-                    for (
-                        let colonne = plage.s.c;
-                        colonne <= plage.e.c;
-                        colonne++
-                    ) {
+    const matieresCalendrier =
+        new Set(
+            Array.from(
+                tableauExcel.querySelectorAll(
+                    ".cellule-examen"
+                )
+            ).map(function (cellule) {
+                return cellule.textContent.trim();
+            })
+        );
 
-                        const adresse =
-                            XLSX.utils.encode_cell({
-                                r: ligne,
-                                c: colonne
-                            });
+    for (
+        let ligne = plage.s.r;
+        ligne <= plage.e.r;
+        ligne++
+    ) {
 
-                        if (!feuille[adresse]) {
-                            continue;
+        for (
+            let colonne = plage.s.c;
+            colonne <= plage.e.c;
+            colonne++
+        ) {
+
+            const adresse =
+                XLSX.utils.encode_cell({
+                    r: ligne,
+                    c: colonne
+                });
+
+            if (!feuille[adresse]) {
+                continue;
+            }
+
+            // -------------------------------------------------
+            // Style général
+            // -------------------------------------------------
+
+            feuille[adresse].s = {
+
+                font: {
+                    name: "Arial",
+                    sz: 11
+                },
+
+                alignment: {
+                    horizontal: "center",
+                    vertical: "center",
+                    wrapText: true
+                },
+
+                border: {
+                    top: {
+                        style: "thin",
+                        color: {
+                            rgb: "000000"
                         }
+                    },
 
-                        feuille[adresse].s = {
+                    bottom: {
+                        style: "thin",
+                        color: {
+                            rgb: "000000"
+                        }
+                    },
 
-                            font: {
-                                name: "Arial",
-                                sz: 11
-                            },
+                    left: {
+                        style: "thin",
+                        color: {
+                            rgb: "000000"
+                        }
+                    },
 
-                            fill: {
-        fgColor: {
-            rgb: "99CCFF"
-        }
-    },
-
-                            alignment: {
-                                horizontal: "center",
-                                vertical: "center",
-                                wrapText: true
-                            },
-
-                            border: {
-                                top: {
-                                    style: "thin",
-                                    color: {
-                                        rgb: "000000"
-                                    }
-                                },
-
-                                bottom: {
-                                    style: "thin",
-                                    color: {
-                                        rgb: "000000"
-                                    }
-                                },
-
-                                left: {
-                                    style: "thin",
-                                    color: {
-                                        rgb: "000000"
-                                    }
-                                },
-
-                                right: {
-                                    style: "thin",
-                                    color: {
-                                        rgb: "000000"
-                                    }
-                                }
-                            }
-
-                        };
-
+                    right: {
+                        style: "thin",
+                        color: {
+                            rgb: "000000"
+                        }
                     }
-
                 }
 
+            };
+
+            // -------------------------------------------------
+            // Couleur uniquement pour les cellules de matières
+            // -------------------------------------------------
+
+            const valeurCellule =
+                feuille[adresse].v
+                    ? String(
+                        feuille[adresse].v
+                    ).trim()
+                    : "";
+
+            if (
+                valeurCellule !== "" &&
+                matieresCalendrier.has(
+                    valeurCellule
+                )
+            ) {
+
+                feuille[adresse].s.font = {
+                    name: "Arial",
+                    sz: 14,
+                    bold: true
+                };
+
+                feuille[adresse].s.fill = {
+                    fgColor: {
+                        rgb: "99CCFF"
+                    }
+                };
+
             }
+
+        }
+
+    }
+
+}
 
             // -------------------------------------------------
             // Ajout de la feuille au classeur
