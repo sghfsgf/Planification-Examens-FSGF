@@ -46,18 +46,30 @@ snapshot.forEach((doc) => {
 
     const data = doc.data();
 
-    console.log(
-        "📄 Calendrier :",
-        doc.id,
-        {
-            anneeUniversitaire: data.anneeUniversitaire,
-            niveauCode: data.niveauCode,
-            semestreCode: data.semestreCode,
-            regimeCode: data.regimeCode,
-            sessionCode: data.sessionCode,
-            statut: data.statut
-        }
-    );
+   console.log(
+    "📄 Calendrier :",
+    doc.id,
+    {
+        anneeUniversitaire: data.anneeUniversitaire,
+        niveauCode: data.niveauCode,
+        semestreCode: data.semestreCode,
+        regimeCode: data.regimeCode,
+        sessionCode: data.sessionCode,
+        statut: data.statut
+    }
+);
+
+console.log(
+    "🔎 VALEURS EXACTES :",
+    JSON.stringify({
+        anneeUniversitaire: data.anneeUniversitaire,
+        niveauCode: data.niveauCode,
+        semestreCode: data.semestreCode,
+        regimeCode: data.regimeCode,
+        sessionCode: data.sessionCode,
+        statut: data.statut
+    })
+);
 
 });
         const calendriers = [];
