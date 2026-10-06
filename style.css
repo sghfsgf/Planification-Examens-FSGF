@@ -908,6 +908,102 @@ select:focus-visible {
 
 }
 
+
+/* =========================================================
+   PRÉSENTATION — CALENDRIERS PUBLICS
+   Aucun changement de logique JavaScript
+========================================================= */
+
+/* Carte Calendriers */
+#calendriers .carte {
+    padding: 20px;
+}
+
+/* Titre */
+#calendriers .carte h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+}
+
+/* Filtres */
+#calendriers .filtres-calendrier {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bleu-clair);
+    border: 1px solid var(--bleu-bordure);
+    border-radius: 8px;
+}
+
+/* Libellés des filtres */
+#calendriers .filtres-calendrier label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Listes déroulantes */
+#calendriers .filtres-calendrier select {
+    width: auto;
+    min-width: 105px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+/* Bouton Afficher */
+#calendriers #btnAfficherCalendrier {
+    padding: 9px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Tableau */
+#calendriers .tableau-conteneur {
+    border-radius: 7px;
+}
+
+/* Colonnes du calendrier */
+#calendriers #tableauCalendrier th,
+#calendriers #tableauCalendrier td {
+    padding: 7px;
+    font-size: 13px;
+}
+
+/* Matières */
+#calendriers #tableauCalendrier .cellule-examen {
+    font-size: 13px;
+    min-width: 110px;
+}
+
+/* Message d'aide :
+   le bouton smartphone reste dans le HTML
+   mais il ne sera plus affiché */
+#calendriers #btnConsultationMobile {
+    display: none !important;
+}
+
+/* Le texte "consultation smartphone" devient inutile */
+#calendriers .aide-calendrier {
+    display: none;
+}
+
+/* Actions Excel / CSV / Impression */
+#calendriers .actions {
+    margin-top: 14px;
+    gap: 8px;
+}
+
+#calendriers .actions button {
+    padding: 8px 13px;
+    font-size: 14px;
+}
+
 /* =========================================================
    24. IMPRESSION DU CALENDRIER - A3 PAYSAGE
 ========================================================= */
