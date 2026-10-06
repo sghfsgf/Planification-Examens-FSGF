@@ -1056,11 +1056,10 @@ select:focus-visible {
     print-color-adjust: exact;
 }
 
-    /* Cellules vides */
-    #tableauCalendrier td:not(.cellule-examen) {
-        background: #ffffff !important;
-    }
-
+    /* Cellules vides contenant — */
+#tableauCalendrier td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
+    background: #ffffff !important;
+}
     /* Éviter de couper une ligne */
     #tableauCalendrier tr {
         page-break-inside: avoid;
