@@ -104,7 +104,6 @@ body {
     opacity: 0.95;
 }
 
-
 /* =========================================================
    4. MENU PRINCIPAL
 ========================================================= */
@@ -122,9 +121,10 @@ body {
 
     padding: 12px 15px;
 
-    background: var(--blanc);
+    /* Fond orangé clair */
+    background: #F4A261;
 
-    border-bottom: 1px solid var(--gris-bordure);
+    border-bottom: 1px solid #E9C46A;
 
     position: sticky;
 
@@ -134,11 +134,13 @@ body {
 }
 
 .menu-principal button {
-    border: 1px solid var(--bleu-bordure);
+    border: 1px solid #E9C46A;
 
-    background: var(--bleu-clair);
+    /* Boutons blancs */
+    background: #FFFFFF;
 
-    color: var(--bleu-principal);
+    /* Texte orangé foncé */
+    color: #B85C00;
 
     padding: 10px 15px;
 
@@ -157,13 +159,15 @@ body {
 }
 
 .menu-principal button:hover {
-    background: var(--bleu-principal);
+    /* Orange plus soutenu au survol */
+    background: #E76F51;
 
-    color: var(--blanc);
+    color: #FFFFFF;
+
+    border-color: #E76F51;
 
     transform: translateY(-1px);
 }
-
 
 /* =========================================================
    5. ESPACE DE TRAVAIL
