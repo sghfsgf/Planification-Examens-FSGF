@@ -702,7 +702,7 @@ else {
 else {
 
     celluleHTML.textContent =
-        "—";
+        "";
 
 }
 
