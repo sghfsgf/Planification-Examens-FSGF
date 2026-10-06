@@ -882,7 +882,80 @@ select:focus-visible {
 
         padding: 16px 10px;
     }
+/* =========================================================
+   CALENDRIERS — PETITS ÉCRANS
+========================================================= */
 
+#calendriers .carte {
+    padding: 12px;
+}
+
+#calendriers .carte h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+}
+
+/* Filtres empilés sur smartphone */
+#calendriers .filtres-calendrier {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+}
+
+#calendriers .filtres-calendrier label {
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+#calendriers .filtres-calendrier select {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 9px;
+    font-size: 14px;
+}
+
+/* Bouton Afficher */
+#calendriers #btnAfficherCalendrier {
+    width: 100%;
+    margin-top: 5px;
+    padding: 9px 10px;
+    font-size: 14px;
+}
+
+/* Tableau : conservation du défilement horizontal */
+#calendriers .tableau-conteneur {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Légère réduction des dimensions */
+#calendriers #tableauCalendrier th,
+#calendriers #tableauCalendrier td {
+    padding: 5px;
+    font-size: 12px;
+}
+
+#calendriers #tableauCalendrier .cellule-examen {
+    font-size: 12px;
+    min-width: 95px;
+}
+
+/* Boutons d'exportation */
+#calendriers .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+#calendriers .actions button {
+    width: 100%;
+    padding: 8px 6px;
+    font-size: 13px;
+}
+
+   
 }
 
 
