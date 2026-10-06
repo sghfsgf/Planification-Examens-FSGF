@@ -1114,7 +1114,7 @@ select:focus-visible {
     print-color-adjust: exact;
 }
 
-    /* Cellules vides contenant — */
+    /* Cellules vides */
 #tableauCalendrier tbody td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
     background: #ffffff !important;
     color: #000000 !important;
