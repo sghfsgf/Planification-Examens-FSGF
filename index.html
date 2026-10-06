@@ -76,31 +76,72 @@
         <!-- =================================================
              ACCUEIL
         ================================================== -->
+<section
+    id="accueil"
+    class="section-app active"
+>
 
-        <section
-            id="accueil"
-            class="section-app active"
-        >
+    <div class="carte">
 
-            <div class="carte">
+        <h2>
+            PLANIFICATION DES EXAMENS
+        </h2>
 
-                <h2>
-                    PLANIFICATION DES EXAMENS
-                </h2>
+        <p>
+            Bienvenue sur le site de consultation
+            des calendriers d'examens.
+        </p>
 
-                <p>
-                    Bienvenue sur le site de consultation
-                    des calendriers d'examens.
-                </p>
+        <p>
+            Consultez les calendriers par niveau
+            et par filière.
+        </p>
 
-                <p>
-                    Consultez les calendriers par niveau
-                    et par filière.
-                </p>
+    </div>
 
-            </div>
 
-        </section>
+    <!-- =================================================
+         SESSIONS D'EXAMENS
+    ================================================== -->
+
+    <div class="carte carte-sessions">
+
+        <h2>
+            📅 Sessions d'examens
+        </h2>
+
+        <p class="introduction-sessions">
+            Calendrier des différentes sessions
+            de l'année universitaire.
+        </p>
+
+
+        <div class="tableau-sessions-conteneur">
+
+            <table id="tableauSessions">
+
+                <thead>
+                    <tr>
+                        <th>Année universitaire</th>
+                        <th>Semestre</th>
+                        <th>Régime</th>
+                        <th>Session</th>
+                        <th>Intitulé</th>
+                        <th>Date début</th>
+                        <th>Date fin</th>
+                    </tr>
+                </thead>
+
+                <tbody id="corpsTableauSessions">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
 
 
         <!-- =================================================
