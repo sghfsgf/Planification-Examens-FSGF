@@ -1057,8 +1057,9 @@ select:focus-visible {
 }
 
     /* Cellules vides contenant — */
-#tableauCalendrier td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
+#tableauCalendrier tbody td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
     background: #ffffff !important;
+    color: #000000 !important;
 }
     /* Éviter de couper une ligne */
     #tableauCalendrier tr {
