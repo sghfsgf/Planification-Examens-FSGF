@@ -1115,3 +1115,149 @@ select:focus-visible {
         page-break-inside: avoid;
     }
 }
+/* =====================================================
+   IMPRESSION DU CALENDRIER - A3 PORTRAIT
+   ===================================================== */
+
+@page {
+    size: A3 portrait;
+    margin: 10mm;
+}
+
+@media print {
+
+    /* -----------------------------------------------
+       Masquer les éléments de navigation et de commande
+       ----------------------------------------------- */
+
+    header,
+    nav,
+    footer,
+    button,
+    select,
+    .filtres-calendrier,
+    .actions-calendrier {
+        display: none !important;
+    }
+
+    /* -----------------------------------------------
+       Page
+       ----------------------------------------------- */
+
+    html,
+    body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: #ffffff !important;
+    }
+
+    /* -----------------------------------------------
+       Contenu principal
+       ----------------------------------------------- */
+
+    main {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* -----------------------------------------------
+       Conteneur du calendrier
+       ----------------------------------------------- */
+
+    .tableau-conteneur {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: visible !important;
+        border: none;
+    }
+
+    /* -----------------------------------------------
+       TABLEAU RÉEL DU CALENDRIER
+       ----------------------------------------------- */
+
+    #tableauCalendrier {
+        width: 100%;
+        min-width: 0;
+        margin: 0 auto;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+    /* -----------------------------------------------
+       Toutes les cellules
+       ----------------------------------------------- */
+
+    #tableauCalendrier th,
+    #tableauCalendrier td {
+        border: 1px solid #000000 !important;
+        padding: 5px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* -----------------------------------------------
+       En-têtes
+       ----------------------------------------------- */
+
+    #tableauCalendrier thead th {
+        font-size: 11pt;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* -----------------------------------------------
+       FILIÈRE et AMPHIS
+       ----------------------------------------------- */
+
+    #tableauCalendrier th:first-child,
+    #tableauCalendrier td:first-child,
+    #tableauCalendrier th:nth-child(2),
+    #tableauCalendrier td:nth-child(2) {
+        font-size: 11pt;
+        font-weight: 700;
+    }
+
+    /* -----------------------------------------------
+       MATIÈRES
+       ----------------------------------------------- */
+
+    #tableauCalendrier .cellule-examen {
+        background: rgb(153, 204, 255) !important;
+        color: #000000 !important;
+
+        font-family:
+            "Calibri Light",
+            Calibri,
+            sans-serif !important;
+
+        font-size: 14pt !important;
+        font-weight: 400 !important;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* -----------------------------------------------
+       Cellules vides
+       ----------------------------------------------- */
+
+    #tableauCalendrier td:not(.cellule-examen) {
+        background: #ffffff !important;
+    }
+
+    /* -----------------------------------------------
+       Éviter autant que possible de couper
+       une ligne du calendrier
+       ----------------------------------------------- */
+
+    #tableauCalendrier tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+}
