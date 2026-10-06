@@ -1034,3 +1034,84 @@ select:focus-visible {
     }
 
 }
+/* =====================================================
+   IMPRESSION DU CALENDRIER
+   ===================================================== */
+
+@page {
+    size: A3 portrait;
+    margin: 10mm;
+}
+
+@media print {
+
+    /* Masquer les éléments inutiles */
+    header,
+    nav,
+    footer,
+    .filtres-calendrier,
+    .actions-calendrier,
+    button,
+    select {
+        display: none !important;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    main {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Le calendrier prend toute la largeur imprimable */
+    .tableau-conteneur {
+        width: 100%;
+        overflow: visible;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    #tableauCalendrier {
+        width: 100%;
+        min-width: 0;
+        border-collapse: collapse;
+        table-layout: auto;
+    }
+
+    #tableauCalendrier th,
+    #tableauCalendrier td {
+        border: 1px solid #000 !important;
+        padding: 6px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Matières */
+    #tableauCalendrier .cellule-examen {
+        background: rgb(153, 204, 255) !important;
+        color: #000 !important;
+        font-family: "Calibri Light", Calibri, sans-serif !important;
+        font-size: 14pt !important;
+        font-weight: 400 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* En-têtes */
+    #tableauCalendrier thead th {
+        font-size: 12pt;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* Éviter autant que possible de couper une ligne */
+    #tableauCalendrier tr {
+        page-break-inside: avoid;
+    }
+}
