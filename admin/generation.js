@@ -1158,8 +1158,13 @@ function genererListeDates(
         new Date(debut);
 
 
-    while (
-        dateCourante <= fin
+   while (
+    dateCourante <= fin
+) {
+
+    // ⛔ Dimanche interdit pour les examens
+    if (
+        dateCourante.getDay() !== 0
     ) {
 
         dates.push({
@@ -1174,12 +1179,14 @@ function genererListeDates(
 
         });
 
-
-        dateCourante.setDate(
-            dateCourante.getDate() + 1
-        );
-
     }
+
+
+    dateCourante.setDate(
+        dateCourante.getDate() + 1
+    );
+
+}
 
 
     return dates;
