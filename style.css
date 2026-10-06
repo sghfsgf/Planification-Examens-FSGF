@@ -1011,10 +1011,12 @@ select:focus-visible {
     }
 
     /* En-têtes */
-    #tableauCalendrier thead th {
+#tableauCalendrier thead th {
+    background: rgb(248, 203, 173) !important;
+    color: #000000 !important;
     font-size: 9pt;
     font-weight: 700;
-    white-space: normal;
+    white-space: normal !important;
     padding: 3px;
 }
 
