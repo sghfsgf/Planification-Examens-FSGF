@@ -408,7 +408,7 @@ function construireTableauCalendrier(planning) {
             } else {
 
                 td.textContent =
-                    "—";
+                    "";
             }
 
             // -------------------------------------------------
