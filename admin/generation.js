@@ -2386,7 +2386,7 @@ async function chargerCalendrier(
 // Un document = un calendrier complet
 //
 // ID dynamique :
-// calendrier_2025-2026_L2_S2_CC_DS_S2
+// calendrier_[anneeUniversitaire]_L2_S2_CC_DS_S2
 //
 // Le calendrier est enregistré comme brouillon.
 // =====================================================
