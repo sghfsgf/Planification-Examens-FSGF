@@ -660,6 +660,43 @@ select:focus-visible {
 
     outline-offset: 2px;
 }
+/* =========================================================
+   CALENDRIERS — PRÉSENTATION DU TABLEAU
+   Couleurs conservées
+========================================================= */
+
+/* En-têtes du calendrier */
+#calendriers #tableauCalendrier thead th {
+    padding: 6px 5px;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+/* Colonnes FILIÈRE et AMPHIS */
+#calendriers #tableauCalendrier th:first-child,
+#calendriers #tableauCalendrier td:first-child {
+    font-size: 13px;
+    padding: 6px 5px;
+}
+
+/* Matières */
+#calendriers #tableauCalendrier .cellule-examen {
+    font-size: 13px;
+    line-height: 1.2;
+    padding: 6px 5px;
+}
+
+/* Cellules vides */
+#calendriers #tableauCalendrier tbody td:not(.cellule-examen) {
+    padding: 6px 5px;
+}
+
+/* Bordures légèrement plus fines visuellement */
+#calendriers #tableauCalendrier th,
+#calendriers #tableauCalendrier td {
+    border-width: 1px;
+}
+
 
 
 /* =========================================================
