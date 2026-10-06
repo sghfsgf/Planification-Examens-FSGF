@@ -175,14 +175,64 @@ async function construireCalendrier() {
             : "";
 
     const sessionCode =
-        selectSession
-            ? selectSession.value
-            : "";
+    selectSession
+        ? selectSession.value
+        : "";
 
-    console.log("Niveau :", niveau);
-    console.log("Semestre :", semestre);
-    console.log("Régime :", regime);
-    console.log("Session :", sessionCode);
+// -------------------------------------------------
+// Récupération des informations de la session
+// -------------------------------------------------
+
+const sessions =
+    (typeof donneesExamens !== "undefined" &&
+     donneesExamens &&
+     Array.isArray(donneesExamens.sessions))
+        ? donneesExamens.sessions
+        : [];
+
+const sessionSelectionnee =
+    sessions.find(
+        function (session) {
+            return (
+                session.sessionCode ===
+                sessionCode
+            );
+        }
+    );
+
+const intituleSession =
+    sessionSelectionnee
+        ? sessionSelectionnee.sessionLibelle || ""
+        : "";
+
+const anneeUniversitaire =
+    sessionSelectionnee
+        ? sessionSelectionnee.anneeUniversitaire || ""
+        : "";
+
+// -------------------------------------------------
+// Mise à jour du titre du calendrier
+// -------------------------------------------------
+
+if (niveauCalendrier) {
+
+    niveauCalendrier.textContent =
+        niveau +
+        (intituleSession
+            ? " — " + intituleSession
+            : "") +
+        (anneeUniversitaire
+            ? " — " + anneeUniversitaire
+            : "");
+
+}
+
+console.log("Niveau :", niveau);
+console.log("Semestre :", semestre);
+console.log("Régime :", regime);
+console.log("Session :", sessionCode);
+console.log("Intitulé :", intituleSession);
+console.log("Année universitaire :", anneeUniversitaire);
 
     // -------------------------------------------------
     // Vérification des filtres
@@ -202,13 +252,7 @@ async function construireCalendrier() {
         return;
     }
 
-    // -------------------------------------------------
-    // Année universitaire
-    // -------------------------------------------------
-
-    const anneeUniversitaire =
-        "2025-2026";
-
+    
     // -------------------------------------------------
     // LECTURE DU CALENDRIER PUBLIÉ DANS FIRESTORE
     // -------------------------------------------------
