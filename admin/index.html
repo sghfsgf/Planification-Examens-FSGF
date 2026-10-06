@@ -1219,7 +1219,27 @@
 
 </script>
 
+<script>
+    const aujourdHui = new Date();
 
+    let anneeDebut = aujourdHui.getFullYear();
+
+    // L'année universitaire change le 10 septembre
+    const dateChangement = new Date(
+        aujourdHui.getFullYear(),
+        8,  // septembre
+        10
+    );
+
+    if (aujourdHui < dateChangement) {
+        anneeDebut--;
+    }
+
+    document.getElementById("anneeUniversitaireAdmin").textContent =
+        anneeDebut + "-" + (anneeDebut + 1);
+</script>
+
+    
 </body>
 
 </html>
