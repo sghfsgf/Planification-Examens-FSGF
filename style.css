@@ -1078,16 +1078,6 @@ select:focus-visible {
     background-color: rgb(252, 228, 214) !important;
 }
 
-/* DATES */
-#tableauCalendrier thead tr:first-child th {
-    background-color: rgb(252, 228, 214) !important;
-}
-
-/* CRÉNEAUX */
-#tableauCalendrier thead tr:nth-child(2) th {
-    background-color: rgb(252, 228, 214) !important;
-}
-
    /* FILIÈRE et AMPHIS */
 #tableauCalendrier th:first-child,
 #tableauCalendrier td:first-child,
