@@ -1165,6 +1165,44 @@ if (btnExportExcel) {
     );
 
 }
+
+    // =====================================================
+// IMPRESSION DU CALENDRIER
+// =====================================================
+
+const btnImprimerCalendrier =
+    document.getElementById("btnImprimerCalendrier");
+
+if (btnImprimerCalendrier) {
+
+    btnImprimerCalendrier.addEventListener(
+        "click",
+        function () {
+
+            const tableauImpression =
+                document.getElementById(
+                    "tableauCalendrier"
+                );
+
+            if (!tableauImpression) {
+
+                console.error(
+                    "❌ Tableau du calendrier introuvable."
+                );
+
+                return;
+            }
+
+            console.log(
+                "🖨️ Impression du calendrier..."
+            );
+
+            window.print();
+
+        }
+    );
+
+}
     // =====================================================
     // EXPOSITION POUR LES AUTRES FICHIERS
     // =====================================================
