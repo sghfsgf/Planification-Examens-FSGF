@@ -1030,6 +1030,9 @@ select:focus-visible {
 
    /* MATIÈRES */
 #tableauCalendrier .cellule-examen {
+    background: rgb(153, 204, 255) !important;
+    color: #000000 !important;
+
     font-family:
         "Calibri Light",
         Calibri,
@@ -1037,14 +1040,13 @@ select:focus-visible {
 
     font-size: 11pt !important;
     font-weight: 400 !important;
-
     line-height: 1.1;
 
     padding: 3px;
 
-    background: rgb(153, 204, 255) !important;
-
-    color: #000000 !important;
+    /* Texte vertical de bas vers le haut */
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
