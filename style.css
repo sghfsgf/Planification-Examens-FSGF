@@ -1020,11 +1020,13 @@ select:focus-visible {
     padding: 3px;
 }
 
-   /* FILIÈRE et AMPHIS */
+  /* FILIÈRE et AMPHIS */
 #tableauCalendrier th:first-child,
 #tableauCalendrier td:first-child,
 #tableauCalendrier th:nth-child(2),
 #tableauCalendrier td:nth-child(2) {
+    background: rgb(248, 203, 173) !important;
+    color: #000000 !important;
     font-size: 9pt;
     font-weight: 700;
     padding: 3px;
