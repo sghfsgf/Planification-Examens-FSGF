@@ -463,17 +463,99 @@ if (btnAfficherCalendrier) {
 
     }
 
+// =====================================================
+// 8 BIS. AFFICHER LES SESSIONS SUR L'ACCUEIL
+// =====================================================
 
+async function afficherSessionsAccueil() {
+
+    const corpsTableau =
+        document.getElementById("corpsTableauSessions");
+
+    if (!corpsTableau) {
+        return;
+    }
+
+    // Attendre le chargement des données Excel
+    if (window.donneesChargees) {
+
+        const chargementOK =
+            await window.donneesChargees;
+
+        if (!chargementOK) {
+
+            console.warn(
+                "⚠️ Impossible de charger les sessions."
+            );
+
+            return;
+        }
+    }
+
+    // Récupérer les sessions
+    const sessions =
+        typeof window.obtenirSessions === "function"
+            ? window.obtenirSessions()
+            : [];
+
+    // Vider le tableau
+    corpsTableau.innerHTML = "";
+
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+
+        const ligne =
+            document.createElement("tr");
+
+        ligne.innerHTML = `
+            <td colspan="7">
+                Aucune session disponible.
+            </td>
+        `;
+
+        corpsTableau.appendChild(ligne);
+
+        return;
+    }
+
+    // Afficher les sessions
+    sessions.forEach(function (session) {
+
+        const ligne =
+            document.createElement("tr");
+
+        ligne.innerHTML = `
+            <td>${session.anneeUniversitaire || ""}</td>
+            <td>${session.semestreCode || ""}</td>
+            <td>${session.regimeCode || ""}</td>
+            <td>${session.sessionCode || ""}</td>
+            <td>${session.sessionLibelle || ""}</td>
+            <td>${session.dateDebutAffichage || ""}</td>
+            <td>${session.dateFinAffichage || ""}</td>
+        `;
+
+        corpsTableau.appendChild(ligne);
+
+    });
+
+    console.log(
+        "📅 Sessions affichées sur l'accueil :",
+        sessions.length
+    );
+}
+    
     // =====================================================
     // 9. INITIALISATION
     // =====================================================
 
     // Accueil affiché au démarrage
-    afficherSection("accueil");
+afficherSection("accueil");
+
+// Afficher les sessions d'examens
+afficherSessionsAccueil();
 
 
-    console.log(
-        "Planification des examens : application initialisée."
-    );
+console.log(
+    "Planification des examens : application initialisée."
+);
 
 });
