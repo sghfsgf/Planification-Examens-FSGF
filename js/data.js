@@ -486,6 +486,10 @@ donneesExamens.creneaux =
 // 7. CHARGEMENT DES SALLES ET AMPHIS
 // =====================================================
 
+// =====================================================
+// 7. CHARGEMENT DES SALLES ET AMPHIS
+// =====================================================
+
 async function chargerSallesAmphis() {
 
     const cheminData =
@@ -504,28 +508,18 @@ async function chargerSallesAmphis() {
 
 
     const classeur =
-    await lireFichierExcel(url);
+        await lireFichierExcel(url);
 
-donneesRessources.sallesAmphis =
-    lireFeuille(
 
-        classeur,
+    donneesRessources.sallesAmphis =
+        lireFeuille(
 
-        "salles_amphis"
+            classeur,
 
-    );
-// -------------------------------------------------
-// Effectifs des filières
-// -------------------------------------------------
+            "salles_amphis"
 
-donneesRessources.effectifs =
-    lireFeuille(
+        );
 
-        classeur,
-
-        "effectifs"
-
-    );
 
     console.log(
         "✓ salles_amphis.xlsx chargé"
@@ -536,24 +530,8 @@ donneesRessources.effectifs =
         "Salles / amphis :",
         donneesRessources.sallesAmphis.length
     );
-// -------------------------------------------------
-// Effectifs des filières
-// -------------------------------------------------
 
-donneesRessources.effectifs =
-    lireFeuille(
-        classeur,
-        "effectifs"
-    );
-
-console.log(
-    "Effectifs :",
-    donneesRessources.effectifs.length
-);
-
-    
 }
-
 
 // =====================================================
 // 8. CHARGEMENT GLOBAL
