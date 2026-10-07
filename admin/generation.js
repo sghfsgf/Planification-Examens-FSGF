@@ -61,6 +61,8 @@ let donneesGeneration = {
 
     sallesAmphis: []
 
+     effectifs: []
+
 };
 
 
@@ -209,6 +211,21 @@ donneesGeneration.sallesAmphis =
         }
     );
 
+        const snapshotEffectifs =
+    await getDocs(
+        collection(
+            db,
+            "effectifs"
+        )
+    );
+
+donneesGeneration.effectifs =
+    snapshotEffectifs.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
         // -------------------------------------------------
         // Contrôle
         // -------------------------------------------------
@@ -232,6 +249,11 @@ donneesGeneration.sallesAmphis =
             "Salles / amphis :",
             donneesGeneration.sallesAmphis.length
         );
+
+        console.log(
+    "Effectifs :",
+    donneesGeneration.effectifs.length
+);
 
         console.log(
     "✓ Données de génération récupérées depuis Firestore"
