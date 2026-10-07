@@ -656,7 +656,10 @@ const effectifs =
             "Salles / amphis à importer :",
             sallesAmphis.length
         );
-
+console.log(
+    "Effectifs à importer :",
+    effectifs.length
+);
 
         // =================================================
         // 1. PRÉPARATION DU BATCH
