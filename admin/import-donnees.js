@@ -730,7 +730,35 @@ console.log(
             );
 
         }
+        // =================================================
+        // 4. SUPPRESSION DES ANCIENS EFFECTIFS
+        // =================================================
 
+        const anciensEffectifs =
+            await getDocs(
+                collection(
+                    db,
+                    "effectifs"
+                )
+            );
+
+
+        anciensEffectifs.forEach(
+            function (documentFirestore) {
+
+                batch.delete(
+                    documentFirestore.ref
+                );
+
+            }
+        );
+
+
+        console.log(
+            "Anciens effectifs supprimés :",
+            anciensEffectifs.size
+        );
+        
 
         // =================================================
         // 4. EXÉCUTION
