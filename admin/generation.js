@@ -59,7 +59,7 @@ let donneesGeneration = {
 
     creneaux: [],
 
-    sallesAmphis: []
+    sallesAmphis: [],
 
      effectifs: []
 
