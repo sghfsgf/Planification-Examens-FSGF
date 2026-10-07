@@ -136,6 +136,34 @@ function testerDonneesAffectation() {
         "Nombre d'effectifs :",
         donnees.effectifs.length
     );
+
+    console.log(
+    "=========================================="
+);
+
+console.log(
+    "DÉTAIL DES SALLES / AMPHIS"
+);
+
+console.table(
+    donnees.sallesAmphis
+);
+
+console.log(
+    "=========================================="
+);
+
+console.log(
+    "DÉTAIL DES EFFECTIFS"
+);
+
+console.table(
+    donnees.effectifs
+);
+
+console.log(
+    "=========================================="
+);
 }
 
 
