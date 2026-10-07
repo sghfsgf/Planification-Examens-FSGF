@@ -515,7 +515,18 @@ async function chargerSallesAmphis() {
             "salles_amphis"
 
         );
+// -------------------------------------------------
+// Effectifs des filières
+// -------------------------------------------------
 
+donneesRessources.effectifs =
+    lireFeuille(
+
+        classeur,
+
+        "effectifs"
+
+    );
 
     console.log(
         "✓ salles_amphis.xlsx chargé"
@@ -526,7 +537,22 @@ async function chargerSallesAmphis() {
         "Salles / amphis :",
         donneesRessources.sallesAmphis.length
     );
+// -------------------------------------------------
+// Effectifs des filières
+// -------------------------------------------------
 
+donneesRessources.effectifs =
+    lireFeuille(
+        classeur,
+        "effectifs"
+    );
+
+console.log(
+    "Effectifs :",
+    donneesRessources.effectifs.length
+);
+
+    
 }
 
 
