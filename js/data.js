@@ -22,10 +22,10 @@ let donneesExamens = {
 
 let donneesRessources = {
 
-    sallesAmphis: []
+    sallesAmphis: [],
+    effectifs: []
 
 };
-
 
 // =====================================================
 // 2. ÉTAT DU CHARGEMENT
