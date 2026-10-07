@@ -506,11 +506,6 @@ async function chargerSallesAmphis() {
     const classeur =
     await lireFichierExcel(url);
 
-console.log(
-    "Feuilles du fichier salles_amphis :",
-    classeur.SheetNames
-);
-
 donneesRessources.sallesAmphis =
     lireFeuille(
 
