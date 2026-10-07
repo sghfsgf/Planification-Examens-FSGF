@@ -635,20 +635,6 @@
     </section>
 
     <!-- =================================================
-         SALLES / AMPHIS
-    ================================================== -->
-
-    <section
-        id="salles-amphis"
-        class="section-admin"
-    >
-
-        ...
-
-    </section>
-
-
-    <!-- =================================================
          AFFECTATION DES SALLES / AMPHIS
     ================================================== -->
 
@@ -657,11 +643,136 @@
         class="section-admin"
     >
 
-        ...
-        
-    </section>
-    
+        <div class="carte-admin">
 
+            <h2>
+                🎯 AFFECTATION DES SALLES / AMPHIS
+            </h2>
+
+            <p>
+                Affectation automatique des étudiants aux salles
+                et amphithéâtres à partir du calendrier validé,
+                des effectifs par filière et des capacités disponibles.
+            </p>
+
+            <h4>
+                📋 Contraintes d'affectation
+            </h4>
+
+            <ol>
+
+                <li>
+                    <strong>Affectation par niveau :</strong>
+                    l'affectation est réalisée séparément pour chaque
+                    niveau (L1, L2, L3, MP, MR).
+                </li>
+
+                <li>
+                    <strong>Regroupement des filières :</strong>
+                    lorsque plusieurs filières du même niveau passent
+                    la même matière au même date et créneau, elles sont
+                    regroupées prioritairement.
+                </li>
+
+                <li>
+                    <strong>Respect de la capacité :</strong>
+                    l'effectif affecté ne doit jamais dépasser la
+                    capacité disponible d'une salle ou d'un amphithéâtre.
+                </li>
+
+                <li>
+                    <strong>Absence de conflit de salle :</strong>
+                    une même salle ou un même amphithéâtre ne peut pas
+                    être affecté à deux groupes différents au même
+                    date et créneau.
+                </li>
+
+                <li>
+                    <strong>Optimisation du remplissage :</strong>
+                    l'algorithme cherche à utiliser au mieux les capacités
+                    disponibles, à limiter le nombre de salles utilisées
+                    et à réduire les places inutilisées.
+                    Un taux d'occupation d'au moins 66 % est recherché
+                    lorsque cela est possible.
+                </li>
+
+            </ol>
+
+            <p>
+                ⚠️ <strong>Règle importante :</strong>
+                le taux de 66 % est un objectif d'optimisation et non
+                une capacité minimale obligatoire. La capacité maximale
+                de chaque salle ou amphithéâtre reste une contrainte
+                absolue.
+            </p>
+
+            <div id="resumeAffectationSalles">
+
+                <p>
+                    Les données nécessaires à l'affectation seront
+                    vérifiées avant la génération.
+                </p>
+
+            </div>
+
+            <div class="actions-generation">
+
+                <button
+                    type="button"
+                    id="btnGenererAffectations"
+                    class="btn-action"
+                >
+                    🔄 Générer les affectations
+                </button>
+
+                <button
+                    type="button"
+                    id="btnControlerAffectations"
+                    class="btn-action"
+                >
+                    🔍 Contrôler les affectations
+                </button>
+
+                <button
+                    type="button"
+                    id="btnEnregistrerAffectations"
+                    class="btn-action"
+                >
+                    💾 Enregistrer les affectations
+                </button>
+
+                <button
+                    type="button"
+                    id="btnReinitialiserAffectations"
+                    class="btn-action"
+                >
+                    🗑️ Réinitialiser
+                </button>
+
+            </div>
+
+            <div
+                id="statutAffectationSalles"
+                class="statut-generation"
+            >
+                Aucune affectation générée.
+            </div>
+
+            <div id="tableauAffectationSalles">
+
+                <!-- Le tableau des affectations sera généré ici -->
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =================================================
+         GÉNÉRATION
+    ================================================== -->
+
+    
     <!-- =================================================
          GÉNÉRATION
     ================================================== -->
