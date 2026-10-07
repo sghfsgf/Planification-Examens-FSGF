@@ -634,7 +634,18 @@ const sallesAmphis =
         "salles_amphis"
 
     );
+// -------------------------------------------------
+// Lecture de la feuille effectifs
+// -------------------------------------------------
 
+const effectifs =
+    lireFeuille(
+
+        classeur,
+
+        "effectifs"
+
+    );
 
         console.log(
             "Début de la synchronisation des salles / amphis..."
