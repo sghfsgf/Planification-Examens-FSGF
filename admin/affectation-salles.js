@@ -84,3 +84,66 @@ chargerSallesAmphisFirestore()
 
         }
     );
+// =================================================
+// TEST DES DONNÉES DU MOTEUR
+// =================================================
+
+function testerDonneesAffectation() {
+
+    if (
+        !window.generationExamens ||
+        !window.generationExamens.obtenirDonnees
+    ) {
+
+        console.warn(
+            "⏳ Moteur de génération pas encore disponible."
+        );
+
+        return;
+    }
+
+    const donnees =
+        window.generationExamens.obtenirDonnees();
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "TEST DES DONNÉES POUR AFFECTATION"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "Salles / amphis :",
+        donnees.sallesAmphis
+    );
+
+    console.log(
+        "Effectifs :",
+        donnees.effectifs
+    );
+
+    console.log(
+        "Nombre de salles / amphis :",
+        donnees.sallesAmphis.length
+    );
+
+    console.log(
+        "Nombre d'effectifs :",
+        donnees.effectifs.length
+    );
+}
+
+
+// =================================================
+// ATTENDRE LE MOTEUR DE GÉNÉRATION
+// =================================================
+
+setTimeout(
+    testerDonneesAffectation,
+    1000
+);
