@@ -758,10 +758,54 @@ console.log(
             "Anciens effectifs supprimés :",
             anciensEffectifs.size
         );
-        
+
 
         // =================================================
-        // 4. EXÉCUTION
+        // 4. AJOUT DES EFFECTIFS DU NOUVEL EXCEL
+        // =================================================
+
+        for (
+            let i = 0;
+            i < effectifs.length;
+            i++
+        ) {
+
+            const effectif =
+                effectifs[i];
+
+
+            const identifiant =
+                effectif.anneeUniversitaire
+                + "_"
+                + effectif.niveauCode
+                + "_"
+                + effectif.filiereCode
+                    .replace(/\s+/g, "_");
+
+
+            batch.set(
+
+                doc(
+                    db,
+                    "effectifs",
+                    identifiant
+                ),
+
+                effectif
+
+            );
+
+        }
+
+
+        console.log(
+            "Effectifs ajoutés au batch :",
+            effectifs.length
+        );
+
+
+        // =================================================
+        // 5. EXÉCUTION
         // =================================================
 
         await batch.commit();
