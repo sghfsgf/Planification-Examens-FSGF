@@ -162,6 +162,48 @@ console.table(
 );
 
 console.log(
+    "Effectifs détaillés :"
+);
+
+donnees.effectifs.forEach(
+    function (effectif) {
+
+        console.log(
+            effectif.anneeUniversitaire,
+            "|",
+            effectif.niveauCode,
+            "|",
+            effectif.filiereCode,
+            "| Effectif =",
+            effectif.effectif
+        );
+
+    }
+);
+
+console.log(
+    "Salles / amphis détaillés :"
+);
+
+donnees.sallesAmphis.forEach(
+    function (salle) {
+
+        console.log(
+            salle.code,
+            "|",
+            salle.type,
+            "|",
+            salle.libelle,
+            "| Capacité =",
+            salle.capacite,
+            "| Disponible =",
+            salle.disponible
+        );
+
+    }
+);
+    
+console.log(
     "=========================================="
 );
 }
