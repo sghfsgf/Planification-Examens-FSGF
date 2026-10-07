@@ -504,17 +504,21 @@ async function chargerSallesAmphis() {
 
 
     const classeur =
-        await lireFichierExcel(url);
+    await lireFichierExcel(url);
 
+console.log(
+    "Feuilles du fichier salles_amphis :",
+    classeur.SheetNames
+);
 
-    donneesRessources.sallesAmphis =
-        lireFeuille(
+donneesRessources.sallesAmphis =
+    lireFeuille(
 
-            classeur,
+        classeur,
 
-            "salles_amphis"
+        "salles_amphis"
 
-        );
+    );
 // -------------------------------------------------
 // Effectifs des filières
 // -------------------------------------------------
