@@ -587,3 +587,148 @@ function preparerAffectationsFilieres(
 
 window.preparerAffectationsFilieres =
     preparerAffectationsFilieres;
+
+// =================================================
+// CONSTRUIRE LA MATRICE DES CONFLITS ENTRE FILIÈRES
+// =================================================
+
+function construireConflitsFilieres(planning) {
+
+    const conflits = [];
+
+    // -------------------------------------------------
+    // Vérifier les données
+    // -------------------------------------------------
+
+    if (
+        !planning ||
+        !planning.filieres
+    ) {
+
+        return conflits;
+
+    }
+
+    // -------------------------------------------------
+    // Parcourir toutes les paires de filières
+    // -------------------------------------------------
+
+    for (
+        let i = 0;
+        i < planning.filieres.length;
+        i++
+    ) {
+
+        const filiereA =
+            planning.filieres[i];
+
+        for (
+            let j = i + 1;
+            j < planning.filieres.length;
+            j++
+        ) {
+
+            const filiereB =
+                planning.filieres[j];
+
+            // -------------------------------------------------
+            // Examens occupés de chaque filière
+            // -------------------------------------------------
+
+            const examensA =
+                filiereA.cellules.filter(
+                    function (cellule) {
+
+                        return cellule.estOccupee;
+
+                    }
+                );
+
+            const examensB =
+                filiereB.cellules.filter(
+                    function (cellule) {
+
+                        return cellule.estOccupee;
+
+                    }
+                );
+
+            let conflitTrouve = false;
+
+            // -------------------------------------------------
+            // Comparer les dates + créneaux
+            // -------------------------------------------------
+
+            for (
+                let a = 0;
+                a < examensA.length;
+                a++
+            ) {
+
+                for (
+                    let b = 0;
+                    b < examensB.length;
+                    b++
+                ) {
+
+                    if (
+                        examensA[a].date ===
+                            examensB[b].date &&
+
+                        Number(
+                            examensA[a].creneauOrdre
+                        ) ===
+                        Number(
+                            examensB[b].creneauOrdre
+                        )
+                    ) {
+
+                        conflitTrouve = true;
+
+                        break;
+
+                    }
+
+                }
+
+                if (conflitTrouve) {
+
+                    break;
+
+                }
+
+            }
+
+            // -------------------------------------------------
+            // Mémoriser uniquement les paires en conflit
+            // -------------------------------------------------
+
+            if (conflitTrouve) {
+
+                conflits.push(
+                    {
+                        filiereA:
+                            filiereA.filiereCode,
+
+                        filiereB:
+                            filiereB.filiereCode
+                    }
+                );
+
+            }
+
+        }
+
+    }
+
+    return conflits;
+
+}
+
+
+// =================================================
+// EXPOSER POUR LES TESTS F12
+// =================================================
+
+window.construireConflitsFilieres =
+    construireConflitsFilieres;
