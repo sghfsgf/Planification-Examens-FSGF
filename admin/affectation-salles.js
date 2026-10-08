@@ -1220,14 +1220,39 @@ function rechercherMeilleureCombinaisonLocaux(
     }
 
     rechercherCombinaisons(
-        0,
-        [],
-        0
-    );
+    0,
+    [],
+    0
+);
 
-    if (
-        combinaisons.length === 0
-    ) {
+// -------------------------------------------------
+// Supprimer les combinaisons constituées
+// d'un seul local qui ne respecte pas 66 %
+// -------------------------------------------------
+
+const combinaisonsValides =
+    combinaisons.filter(
+        function (combinaison) {
+
+            if (
+                combinaison.locaux.length === 1
+            ) {
+
+                return (
+                    effectif /
+                    combinaison.capaciteTotale >=
+                    0.66
+                );
+
+            }
+
+            return true;
+
+        }
+    );
+   if (
+    combinaisonsValides.length === 0
+) {
 
         return {
             succes: false,
@@ -1248,7 +1273,7 @@ function rechercherMeilleureCombinaisonLocaux(
     // 3. Choisir la meilleure combinaison
     // -------------------------------------------------
 
-    combinaisons.sort(
+    combinaisonsValides.sort(
         function (a, b) {
 
             // Priorité 1 :
@@ -1278,7 +1303,7 @@ function rechercherMeilleureCombinaisonLocaux(
     );
 
     const meilleure =
-        combinaisons[0];
+    combinaisonsValides[0];
 
     return {
         succes: true,
