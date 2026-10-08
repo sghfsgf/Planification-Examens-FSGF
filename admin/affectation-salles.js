@@ -1434,15 +1434,19 @@ document.addEventListener(
                         planning.niveauCode
                     );
 
-                    console.log(
-                        "Semestre :",
-                        planning.semestreCode
-                    );
+                  console.log(
+    "Semestre :",
+    document.getElementById(
+        "semestreCalendrierAdmin"
+    ).value
+);
 
-                    console.log(
-                        "Régime :",
-                        planning.regimeCode
-                    );
+console.log(
+    "Régime :",
+    document.getElementById(
+        "regimeCalendrierAdmin"
+    ).value
+);
 
                     console.log(
                         "Session :",
@@ -1531,13 +1535,17 @@ document.addEventListener(
                             </p>
 
                             <p>
-                                <strong>Semestre :</strong>
-                                ${planning.semestreCode || ""}
+                              <strong>Semestre :</strong>
+                              ${document.getElementById(
+                              "semestreCalendrierAdmin"
+                               ).value} 
                             </p>
 
                             <p>
-                                <strong>Régime :</strong>
-                                ${planning.regimeCode || ""}
+                               <strong>Régime :</strong>
+                                ${document.getElementById(
+                                "regimeCalendrierAdmin"
+                                ).value}
                             </p>
 
                             <p>
