@@ -1973,3 +1973,202 @@ document.addEventListener(
     }
 );
 
+// =================================================
+// INTERFACE ADMIN — ENREGISTRER LES AFFECTATIONS
+// =================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const boutonEnregistrer =
+            document.getElementById(
+                "btnEnregistrerAffectations"
+            );
+
+        const statut =
+            document.getElementById(
+                "statutAffectationSalles"
+            );
+
+        if (!boutonEnregistrer) {
+
+            console.warn(
+                "⚠️ Bouton btnEnregistrerAffectations introuvable."
+            );
+
+            return;
+        }
+
+        boutonEnregistrer.addEventListener(
+            "click",
+            async function () {
+
+                console.log(
+                    "💾 Enregistrement des affectations..."
+                );
+
+                if (statut) {
+
+                    statut.textContent =
+                        "⏳ Enregistrement des affectations en cours...";
+
+                }
+
+                try {
+
+                    // =========================================
+                    // VÉRIFIER QU'UNE AFFECTATION EXISTE
+                    // =========================================
+
+                    if (
+                        !affectationCourante ||
+                        !planningAffectationCourant
+                    ) {
+
+                        throw new Error(
+                            "Aucune affectation à enregistrer. Veuillez d'abord générer les affectations."
+                        );
+
+                    }
+
+                    const affectations =
+                        affectationCourante.affectations;
+
+                    if (
+                        !Array.isArray(affectations) ||
+                        affectations.length === 0
+                    ) {
+
+                        throw new Error(
+                            "Aucune affectation disponible."
+                        );
+
+                    }
+
+                    // =========================================
+                    // AJOUTER LES LOCAUX AU PLANNING
+                    // =========================================
+
+                    planningAffectationCourant.filieres.forEach(
+                        function (filiere) {
+
+                            const affectation =
+                                affectations.find(
+                                    function (item) {
+
+                                        return (
+                                            item.filiereCode ===
+                                            filiere.filiereCode
+                                        );
+
+                                    }
+                                );
+
+                            if (affectation) {
+
+                                filiere.amphis =
+                                    [...affectation.locaux];
+
+                                console.log(
+                                    "✓ " +
+                                    filiere.filiereCode +
+                                    " → " +
+                                    filiere.amphis.join(
+                                        " || "
+                                    )
+                                );
+
+                            }
+
+                        }
+                    );
+
+                    // =========================================
+                    // VÉRIFIER LE PLANNING AVANT ENREGISTREMENT
+                    // =========================================
+
+                    console.log(
+                        "Planning à enregistrer :",
+                        planningAffectationCourant
+                    );
+
+                    planningAffectationCourant.filieres.forEach(
+                        function (filiere) {
+
+                            console.log(
+                                "Filière :",
+                                filiere.filiereCode,
+                                "| Amphis :",
+                                filiere.amphis
+                            );
+
+                        }
+                    );
+
+                    // =========================================
+                    // ENREGISTRER DANS FIRESTORE
+                    // =========================================
+
+                    if (
+                        !window.generationExamens ||
+                        typeof window.generationExamens.enregistrerCalendrier !==
+                        "function"
+                    ) {
+
+                        throw new Error(
+                            "La fonction enregistrerCalendrier() est introuvable."
+                        );
+
+                    }
+
+                    const resultat =
+                        await window.generationExamens.enregistrerCalendrier(
+                            planningAffectationCourant
+                        );
+
+                    console.log(
+                        "✓ Résultat de l'enregistrement :",
+                        resultat
+                    );
+
+                    if (
+                        resultat &&
+                        resultat.id
+                    ) {
+
+                        console.log(
+                            "✓ Calendrier enregistré dans Firestore :",
+                            resultat.id
+                        );
+
+                    }
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "✅ Affectations enregistrées avec succès dans Firestore.";
+
+                    }
+
+                } catch (erreur) {
+
+                    console.error(
+                        "❌ Erreur lors de l'enregistrement des affectations :",
+                        erreur
+                    );
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "❌ " + erreur.message;
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+);
