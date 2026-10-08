@@ -1782,13 +1782,58 @@ document.addEventListener(
                             }
 
                             // ---------------------------------
-                            // 2. Vérifier la capacité
-                            // ---------------------------------
+// 2. Vérifier que les locaux sont disponibles
+// ---------------------------------
 
-                            if (
-                                affectation.capaciteTotale <
-                                affectation.effectif
-                            ) {
+affectation.locaux.forEach(
+    function (codeLocal) {
+
+        const local =
+            window.generationExamens
+                .obtenirDonnees()
+                .sallesAmphis
+                .find(
+                    function (salle) {
+
+                        return salle.code === codeLocal;
+
+                    }
+                );
+
+        if (!local) {
+
+            erreurs.push(
+                affectation.filiereCode +
+                " : local " +
+                codeLocal +
+                " introuvable dans les ressources."
+            );
+
+            return;
+        }
+
+        if (local.disponible !== "Oui") {
+
+            erreurs.push(
+                affectation.filiereCode +
+                " : local " +
+                codeLocal +
+                " non disponible."
+            );
+
+        }
+
+    }
+);
+
+                  // ---------------------------------
+                  // 3. Vérifier la capacité
+                  // ---------------------------------
+
+                       if (
+                       affectation.capaciteTotale <
+                       affectation.effectif
+                          ) {
 
                                 erreurs.push(
                                     affectation.filiereCode +
