@@ -1680,3 +1680,296 @@ console.log(
     }
 );
 
+// =================================================
+// INTERFACE ADMIN — CONTRÔLER LES AFFECTATIONS
+// =================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const boutonControler =
+            document.getElementById(
+                "btnControlerAffectations"
+            );
+
+        const statut =
+            document.getElementById(
+                "statutAffectationSalles"
+            );
+
+        if (!boutonControler) {
+
+            console.warn(
+                "⚠️ Bouton btnControlerAffectations introuvable."
+            );
+
+            return;
+        }
+
+        boutonControler.addEventListener(
+            "click",
+            function () {
+
+                console.log(
+                    "🔍 Contrôle des affectations..."
+                );
+
+                if (statut) {
+
+                    statut.textContent =
+                        "⏳ Contrôle des affectations en cours...";
+
+                }
+
+                try {
+
+                    // =========================================
+                    // VÉRIFIER QU'UNE AFFECTATION EXISTE
+                    // =========================================
+
+                    if (
+                        !affectationCourante ||
+                        !planningAffectationCourant
+                    ) {
+
+                        throw new Error(
+                            "Aucune affectation à contrôler. Veuillez d'abord générer les affectations."
+                        );
+
+                    }
+
+                    const affectations =
+                        affectationCourante.affectations;
+
+                    if (
+                        !Array.isArray(affectations) ||
+                        affectations.length === 0
+                    ) {
+
+                        throw new Error(
+                            "Aucune affectation disponible."
+                        );
+
+                    }
+
+                    const erreurs = [];
+
+                    // =========================================
+                    // CONTRÔLE DE CHAQUE FILIÈRE
+                    // =========================================
+
+                    affectations.forEach(
+                        function (affectation) {
+
+                            // ---------------------------------
+                            // 1. Vérifier les locaux
+                            // ---------------------------------
+
+                            if (
+                                !Array.isArray(
+                                    affectation.locaux
+                                ) ||
+                                affectation.locaux.length === 0
+                            ) {
+
+                                erreurs.push(
+                                    affectation.filiereCode +
+                                    " : aucun local affecté."
+                                );
+
+                                return;
+                            }
+
+                            // ---------------------------------
+                            // 2. Vérifier la capacité
+                            // ---------------------------------
+
+                            if (
+                                affectation.capaciteTotale <
+                                affectation.effectif
+                            ) {
+
+                                erreurs.push(
+                                    affectation.filiereCode +
+                                    " : capacité insuffisante (" +
+                                    affectation.capaciteTotale +
+                                    " pour " +
+                                    affectation.effectif +
+                                    " étudiants)."
+                                );
+
+                            }
+
+                            // ---------------------------------
+                            // 3. Vérifier le taux de 66 %
+                            // ---------------------------------
+
+                            if (
+                                affectation.locaux.length === 1 &&
+                                affectation.tauxOccupation <
+                                0.66
+                            ) {
+
+                                erreurs.push(
+                                    affectation.filiereCode +
+                                    " : occupation inférieure à 66 % avec un seul local."
+                                );
+
+                            }
+
+                        }
+                    );
+
+                    // =========================================
+                    // CONTRÔLE DES CONFLITS DE SALLES
+                    // =========================================
+
+                    const conflits =
+                        construireConflitsFilieres(
+                            planningAffectationCourant
+                        );
+
+                    const carteConflits =
+                        construireCarteConflits(
+                            conflits
+                        );
+
+                    for (
+                        let i = 0;
+                        i < affectations.length;
+                        i++
+                    ) {
+
+                        const affectationA =
+                            affectations[i];
+
+                        const conflitsA =
+                            carteConflits[
+                                affectationA.filiereCode
+                            ] || [];
+
+                        for (
+                            let j = 0;
+                            j < affectations.length;
+                            j++
+                        ) {
+
+                            if (i === j) {
+                                continue;
+                            }
+
+                            const affectationB =
+                                affectations[j];
+
+                            if (
+                                conflitsA.includes(
+                                    affectationB.filiereCode
+                                )
+                            ) {
+
+                                const locauxCommuns =
+                                    affectationA.locaux.filter(
+                                        function (local) {
+
+                                            return affectationB.locaux.includes(
+                                                local
+                                            );
+
+                                        }
+                                    );
+
+                                if (
+                                    locauxCommuns.length > 0
+                                ) {
+
+                                    erreurs.push(
+                                        "Conflit de salle entre " +
+                                        affectationA.filiereCode +
+                                        " et " +
+                                        affectationB.filiereCode +
+                                        " : " +
+                                        locauxCommuns.join(" || ")
+                                    );
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    // =========================================
+                    // AFFICHER LE RÉSULTAT
+                    // =========================================
+
+                    if (erreurs.length > 0) {
+
+                        console.error(
+                            "❌ Contrôle échoué :",
+                            erreurs
+                        );
+
+                        if (statut) {
+
+                            statut.textContent =
+                                "❌ Contrôle échoué : " +
+                                erreurs.length +
+                                " problème(s).";
+
+                        }
+
+                        console.table(
+                            erreurs.map(
+                                function (erreur) {
+
+                                    return {
+                                        Erreur: erreur
+                                    };
+
+                                }
+                            )
+                        );
+
+                        return;
+                    }
+
+                    console.log(
+                        "✓ Contrôle des affectations réussi."
+                    );
+
+                    console.log(
+                        "✓ Nombre de filières contrôlées :",
+                        affectations.length
+                    );
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "✅ Affectations contrôlées avec succès : aucune anomalie détectée.";
+
+                    }
+
+                } catch (erreur) {
+
+                    console.error(
+                        "❌ Erreur lors du contrôle :",
+                        erreur
+                    );
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "❌ " + erreur.message;
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+);
+
