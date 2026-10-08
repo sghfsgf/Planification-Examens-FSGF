@@ -855,3 +855,223 @@ function localCompatibleAvecConflits(
 
 window.localCompatibleAvecConflits =
     localCompatibleAvecConflits;
+
+// =================================================
+// AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
+// =================================================
+
+function affecterLocauxFixes(
+    planning,
+    sallesAmphis,
+    effectifs
+) {
+
+    const resultats = [];
+
+    if (
+        !planning ||
+        !planning.filieres ||
+        !sallesAmphis ||
+        !effectifs
+    ) {
+
+        return {
+            succes: false,
+            affectations: [],
+            message: "Données insuffisantes."
+        };
+
+    }
+
+    const conflits =
+        construireConflitsFilieres(
+            planning
+        );
+
+    const carteConflits =
+        construireCarteConflits(
+            conflits
+        );
+
+    // -------------------------------------------------
+    // Parcourir les filières
+    // -------------------------------------------------
+
+    planning.filieres.forEach(
+        function (filiere) {
+
+            const ligneEffectif =
+                effectifs.find(
+                    function (ligne) {
+
+                        return (
+                            ligne.niveauCode ===
+                                planning.niveauCode &&
+                            ligne.filiereCode ===
+                                filiere.filiereCode
+                        );
+
+                    }
+                );
+
+            if (!ligneEffectif) {
+
+                resultats.push(
+                    {
+                        filiereCode:
+                            filiere.filiereCode,
+
+                        succes: false,
+
+                        locaux: [],
+
+                        message:
+                            "Effectif introuvable."
+                    }
+                );
+
+                return;
+
+            }
+
+            const effectif =
+                Number(
+                    ligneEffectif.effectif
+                );
+
+            // -------------------------------------------------
+            // Rechercher les locaux possibles
+            // -------------------------------------------------
+
+            const locauxPossibles =
+                sallesAmphis
+                    .filter(
+                        function (salle) {
+
+                            const capacite =
+                                Number(
+                                    salle.capacite
+                                );
+
+                            const tauxOccupation =
+                                effectif /
+                                capacite;
+
+                            return (
+                                salle.disponible ===
+                                    "Oui" &&
+
+                                capacite >=
+                                    effectif &&
+
+                                tauxOccupation >=
+                                    0.66
+                            );
+
+                        }
+                    )
+                    .filter(
+                        function (salle) {
+
+                            return localCompatibleAvecConflits(
+                                filiere.filiereCode,
+                                salle.code,
+                                carteConflits,
+                                resultats
+                            );
+
+                        }
+                    )
+                    .sort(
+                        function (a, b) {
+
+                            return (
+                                Number(a.capacite) -
+                                Number(b.capacite)
+                            );
+
+                        }
+                    );
+
+            if (
+                locauxPossibles.length === 0
+            ) {
+
+                resultats.push(
+                    {
+                        filiereCode:
+                            filiere.filiereCode,
+
+                        effectif:
+                            effectif,
+
+                        succes: false,
+
+                        locaux: [],
+
+                        message:
+                            "Affectation impossible."
+                    }
+                );
+
+                return;
+
+            }
+
+            const local =
+                locauxPossibles[0];
+
+            resultats.push(
+                {
+                    filiereCode:
+                        filiere.filiereCode,
+
+                    effectif:
+                        effectif,
+
+                    succes: true,
+
+                    locaux: [
+                        local.code
+                    ],
+
+                    capaciteTotale:
+                        Number(local.capacite),
+
+                    tauxOccupation:
+                        effectif /
+                        Number(local.capacite),
+
+                    message:
+                        "Local fixe affecté."
+                }
+            );
+
+        }
+    );
+
+    const impossible =
+        resultats.some(
+            function (resultat) {
+
+                return !resultat.succes;
+
+            }
+        );
+
+    return {
+        succes: !impossible,
+
+        affectations:
+            resultats,
+
+        message:
+            impossible
+                ? "Une ou plusieurs filières sont impossibles à affecter."
+                : "Toutes les filières sont affectées."
+    };
+
+}
+
+window.affecterLocauxFixes =
+    affecterLocauxFixes;
