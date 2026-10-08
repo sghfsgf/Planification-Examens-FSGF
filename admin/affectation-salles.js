@@ -890,12 +890,15 @@ window.localCompatibleAvecConflits =
 // RECHERCHER LA MEILLEURE COMBINAISON DE LOCAUX
 // =================================================
 
+
+// =================================================
+// RECHERCHER LA MEILLEURE COMBINAISON DE LOCAUX
+// =================================================
+
 function rechercherMeilleureCombinaisonLocaux(
     filiereCode,
     effectif,
-    sallesAmphis,
-    carteConflits,
-    affectationsFilieres
+    sallesAmphis
 ) {
 
     // -------------------------------------------------
@@ -919,8 +922,11 @@ function rechercherMeilleureCombinaisonLocaux(
 
     }
 
+    const effectifNumerique =
+        Number(effectif);
+
     // -------------------------------------------------
-    // Locaux disponibles et compatibles
+    // Locaux disponibles
     // -------------------------------------------------
 
     const locauxDisponibles =
@@ -930,22 +936,14 @@ function rechercherMeilleureCombinaisonLocaux(
 
                     return (
                         salle.disponible === "Oui" &&
-
-                        Number(salle.capacite) > 0 &&
-
-                        localCompatibleAvecConflits(
-                            filiereCode,
-                            salle.code,
-                            carteConflits,
-                            affectationsFilieres
-                        )
+                        Number(salle.capacite) > 0
                     );
 
                 }
             );
 
     // -------------------------------------------------
-    // 1. Chercher d'abord un seul local >= 66 %
+    // 1. Chercher un seul local respectant les 66 %
     // -------------------------------------------------
 
     const locauxUniques =
@@ -954,14 +952,12 @@ function rechercherMeilleureCombinaisonLocaux(
                 function (salle) {
 
                     const capacite =
-                        Number(
-                            salle.capacite
-                        );
+                        Number(salle.capacite);
 
                     return (
-                        capacite >= effectif &&
+                        capacite >= effectifNumerique &&
 
-                        effectif /
+                        effectifNumerique /
                             capacite >=
                         TAUX_OCCUPATION_MINIMUM
                     );
@@ -987,6 +983,7 @@ function rechercherMeilleureCombinaisonLocaux(
             locauxUniques[0];
 
         return {
+
             succes: true,
 
             locaux: [
@@ -997,11 +994,12 @@ function rechercherMeilleureCombinaisonLocaux(
                 Number(local.capacite),
 
             tauxOccupation:
-                effectif /
+                effectifNumerique /
                 Number(local.capacite),
 
             message:
                 "Un seul local suffit."
+
         };
 
     }
@@ -1023,7 +1021,8 @@ function rechercherMeilleureCombinaisonLocaux(
         // -------------------------------------------------
 
         if (
-            capaciteTotale >= effectif
+            capaciteTotale >=
+            effectifNumerique
         ) {
 
             combinaisons.push(
@@ -1077,27 +1076,36 @@ function rechercherMeilleureCombinaisonLocaux(
     );
 
     // -------------------------------------------------
-    // Supprimer les combinaisons constituées
-    // d'un seul local qui ne respecte pas le seuil
+    // Garder uniquement les combinaisons valides
     // -------------------------------------------------
 
     const combinaisonsValides =
         combinaisons.filter(
             function (combinaison) {
 
+                // Un seul local :
+                // il doit respecter les 66 %
+
                 if (
                     combinaison.locaux.length === 1
                 ) {
 
                     return (
-                        effectif /
+                        effectifNumerique /
                         combinaison.capaciteTotale >=
                         TAUX_OCCUPATION_MINIMUM
                     );
 
                 }
 
-                return true;
+                // Plusieurs locaux :
+                // la capacité totale doit simplement
+                // être suffisante
+
+                return (
+                    combinaison.capaciteTotale >=
+                    effectifNumerique
+                );
 
             }
         );
@@ -1107,6 +1115,7 @@ function rechercherMeilleureCombinaisonLocaux(
     ) {
 
         return {
+
             succes: false,
 
             locaux: [],
@@ -1117,6 +1126,7 @@ function rechercherMeilleureCombinaisonLocaux(
 
             message:
                 "Aucune combinaison de locaux ne permet d'accueillir l'effectif."
+
         };
 
     }
@@ -1128,10 +1138,8 @@ function rechercherMeilleureCombinaisonLocaux(
     combinaisonsValides.sort(
         function (a, b) {
 
-            // -------------------------------------------------
             // Priorité 1 :
-            // moins de locaux
-            // -------------------------------------------------
+            // nombre minimal de locaux
 
             if (
                 a.locaux.length !==
@@ -1145,10 +1153,9 @@ function rechercherMeilleureCombinaisonLocaux(
 
             }
 
-            // -------------------------------------------------
             // Priorité 2 :
             // capacité totale la plus proche
-            // -------------------------------------------------
+            // de l'effectif
 
             return (
                 a.capaciteTotale -
@@ -1162,6 +1169,7 @@ function rechercherMeilleureCombinaisonLocaux(
         combinaisonsValides[0];
 
     return {
+
         succes: true,
 
         locaux:
@@ -1171,15 +1179,22 @@ function rechercherMeilleureCombinaisonLocaux(
             meilleure.capaciteTotale,
 
         tauxOccupation:
-            effectif /
+            effectifNumerique /
             meilleure.capaciteTotale,
 
         message:
-            "Plusieurs locaux sont nécessaires."
+            meilleure.locaux.length === 1
+                ? "Un seul local suffit."
+                : "Plusieurs locaux sont nécessaires."
+
     };
 
 }
 
+
+// =================================================
+// EXPOSER POUR LES TESTS F12
+// =================================================
 
 window.rechercherMeilleureCombinaisonLocaux =
     rechercherMeilleureCombinaisonLocaux;
