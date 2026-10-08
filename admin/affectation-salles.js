@@ -1359,3 +1359,310 @@ function affecterLocauxFixes(
 
 window.affecterLocauxFixes =
     affecterLocauxFixes;
+
+// =================================================
+// INTERFACE ADMIN — GÉNÉRER LES AFFECTATIONS
+// =================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const boutonGenerer =
+            document.getElementById(
+                "btnGenererAffectations"
+            );
+
+        const statut =
+            document.getElementById(
+                "statutAffectationSalles"
+            );
+
+        const tableau =
+            document.getElementById(
+                "tableauAffectationSalles"
+            );
+
+        if (!boutonGenerer) {
+
+            console.warn(
+                "⚠️ Bouton btnGenererAffectations introuvable."
+            );
+
+            return;
+        }
+
+        boutonGenerer.addEventListener(
+            "click",
+            function () {
+
+                console.log(
+                    "🔄 Génération des affectations..."
+                );
+
+                if (statut) {
+
+                    statut.textContent =
+                        "⏳ Génération des affectations en cours...";
+
+                }
+
+                try {
+
+                    // =========================================
+                    // RÉCUPÉRER LE CALENDRIER ACTUELLEMENT AFFICHÉ
+                    // =========================================
+
+                    const planning =
+                        window.planningCalendrierAdmin;
+
+                    if (!planning) {
+
+                        throw new Error(
+                            "Aucun calendrier n'est actuellement affiché. Veuillez d'abord afficher un calendrier dans le volet 📊 Calendriers."
+                        );
+
+                    }
+
+                    console.log(
+                        "✓ Calendrier récupéré :",
+                        planning
+                    );
+
+                    console.log(
+                        "Niveau :",
+                        planning.niveauCode
+                    );
+
+                    console.log(
+                        "Semestre :",
+                        planning.semestreCode
+                    );
+
+                    console.log(
+                        "Régime :",
+                        planning.regimeCode
+                    );
+
+                    console.log(
+                        "Session :",
+                        planning.sessionCode
+                    );
+
+                    // =========================================
+                    // RÉCUPÉRER LES DONNÉES FIRESTORE
+                    // =========================================
+
+                    if (
+                        !window.generationExamens ||
+                        !window.generationExamens.obtenirDonnees
+                    ) {
+
+                        throw new Error(
+                            "Le moteur de génération n'est pas disponible."
+                        );
+
+                    }
+
+                    const donnees =
+                        window.generationExamens.obtenirDonnees();
+
+                    if (
+                        !donnees ||
+                        !donnees.sallesAmphis ||
+                        !donnees.effectifs
+                    ) {
+
+                        throw new Error(
+                            "Les données des salles et des effectifs sont indisponibles."
+                        );
+
+                    }
+
+                    console.log(
+                        "Salles / amphis :",
+                        donnees.sallesAmphis.length
+                    );
+
+                    console.log(
+                        "Effectifs :",
+                        donnees.effectifs.length
+                    );
+
+                    // =========================================
+                    // EFFECTUER L'AFFECTATION
+                    // =========================================
+
+                    const resultat =
+                        affecterLocauxFixes(
+                            planning,
+                            donnees.sallesAmphis,
+                            donnees.effectifs
+                        );
+
+                    console.log(
+                        "Résultat affectation :",
+                        resultat
+                    );
+
+                    if (!resultat.succes) {
+
+                        throw new Error(
+                            resultat.message
+                        );
+
+                    }
+
+                    // =========================================
+                    // AFFICHER LE RÉSUMÉ
+                    // =========================================
+
+                    const resume =
+                        document.getElementById(
+                            "resumeAffectationSalles"
+                        );
+
+                    if (resume) {
+
+                        resume.innerHTML = `
+                            <p>
+                                <strong>Niveau :</strong>
+                                ${planning.niveauCode || ""}
+                            </p>
+
+                            <p>
+                                <strong>Semestre :</strong>
+                                ${planning.semestreCode || ""}
+                            </p>
+
+                            <p>
+                                <strong>Régime :</strong>
+                                ${planning.regimeCode || ""}
+                            </p>
+
+                            <p>
+                                <strong>Session :</strong>
+                                ${planning.sessionCode || ""}
+                            </p>
+
+                            <p>
+                                <strong>Filières affectées :</strong>
+                                ${resultat.affectations.length}
+                            </p>
+                        `;
+
+                    }
+
+                    // =========================================
+                    // AFFICHER LE TABLEAU
+                    // =========================================
+
+                    if (tableau) {
+
+                        tableau.innerHTML = "";
+
+                        const table =
+                            document.createElement(
+                                "table"
+                            );
+
+                        table.className =
+                            "tableau-donnees";
+
+                        const thead =
+                            document.createElement(
+                                "thead"
+                            );
+
+                        thead.innerHTML = `
+                            <tr>
+                                <th>Filière</th>
+                                <th>Effectif</th>
+                                <th>Local(s)</th>
+                                <th>Capacité</th>
+                                <th>Occupation</th>
+                            </tr>
+                        `;
+
+                        table.appendChild(
+                            thead
+                        );
+
+                        const tbody =
+                            document.createElement(
+                                "tbody"
+                            );
+
+                        resultat.affectations.forEach(
+                            function (affectation) {
+
+                                const ligne =
+                                    document.createElement(
+                                        "tr"
+                                    );
+
+                                ligne.innerHTML = `
+                                    <td>${affectation.filiereCode}</td>
+                                    <td>${affectation.effectif}</td>
+                                    <td>${affectation.locaux.join(" || ")}</td>
+                                    <td>${affectation.capaciteTotale}</td>
+                                    <td>${(
+                                        affectation.tauxOccupation *
+                                        100
+                                    ).toFixed(2)} %</td>
+                                `;
+
+                                tbody.appendChild(
+                                    ligne
+                                );
+
+                            }
+                        );
+
+                        table.appendChild(
+                            tbody
+                        );
+
+                        tableau.appendChild(
+                            table
+                        );
+
+                    }
+
+                    // =========================================
+                    // STATUT
+                    // =========================================
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "✅ Affectations générées avec succès.";
+
+                    }
+
+                    console.log(
+                        "✓ Affectations générées avec succès."
+                    );
+
+                } catch (erreur) {
+
+                    console.error(
+                        "❌ Erreur génération affectations :",
+                        erreur
+                    );
+
+                    if (statut) {
+
+                        statut.textContent =
+                            "❌ " + erreur.message;
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+);
+
