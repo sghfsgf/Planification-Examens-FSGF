@@ -443,3 +443,147 @@ function localEstDisponiblePourCreneau(
 
 window.localEstDisponiblePourCreneau =
     localEstDisponiblePourCreneau;
+// =================================================
+// PRÉPARER LES AFFECTATIONS FIXES PAR FILIÈRE
+// =================================================
+
+function preparerAffectationsFilieres(
+    planning,
+    sallesAmphis,
+    effectifs
+) {
+
+    const affectations = [];
+
+    // -------------------------------------------------
+    // Vérifier les données
+    // -------------------------------------------------
+
+    if (
+        !planning ||
+        !planning.filieres ||
+        !sallesAmphis ||
+        !effectifs
+    ) {
+
+        return {
+            succes: false,
+            affectations: [],
+            message: "Données insuffisantes."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // Parcourir toutes les filières du planning
+    // -------------------------------------------------
+
+    planning.filieres.forEach(
+        function (filiere) {
+
+            // -------------------------------------------------
+            // Rechercher l'effectif de la filière
+            // -------------------------------------------------
+
+            const ligneEffectif =
+                effectifs.find(
+                    function (ligne) {
+
+                        return (
+                            ligne.niveauCode ===
+                                planning.niveauCode &&
+                            ligne.filiereCode ===
+                                filiere.filiereCode
+                        );
+
+                    }
+                );
+
+            if (!ligneEffectif) {
+
+                affectations.push(
+                    {
+                        filiereCode:
+                            filiere.filiereCode,
+                        succes: false,
+                        locaux: [],
+                        message:
+                            "Effectif introuvable."
+                    }
+                );
+
+                return;
+
+            }
+
+            // -------------------------------------------------
+            // Rechercher les locaux possibles
+            // -------------------------------------------------
+
+            const resultat =
+                trouverLocauxPourFiliere(
+                    filiere.filiereCode,
+                    Number(ligneEffectif.effectif),
+                    sallesAmphis
+                );
+
+            // -------------------------------------------------
+            // Mémoriser l'affectation
+            // -------------------------------------------------
+
+            affectations.push(
+                {
+                    filiereCode:
+                        filiere.filiereCode,
+
+                    effectif:
+                        Number(ligneEffectif.effectif),
+
+                    succes:
+                        resultat.succes,
+
+                    locaux:
+                        resultat.locaux,
+
+                    capaciteTotale:
+                        resultat.capaciteTotale,
+
+                    message:
+                        resultat.message
+                }
+            );
+
+        }
+    );
+
+    // -------------------------------------------------
+    // Vérifier si toutes les filières sont affectables
+    // -------------------------------------------------
+
+    const impossible =
+        affectations.some(
+            function (affectation) {
+
+                return !affectation.succes;
+
+            }
+        );
+
+    return {
+        succes: !impossible,
+        affectations: affectations,
+        message:
+            impossible
+                ? "Une ou plusieurs filières sont impossibles à affecter."
+                : "Toutes les filières ont une affectation possible."
+    };
+
+}
+
+
+// =================================================
+// EXPOSER POUR LES TESTS F12
+// =================================================
+
+window.preparerAffectationsFilieres =
+    preparerAffectationsFilieres;
