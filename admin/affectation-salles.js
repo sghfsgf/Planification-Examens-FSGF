@@ -734,3 +734,58 @@ function construireConflitsFilieres(planning) {
 
 window.construireConflitsFilieres =
     construireConflitsFilieres;
+
+// =================================================
+// CONSTRUIRE LA LISTE DES CONFLITS PAR FILIÈRE
+// =================================================
+
+function construireCarteConflits(
+    conflits
+) {
+
+    const carteConflits = {};
+
+    if (!conflits) {
+
+        return carteConflits;
+
+    }
+
+    conflits.forEach(
+        function (conflit) {
+
+            const filiereA =
+                conflit.filiereA;
+
+            const filiereB =
+                conflit.filiereB;
+
+            if (!carteConflits[filiereA]) {
+
+                carteConflits[filiereA] = [];
+
+            }
+
+            if (!carteConflits[filiereB]) {
+
+                carteConflits[filiereB] = [];
+
+            }
+
+            carteConflits[filiereA].push(
+                filiereB
+            );
+
+            carteConflits[filiereB].push(
+                filiereA
+            );
+
+        }
+    );
+
+    return carteConflits;
+
+}
+
+window.construireCarteConflits =
+    construireCarteConflits;
