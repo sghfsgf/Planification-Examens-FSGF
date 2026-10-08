@@ -1363,6 +1363,9 @@ window.affecterLocauxFixes =
 // =================================================
 // INTERFACE ADMIN — GÉNÉRER LES AFFECTATIONS
 // =================================================
+let affectationCourante = null;
+let planningAffectationCourant = null;
+
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -1503,7 +1506,10 @@ console.log(
                             donnees.sallesAmphis,
                             donnees.effectifs
                         );
+                     affectationCourante = resultat;
+                           planningAffectationCourant = planning;
 
+                    
                     console.log(
                         "Résultat affectation :",
                         resultat
