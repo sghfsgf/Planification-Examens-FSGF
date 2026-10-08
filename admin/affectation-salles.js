@@ -380,3 +380,9 @@ function trouverLocauxPourFiliere(
     };
 
 }
+// =================================================
+// EXPOSER LA FONCTION POUR LES TESTS F12
+// =================================================
+
+window.trouverLocauxPourFiliere =
+    trouverLocauxPourFiliere;
