@@ -217,3 +217,166 @@ setTimeout(
     testerDonneesAffectation,
     1000
 );
+// =================================================
+// RECHERCHER DES LOCAUX POUR UNE FILIÈRE
+// =================================================
+
+function trouverLocauxPourFiliere(
+    filiereCode,
+    effectif,
+    sallesAmphis
+) {
+
+    // -------------------------------------------------
+    // Vérifier les données
+    // -------------------------------------------------
+
+    if (
+        !effectif ||
+        !sallesAmphis ||
+        sallesAmphis.length === 0
+    ) {
+
+        return {
+            succes: false,
+            locaux: [],
+            message: "Aucun local disponible."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // Garder uniquement les locaux disponibles
+    // -------------------------------------------------
+
+    const locauxDisponibles =
+        sallesAmphis.filter(
+            function (salle) {
+
+                return (
+                    salle.disponible === "Oui" &&
+                    Number(salle.capacite) > 0
+                );
+
+            }
+        );
+
+    // -------------------------------------------------
+    // 1. Chercher un seul local suffisamment grand
+    // -------------------------------------------------
+
+    const localUnique =
+        locauxDisponibles
+            .filter(
+                function (salle) {
+
+                    return (
+                        Number(salle.capacite) >=
+                        Number(effectif)
+                    );
+
+                }
+            )
+            .sort(
+                function (a, b) {
+
+                    return (
+                        Number(a.capacite) -
+                        Number(b.capacite)
+                    );
+
+                }
+            )[0];
+
+    if (localUnique) {
+
+        return {
+            succes: true,
+            locaux: [
+                localUnique.code
+            ],
+            capaciteTotale:
+                Number(localUnique.capacite),
+            effectif:
+                Number(effectif),
+            message:
+                "Un seul local suffit."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // 2. Chercher plusieurs locaux
+    // -------------------------------------------------
+
+    const locauxTries =
+        locauxDisponibles
+            .slice()
+            .sort(
+                function (a, b) {
+
+                    return (
+                        Number(b.capacite) -
+                        Number(a.capacite)
+                    );
+
+                }
+            );
+
+    const locauxChoisis = [];
+
+    let capaciteTotale = 0;
+
+    for (
+        let i = 0;
+        i < locauxTries.length;
+        i++
+    ) {
+
+        const salle =
+            locauxTries[i];
+
+        locauxChoisis.push(
+            salle.code
+        );
+
+        capaciteTotale +=
+            Number(salle.capacite);
+
+        if (
+            capaciteTotale >=
+            Number(effectif)
+        ) {
+
+            return {
+                succes: true,
+                locaux:
+                    locauxChoisis,
+                capaciteTotale:
+                    capaciteTotale,
+                effectif:
+                    Number(effectif),
+                message:
+                    "Plusieurs locaux sont nécessaires."
+            };
+
+        }
+
+    }
+
+    // -------------------------------------------------
+    // 3. Aucun ensemble de locaux suffisant
+    // -------------------------------------------------
+
+    return {
+        succes: false,
+        locaux: [],
+        capaciteTotale:
+            capaciteTotale,
+        effectif:
+            Number(effectif),
+        message:
+            "Affectation impossible."
+    };
+
+}
