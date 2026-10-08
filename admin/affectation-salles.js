@@ -1368,6 +1368,11 @@ window.construireGroupesFilieres =
 // AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
 // =================================================
 
+// =================================================
+// AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
+// EN TENANT COMPTE DES REGROUPEMENTS
+// =================================================
+
 function affecterLocauxFixes(
     planning,
     sallesAmphis,
@@ -1376,10 +1381,6 @@ function affecterLocauxFixes(
 
     const resultats = [];
 
-    // -------------------------------------------------
-    // Vérifier les données
-    // -------------------------------------------------
-
     if (
         !planning ||
         !planning.filieres ||
@@ -1387,38 +1388,173 @@ function affecterLocauxFixes(
         !effectifs
     ) {
 
-        return {
-            succes: false,
-            affectations: [],
-            message: "Données insuffisantes."
-        };
+        return resultats;
 
     }
 
     // -------------------------------------------------
-    // Construire les conflits entre filières
+    // Construire les groupes de filières
     // -------------------------------------------------
 
-    const conflits =
-        construireConflitsFilieres(
-            planning
+    const groupes =
+        construireGroupesFilieres(
+            planning,
+            effectifs
         );
 
-    const carteConflits =
-        construireCarteConflits(
-            conflits
-        );
+    console.log(
+        "🔎 Groupes de filières détectés :",
+        groupes
+    );
 
     // -------------------------------------------------
-    // Parcourir les filières
+    // Mémoriser les filières déjà affectées
+    // -------------------------------------------------
+
+    const filieresDejaAffectees =
+        new Set();
+
+    // -------------------------------------------------
+    // 1. AFFECTATION DES GROUPES
+    // -------------------------------------------------
+
+    groupes.forEach(
+        function (groupe) {
+
+            console.log(
+                "🔄 Affectation du groupe :",
+                groupe.filieres.join(" + "),
+                "| Effectif total :",
+                groupe.effectifTotal
+            );
+
+            const resultat =
+                rechercherMeilleureCombinaisonLocaux(
+                    "GROUPE",
+                    groupe.effectifTotal,
+                    sallesAmphis
+                );
+
+            // -------------------------------------------------
+            // Si aucune combinaison n'est possible
+            // -------------------------------------------------
+
+            if (!resultat.succes) {
+
+                groupe.filieres.forEach(
+                    function (filiereCode) {
+
+                        resultats.push({
+
+                            filiereCode:
+                                filiereCode,
+
+                            succes:
+                                false,
+
+                            locaux: [],
+
+                            capaciteTotale: 0,
+
+                            tauxOccupation: 0,
+
+                            effectif:
+                                groupe.effectifs[
+                                    groupe.filieres.indexOf(
+                                        filiereCode
+                                    )
+                                ],
+
+                            groupe:
+                                groupe.filieres,
+
+                            message:
+                                "Aucune combinaison de locaux ne permet d'accueillir le groupe de " +
+                                groupe.effectifTotal +
+                                " étudiants."
+
+                        });
+
+                        filieresDejaAffectees.add(
+                            filiereCode
+                        );
+
+                    }
+                );
+
+                return;
+
+            }
+
+            // -------------------------------------------------
+            // Affecter les mêmes locaux à toutes les filières
+            // du groupe
+            // -------------------------------------------------
+
+            groupe.filieres.forEach(
+                function (filiereCode, index) {
+
+                    resultats.push({
+
+                        filiereCode:
+                            filiereCode,
+
+                        succes:
+                            true,
+
+                        locaux:
+                            resultat.locaux.slice(),
+
+                        capaciteTotale:
+                            resultat.capaciteTotale,
+
+                        tauxOccupation:
+                            resultat.tauxOccupation,
+
+                        effectif:
+                            groupe.effectifs[index],
+
+                        groupe:
+                            groupe.filieres.slice(),
+
+                        effectifGroupe:
+                            groupe.effectifTotal,
+
+                        datesCreneaux:
+                            groupe.datesCreneaux.slice(),
+
+                        message:
+                            "Filière affectée avec le groupe : " +
+                            groupe.filieres.join(" + ")
+
+                    });
+
+                    filieresDejaAffectees.add(
+                        filiereCode
+                    );
+
+                }
+            );
+
+        }
+    );
+
+    // -------------------------------------------------
+    // 2. AFFECTATION DES FILIÈRES NON REGROUPÉES
     // -------------------------------------------------
 
     planning.filieres.forEach(
         function (filiere) {
 
-            // -------------------------------------------------
-            // Rechercher l'effectif de la filière
-            // -------------------------------------------------
+            if (
+                filieresDejaAffectees.has(
+                    filiere.filiereCode
+                )
+            ) {
+
+                return;
+
+            }
 
             const ligneEffectif =
                 effectifs.find(
@@ -1435,21 +1571,34 @@ function affecterLocauxFixes(
                     }
                 );
 
+            // -------------------------------------------------
+            // Effectif introuvable
+            // -------------------------------------------------
+
             if (!ligneEffectif) {
 
-                resultats.push(
-                    {
-                        filiereCode:
-                            filiere.filiereCode,
+                resultats.push({
 
-                        succes: false,
+                    filiereCode:
+                        filiere.filiereCode,
 
-                        locaux: [],
+                    succes:
+                        false,
 
-                        message:
-                            "Effectif introuvable."
-                    }
-                );
+                    locaux: [],
+
+                    capaciteTotale: 0,
+
+                    tauxOccupation: 0,
+
+                    effectif: 0,
+
+                    groupe: null,
+
+                    message:
+                        "Effectif introuvable pour cette filière."
+
+                });
 
                 return;
 
@@ -1461,80 +1610,105 @@ function affecterLocauxFixes(
                 );
 
             // -------------------------------------------------
-            // Rechercher la meilleure affectation
-            // -------------------------------------------------
-            // Les locaux trouvés ici sont fixes
-            // pour toute la session de cette filière.
+            // Recherche du meilleur local / combinaison
             // -------------------------------------------------
 
             const resultat =
                 rechercherMeilleureCombinaisonLocaux(
                     filiere.filiereCode,
                     effectif,
-                    sallesAmphis,
-                    carteConflits,
-                    resultats
+                    sallesAmphis
                 );
 
-            // -------------------------------------------------
-            // Mémoriser l'affectation fixe
-            // -------------------------------------------------
+            resultats.push({
 
-            resultats.push(
-                {
-                    filiereCode:
-                        filiere.filiereCode,
+                filiereCode:
+                    filiere.filiereCode,
 
-                    effectif:
-                        effectif,
+                succes:
+                    resultat.succes,
 
-                    succes:
-                        resultat.succes,
+                locaux:
+                    resultat.locaux,
 
-                    locaux:
-                        resultat.locaux,
+                capaciteTotale:
+                    resultat.capaciteTotale,
 
-                    capaciteTotale:
-                        resultat.capaciteTotale,
+                tauxOccupation:
+                    resultat.tauxOccupation,
 
-                    tauxOccupation:
-                        resultat.tauxOccupation,
+                effectif:
+                    effectif,
 
-                    message:
-                        resultat.message
-                }
-            );
+                groupe: null,
+
+                message:
+                    resultat.message
+
+            });
 
         }
     );
 
     // -------------------------------------------------
-    // Vérifier si toutes les filières sont affectées
+    // Affichage console
     // -------------------------------------------------
 
-    const impossible =
-        resultats.some(
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "RÉSULTAT DES AFFECTATIONS"
+    );
+
+    console.table(
+        resultats.map(
             function (resultat) {
 
-                return !resultat.succes;
+                return {
+
+                    Filiere:
+                        resultat.filiereCode,
+
+                    Effectif:
+                        resultat.effectif,
+
+                    Groupe:
+                        resultat.groupe
+                            ? resultat.groupe.join(" + ")
+                            : "",
+
+                    Locaux:
+                        resultat.locaux.join(" || "),
+
+                    Capacite:
+                        resultat.capaciteTotale,
+
+                    Occupation:
+                        (
+                            resultat.tauxOccupation *
+                            100
+                        ).toFixed(2) + " %",
+
+                    Succes:
+                        resultat.succes
+
+                };
 
             }
-        );
+        )
+    );
 
-    return {
-        succes: !impossible,
+    console.log(
+        "=========================================="
+    );
 
-        affectations:
-            resultats,
-
-        message:
-            impossible
-                ? "Une ou plusieurs filières sont impossibles à affecter."
-                : "Toutes les filières sont affectées."
-    };
-
+    return resultats;
 }
 
+window.affecterLocauxFixes =
+    affecterLocauxFixes;
 
 window.affecterLocauxFixes =
     affecterLocauxFixes;
