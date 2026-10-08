@@ -1201,6 +1201,301 @@ window.rechercherMeilleureCombinaisonLocaux =
 
 
 // =================================================
+// CONSTRUIRE LES GROUPES DE FILIÈRES
+// =================================================
+
+function construireGroupesFilieres(
+    planning,
+    effectifs
+) {
+
+    const groupes = [];
+
+    // -------------------------------------------------
+    // Vérifier les données
+    // -------------------------------------------------
+
+    if (
+        !planning ||
+        !planning.filieres ||
+        !effectifs
+    ) {
+
+        return groupes;
+
+    }
+
+    // -------------------------------------------------
+    // Construire une clé DATE + CRÉNEAU
+    // pour chaque examen occupé
+    // -------------------------------------------------
+
+    const examensParFiliere = {};
+
+    planning.filieres.forEach(
+        function (filiere) {
+
+            const ligneEffectif =
+                effectifs.find(
+                    function (ligne) {
+
+                        return (
+                            ligne.niveauCode ===
+                                planning.niveauCode &&
+
+                            ligne.filiereCode ===
+                                filiere.filiereCode
+                        );
+
+                    }
+                );
+
+            if (!ligneEffectif) {
+                return;
+            }
+
+            const effectif =
+                Number(ligneEffectif.effectif);
+
+            examensParFiliere[
+                filiere.filiereCode
+            ] = [];
+
+            filiere.cellules.forEach(
+                function (cellule) {
+
+                    if (
+                        !cellule.estOccupee ||
+                        !cellule.date
+                    ) {
+
+                        return;
+
+                    }
+
+                    // -------------------------------------------------
+                    // La date Firestore peut être un Timestamp
+                    // -------------------------------------------------
+
+                    let dateCle;
+
+                    if (
+                        typeof cellule.date.seconds ===
+                        "number"
+                    ) {
+
+                        dateCle =
+                            String(
+                                cellule.date.seconds
+                            );
+
+                    } else {
+
+                        dateCle =
+                            String(
+                                new Date(
+                                    cellule.date
+                                ).getTime()
+                            );
+
+                    }
+
+                    const creneauCle =
+                        String(
+                            cellule.creneauOrdre
+                        );
+
+                    examensParFiliere[
+                        filiere.filiereCode
+                    ].push(
+                        {
+                            date: dateCle,
+                            creneau:
+                                creneauCle,
+                            effectif:
+                                effectif
+                        }
+                    );
+
+                }
+            );
+
+        }
+    );
+
+    // -------------------------------------------------
+    // Rechercher les filières ayant les mêmes
+    // dates ET les mêmes créneaux
+    // -------------------------------------------------
+
+    const filieres =
+        Object.keys(
+            examensParFiliere
+        );
+
+    for (
+        let i = 0;
+        i < filieres.length;
+        i++
+    ) {
+
+        const filiereA =
+            filieres[i];
+
+        const examensA =
+            examensParFiliere[
+                filiereA
+            ];
+
+        if (
+            examensA.length === 0
+        ) {
+
+            continue;
+
+        }
+
+        for (
+            let j = i + 1;
+            j < filieres.length;
+            j++
+        ) {
+
+            const filiereB =
+                filieres[j];
+
+            const examensB =
+                examensParFiliere[
+                    filiereB
+                ];
+
+            if (
+                examensB.length === 0
+            ) {
+
+                continue;
+
+            }
+
+            // -------------------------------------------------
+            // Vérifier que les deux filières ont
+            // exactement les mêmes dates + créneaux
+            // -------------------------------------------------
+
+            const clesA =
+                examensA
+                    .map(
+                        function (examen) {
+
+                            return (
+                                examen.date +
+                                "|" +
+                                examen.creneau
+                            );
+
+                        }
+                    )
+                    .sort();
+
+            const clesB =
+                examensB
+                    .map(
+                        function (examen) {
+
+                            return (
+                                examen.date +
+                                "|" +
+                                examen.creneau
+                            );
+
+                        }
+                    )
+                    .sort();
+
+            if (
+                clesA.length !==
+                clesB.length
+            ) {
+
+                continue;
+
+            }
+
+            const memesDatesEtCreneaux =
+                clesA.every(
+                    function (cle, index) {
+
+                        return (
+                            cle ===
+                            clesB[index]
+                        );
+
+                    }
+                );
+
+            if (
+                !memesDatesEtCreneaux
+            ) {
+
+                continue;
+
+            }
+
+            // -------------------------------------------------
+            // Calculer la somme des effectifs
+            // -------------------------------------------------
+
+            const effectifA =
+                examensA[0].effectif;
+
+            const effectifB =
+                examensB[0].effectif;
+
+            const effectifTotal =
+                effectifA +
+                effectifB;
+
+            // -------------------------------------------------
+            // Créer le groupe
+            // -------------------------------------------------
+
+            groupes.push(
+                {
+                    filieres: [
+                        filiereA,
+                        filiereB
+                    ],
+
+                    effectifs: [
+                        effectifA,
+                        effectifB
+                    ],
+
+                    effectifTotal:
+                        effectifTotal,
+
+                    datesCreneaux:
+                        clesA
+                }
+            );
+
+        }
+
+    }
+
+    return groupes;
+
+}
+
+
+// =================================================
+// EXPOSER POUR LES TESTS F12
+// =================================================
+
+window.construireGroupesFilieres =
+    construireGroupesFilieres;
+
+// =================================================
 // AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
 // =================================================
 
