@@ -385,8 +385,11 @@ function construireTableauCalendrier(planning) {
         const celluleAmphis =
             document.createElement("td");
 
-        celluleAmphis.textContent = "";
-
+       celluleAmphis.textContent =
+    filiere.amphis &&
+    filiere.amphis.length > 0
+        ? filiere.amphis.join(" || ")
+        : "";
         ligne.appendChild(
             celluleAmphis
         );
