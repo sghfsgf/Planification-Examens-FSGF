@@ -1075,3 +1075,228 @@ function affecterLocauxFixes(
 
 window.affecterLocauxFixes =
     affecterLocauxFixes;
+ // =================================================
+// RECHERCHER LA MEILLEURE COMBINAISON DE LOCAUX
+// =================================================
+
+function rechercherMeilleureCombinaisonLocaux(
+    filiereCode,
+    effectif,
+    sallesAmphis,
+    carteConflits,
+    affectationsFilieres
+) {
+
+    const locauxDisponibles =
+        sallesAmphis
+            .filter(
+                function (salle) {
+
+                    return (
+                        salle.disponible === "Oui" &&
+                        Number(salle.capacite) > 0 &&
+                        localCompatibleAvecConflits(
+                            filiereCode,
+                            salle.code,
+                            carteConflits,
+                            affectationsFilieres
+                        )
+                    );
+
+                }
+            );
+
+    // -------------------------------------------------
+    // 1. Chercher d'abord un seul local >= 66 %
+    // -------------------------------------------------
+
+    const locauxUniques =
+        locauxDisponibles
+            .filter(
+                function (salle) {
+
+                    const capacite =
+                        Number(salle.capacite);
+
+                    return (
+                        capacite >= effectif &&
+                        effectif / capacite >= 0.66
+                    );
+
+                }
+            )
+            .sort(
+                function (a, b) {
+
+                    return (
+                        Number(a.capacite) -
+                        Number(b.capacite)
+                    );
+
+                }
+            );
+
+    if (
+        locauxUniques.length > 0
+    ) {
+
+        const local =
+            locauxUniques[0];
+
+        return {
+            succes: true,
+
+            locaux: [
+                local.code
+            ],
+
+            capaciteTotale:
+                Number(local.capacite),
+
+            tauxOccupation:
+                effectif /
+                Number(local.capacite),
+
+            message:
+                "Un seul local suffit."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // 2. Rechercher plusieurs locaux
+    // -------------------------------------------------
+
+    const combinaisons = [];
+
+    function rechercherCombinaisons(
+        debut,
+        combinaison,
+        capaciteTotale
+    ) {
+
+        if (
+            capaciteTotale >= effectif
+        ) {
+
+            combinaisons.push(
+                {
+                    locaux:
+                        combinaison.slice(),
+
+                    capaciteTotale:
+                        capaciteTotale
+                }
+            );
+
+            return;
+
+        }
+
+        for (
+            let i = debut;
+            i < locauxDisponibles.length;
+            i++
+        ) {
+
+            const salle =
+                locauxDisponibles[i];
+
+            combinaison.push(
+                salle.code
+            );
+
+            rechercherCombinaisons(
+                i + 1,
+                combinaison,
+                capaciteTotale +
+                    Number(salle.capacite)
+            );
+
+            combinaison.pop();
+
+        }
+
+    }
+
+    rechercherCombinaisons(
+        0,
+        [],
+        0
+    );
+
+    if (
+        combinaisons.length === 0
+    ) {
+
+        return {
+            succes: false,
+
+            locaux: [],
+
+            capaciteTotale: 0,
+
+            tauxOccupation: 0,
+
+            message:
+                "Aucune combinaison de locaux ne permet d'accueillir l'effectif."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // 3. Choisir la meilleure combinaison
+    // -------------------------------------------------
+
+    combinaisons.sort(
+        function (a, b) {
+
+            // Priorité 1 :
+            // moins de locaux
+
+            if (
+                a.locaux.length !==
+                b.locaux.length
+            ) {
+
+                return (
+                    a.locaux.length -
+                    b.locaux.length
+                );
+
+            }
+
+            // Priorité 2 :
+            // capacité totale la plus proche
+
+            return (
+                a.capaciteTotale -
+                b.capaciteTotale
+            );
+
+        }
+    );
+
+    const meilleure =
+        combinaisons[0];
+
+    return {
+        succes: true,
+
+        locaux:
+            meilleure.locaux,
+
+        capaciteTotale:
+            meilleure.capaciteTotale,
+
+        tauxOccupation:
+            effectif /
+            meilleure.capaciteTotale,
+
+        message:
+            "Plusieurs locaux sont nécessaires."
+    };
+
+}
+ window.rechercherMeilleureCombinaisonLocaux =
+    rechercherMeilleureCombinaisonLocaux;
