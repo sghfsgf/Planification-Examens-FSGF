@@ -386,3 +386,60 @@ function trouverLocauxPourFiliere(
 
 window.trouverLocauxPourFiliere =
     trouverLocauxPourFiliere;
+// =================================================
+// VÉRIFIER SI UN LOCAL EST DÉJÀ UTILISÉ
+// À UNE DATE ET UN CRÉNEAU
+// =================================================
+
+function localEstDisponiblePourCreneau(
+    codeLocal,
+    date,
+    creneauOrdre,
+    affectations
+) {
+
+    // -------------------------------------------------
+    // Aucune affectation existante
+    // -------------------------------------------------
+
+    if (
+        !affectations ||
+        affectations.length === 0
+    ) {
+
+        return true;
+
+    }
+
+    // -------------------------------------------------
+    // Rechercher un conflit
+    // -------------------------------------------------
+
+    const conflit =
+        affectations.some(
+            function (affectation) {
+
+                return (
+                    affectation.codeLocal === codeLocal &&
+                    affectation.date === date &&
+                    Number(affectation.creneauOrdre) ===
+                    Number(creneauOrdre)
+                );
+
+            }
+        );
+
+    // -------------------------------------------------
+    // Résultat
+    // -------------------------------------------------
+
+    return !conflit;
+}
+
+
+// =================================================
+// EXPOSER LA FONCTION POUR LES TESTS F12
+// =================================================
+
+window.localEstDisponiblePourCreneau =
+    localEstDisponiblePourCreneau;
