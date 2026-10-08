@@ -789,3 +789,69 @@ function construireCarteConflits(
 
 window.construireCarteConflits =
     construireCarteConflits;
+
+ // =================================================
+// VÉRIFIER SI UN LOCAL EST COMPATIBLE
+// AVEC LES CONFLITS D'UNE FILIÈRE
+// =================================================
+
+function localCompatibleAvecConflits(
+    filiereCode,
+    codeLocal,
+    carteConflits,
+    affectationsFilieres
+) {
+
+    if (
+        !carteConflits ||
+        !affectationsFilieres
+    ) {
+
+        return true;
+
+    }
+
+    const conflits =
+        carteConflits[filiereCode] || [];
+
+    for (
+        let i = 0;
+        i < conflits.length;
+        i++
+    ) {
+
+        const filiereEnConflit =
+            conflits[i];
+
+        const affectation =
+            affectationsFilieres.find(
+                function (item) {
+
+                    return (
+                        item.filiereCode ===
+                        filiereEnConflit
+                    );
+
+                }
+            );
+
+        if (
+            affectation &&
+            affectation.locaux &&
+            affectation.locaux.includes(
+                codeLocal
+            )
+        ) {
+
+            return false;
+
+        }
+
+    }
+
+    return true;
+
+}
+
+window.localCompatibleAvecConflits =
+    localCompatibleAvecConflits;
