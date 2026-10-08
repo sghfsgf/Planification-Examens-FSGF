@@ -672,17 +672,19 @@ function construireConflitsFilieres(planning) {
                 ) {
 
                     if (
-                        examensA[a].date ===
-                            examensB[b].date &&
+    examensA[a].date &&
+    examensB[b].date &&
 
-                        Number(
-                            examensA[a].creneauOrdre
-                        ) ===
-                        Number(
-                            examensB[b].creneauOrdre
-                        )
-                    ) {
+    examensA[a].date.seconds ===
+        examensB[b].date.seconds &&
 
+    Number(
+        examensA[a].creneauOrdre
+    ) ===
+    Number(
+        examensB[b].creneauOrdre
+    )
+) {
                         conflitTrouve = true;
 
                         break;
