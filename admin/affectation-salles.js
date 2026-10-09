@@ -1225,6 +1225,7 @@ window.rechercherMeilleureCombinaisonLocaux =
 // =================================================
 
 
+
 function construireGroupesFilieres(planning, effectifs) {
 
     const groupesParDateCreneau = {};
@@ -1237,28 +1238,11 @@ function construireGroupesFilieres(planning, effectifs) {
         return [];
     }
 
-    // -------------------------------------------------
-    // Parcourir chaque filière du calendrier global
-    // -------------------------------------------------
-
     planning.filieres.forEach(function (filiere) {
 
-      const niveauCode =
-      filiere.niveauCode || planning.niveauCode;
-        
-        console.log("🔎 Exemple de document effectif :", effectifs[0]);
-        console.log("🔎 Année du planning :", planning.anneeUniversitaire);
-        console.log("🔎 Filière du calendrier :", filiere);
+        const niveauCode =
+            filiere.niveauCode || planning.niveauCode;
 
-        console.log(
-    "🔎 Année affichée dans Admin :",
-    document.getElementById("anneeUniversitaireAdmin")?.textContent.trim()
-      );
-
-    console.log(
-    "🔎 Années présentes dans les effectifs :",
-    [...new Set(effectifs.map(ligne => ligne.anneeUniversitaire))]
-    );
         const ligneEffectif = effectifs.find(function (ligne) {
             return (
                 ligne.niveauCode === niveauCode &&
@@ -1276,14 +1260,11 @@ function construireGroupesFilieres(planning, effectifs) {
             console.warn(
                 "Effectif absent ou invalide :",
                 niveauCode,
-                filiere.filiereCode
+                filiere.filiereCode,
+                planning.anneeUniversitaire
             );
             return;
         }
-
-        // Une filière ne doit apparaître qu'une fois
-        // par date et créneau, même si plusieurs cellules
-        // occupées sont présentes.
 
         const creneauxFiliere = new Set();
 
@@ -1337,10 +1318,6 @@ function construireGroupesFilieres(planning, effectifs) {
 
     });
 
-    // -------------------------------------------------
-    // Conserver les créneaux avec au moins deux filières
-    // -------------------------------------------------
-
     return Object.values(groupesParDateCreneau)
         .filter(function (groupe) {
             return groupe.filieres.length >= 2;
@@ -1352,9 +1329,6 @@ function construireGroupesFilieres(planning, effectifs) {
                     return total + filiere.effectif;
                 }, 0);
 
-            const dateCreneau =
-                groupe.date + "|" + groupe.creneauOrdre;
-
             return {
                 niveauCode: groupe.niveauCode,
                 filieres: groupe.filieres.map(
@@ -1364,7 +1338,9 @@ function construireGroupesFilieres(planning, effectifs) {
                     filiere => filiere.effectif
                 ),
                 effectifTotal: effectifTotal,
-                datesCreneaux: [dateCreneau]
+                datesCreneaux: [
+                    groupe.date + "|" + groupe.creneauOrdre
+                ]
             };
         });
 }
