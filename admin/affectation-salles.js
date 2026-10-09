@@ -698,20 +698,37 @@ function construireConflitsFilieres(planning) {
                     b++
                 ) {
 
-                    if (
-                        examensA[a].date &&
-                        examensB[b].date &&
+                  const dateA =
+    examensA[a].dateAffichage ||
+    (
+        typeof examensA[a].date?.seconds === "number"
+            ? new Date(
+                examensA[a].date.seconds * 1000
+            ).toLocaleDateString("fr-FR", {
+                timeZone: "Africa/Tunis"
+            })
+            : null
+    );
 
-                        examensA[a].date.seconds ===
-                            examensB[b].date.seconds &&
+const dateB =
+    examensB[b].dateAffichage ||
+    (
+        typeof examensB[b].date?.seconds === "number"
+            ? new Date(
+                examensB[b].date.seconds * 1000
+            ).toLocaleDateString("fr-FR", {
+                timeZone: "Africa/Tunis"
+            })
+            : null
+    );
 
-                        Number(
-                            examensA[a].creneauOrdre
-                        ) ===
-                        Number(
-                            examensB[b].creneauOrdre
-                        )
-                    ) {
+if (
+    dateA &&
+    dateB &&
+    dateA === dateB &&
+    Number(examensA[a].creneauOrdre) ===
+        Number(examensB[b].creneauOrdre)
+) {
 
                         conflitTrouve = true;
 
