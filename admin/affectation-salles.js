@@ -1679,7 +1679,19 @@ function affecterLocauxFixes(
         "=========================================="
     );
 
-    return resultats;
+const succes =
+    resultats.length > 0 &&
+    resultats.every(function (resultat) {
+        return resultat.succes === true;
+    });
+
+return {
+    succes: succes,
+    affectations: resultats,
+    message: succes
+        ? "Toutes les filières ont une affectation possible."
+        : "Une ou plusieurs filières n'ont pas d'affectation valide."
+};
 }
 
 window.affecterLocauxFixes =
