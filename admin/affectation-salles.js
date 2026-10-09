@@ -1869,6 +1869,11 @@ console.log(
 
                     window.affectationCourante = resultat;
                      window.planningAffectationCourant = planning;
+
+                    console.log(
+    "TEST — affectation exposée :",
+    window.affectationCourante
+);
                     console.log(
                         "Résultat affectation :",
                         resultat
