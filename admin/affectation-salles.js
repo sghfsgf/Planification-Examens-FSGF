@@ -1224,7 +1224,11 @@ function construireGroupesFilieres(planning, effectifs) {
     planning.filieres.forEach(function (filiere) {
 
         const niveauCode = filiere.niveauCode;
-
+        
+        console.log("🔎 Exemple de document effectif :", effectifs[0]);
+        console.log("🔎 Année du planning :", planning.anneeUniversitaire);
+        console.log("🔎 Filière du calendrier :", filiere);
+        
         const ligneEffectif = effectifs.find(function (ligne) {
             return (
                 ligne.niveauCode === niveauCode &&
