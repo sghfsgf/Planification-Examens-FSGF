@@ -1223,7 +1223,8 @@ function construireGroupesFilieres(planning, effectifs) {
 
     planning.filieres.forEach(function (filiere) {
 
-        const niveauCode = filiere.niveauCode;
+      const niveauCode =
+      filiere.niveauCode || planning.niveauCode;
         
         console.log("🔎 Exemple de document effectif :", effectifs[0]);
         console.log("🔎 Année du planning :", planning.anneeUniversitaire);
@@ -1546,7 +1547,10 @@ const ligneEffectif =
                 ligne.niveauCode === niveauFiliere &&
                 ligne.filiereCode === filiere.filiereCode &&
                 ligne.anneeUniversitaire ===
-                    planning.anneeUniversitaire
+                      (
+                      planning.anneeUniversitaire ||
+                     document.getElementById("anneeUniversitaireAdmin")?.textContent.trim()
+                      )
             );
         }
     );
