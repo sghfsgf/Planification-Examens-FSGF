@@ -2556,68 +2556,139 @@ if (documentExistant.exists()) {
     );
 }
 
+
     // -------------------------------------------------
     // Construire le document
     // -------------------------------------------------
 
+    const controleInitial = {
+
+        valide: false,
+        dateControle: null,
+        matieresNonPlacees: [],
+        doublons: [],
+        erreursCommunes: [],
+        erreursCreneauxSuccessifs: [],
+        ecartEquilibrage: null
+
+    };
+
     const documentCalendrier = {
 
-        anneeUniversitaire:
-            anneeUniversitaire,
+        anneeUniversitaire: anneeUniversitaire,
 
-        niveauCode:
-            planning.niveauCode,
+        niveauCode: planning.niveauCode,
 
-        semestreCode:
-            semestreCode,
+        semestreCode: semestreCode,
 
-        regimeCode:
-            regimeCode,
+        regimeCode: regimeCode,
 
-        sessionCode:
-            planning.sessionCode,
+        sessionCode: planning.sessionCode,
 
-        sessionLibelle:
-            session.sessionLibelle || "",
+        sessionLibelle: session.sessionLibelle || "",
 
-        statut:
-            "brouillon",
+        // Toute modification repasse le calendrier en brouillon
+        statut: "brouillon",
 
-        creeLe:
-            serverTimestamp(),
+        // Conserver la date de création si le document existe
+        creeLe: documentExistant.exists()
+            ? documentExistant.data().creeLe
+            : serverTimestamp(),
 
-        modifieLe:
-            serverTimestamp(),
+        modifieLe: serverTimestamp(),
 
-        planning:
-            planning,
+        // Remplacer le planning par sa nouvelle version
+        planning: planning,
 
-        controle: {
+        // Invalider l'ancien contrôle
+        controle: controleInitial
 
-            valide:
-                false,
+    };
 
-            dateControle:
-                null,
+    // -------------------------------------------------
+    // Enregistrer ou mettre à jour dans Firestore
+    // -------------------------------------------------
 
-            matieresNonPlacees:
-                [],
+    try {
 
-            doublons:
-                [],
+        if (documentExistant.exists()) {
 
-            erreursCommunes:
-                [],
+            // Mise à jour du calendrier individuel existant
+            await updateDoc(
+                referenceCalendrier,
+                documentCalendrier
+            );
 
-            erreursCreneauxSuccessifs:
-                [],
+            console.log(
+                "✓ Calendrier existant mis à jour :",
+                idCalendrier
+            );
 
-            ecartEquilibrage:
-                null
+        } else {
+
+            // Création d'un nouveau calendrier individuel
+            await setDoc(
+                referenceCalendrier,
+                documentCalendrier
+            );
+
+            console.log(
+                "✓ Nouveau calendrier créé :",
+                idCalendrier
+            );
 
         }
 
-    };
+        console.log(
+            "✓ Calendrier enregistré dans Firestore."
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Niveau :",
+            planning.niveauCode
+        );
+
+        console.log(
+            "Session :",
+            planning.sessionCode
+        );
+
+        console.log(
+            "Statut : brouillon"
+        );
+
+        return {
+
+            id: idCalendrier,
+
+            anneeUniversitaire: anneeUniversitaire,
+
+            niveauCode: planning.niveauCode,
+
+            semestreCode: semestreCode,
+
+            regimeCode: regimeCode,
+
+            sessionCode: planning.sessionCode,
+
+            statut: "brouillon"
+
+        };
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de l'enregistrement du calendrier :",
+            erreur
+        );
+
+        return null;
+    }
 
     // -------------------------------------------------
     // Enregistrer dans Firestore
