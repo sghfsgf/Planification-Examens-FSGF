@@ -1204,98 +1204,99 @@ window.rechercherMeilleureCombinaisonLocaux =
 // CONSTRUIRE LES GROUPES DE FILIÈRES
 // =================================================
 
-// =================================================
-// CONSTRUIRE LES GROUPES DE FILIÈRES
-// =================================================
 
 function construireGroupesFilieres(planning, effectifs) {
 
-    const groupes = [];
+    const groupesParDateCreneau = {};
 
-    if (!planning ||
-        !planning.filieres ||
-        !effectifs) {
-
-        return groupes;
+    if (
+        !planning ||
+        !Array.isArray(planning.filieres) ||
+        !Array.isArray(effectifs)
+    ) {
+        return [];
     }
 
     // -------------------------------------------------
-    // Construire les examens par date + créneau
+    // Parcourir chaque filière du calendrier global
     // -------------------------------------------------
-
-    const examensParDateCreneau = {};
 
     planning.filieres.forEach(function (filiere) {
 
-        const ligneEffectif =
-            effectifs.find(function (ligne) {
+        const niveauCode = filiere.niveauCode;
 
-                return ligne.niveauCode === planning.niveauCode &&
-                       ligne.filiereCode === filiere.filiereCode;
+        const ligneEffectif = effectifs.find(function (ligne) {
+            return (
+                ligne.niveauCode === niveauCode &&
+                ligne.filiereCode === filiere.filiereCode &&
+                ligne.anneeUniversitaire ===
+                    planning.anneeUniversitaire
+            );
+        });
 
-            });
-
-        if (!ligneEffectif) {
+        if (
+            !ligneEffectif ||
+            !Number.isFinite(Number(ligneEffectif.effectif)) ||
+            Number(ligneEffectif.effectif) <= 0
+        ) {
+            console.warn(
+                "Effectif absent ou invalide :",
+                niveauCode,
+                filiere.filiereCode
+            );
             return;
         }
 
-        const effectif =
-            Number(ligneEffectif.effectif);
+        // Une filière ne doit apparaître qu'une fois
+        // par date et créneau, même si plusieurs cellules
+        // occupées sont présentes.
 
-        filiere.cellules.forEach(function (cellule) {
+        const creneauxFiliere = new Set();
 
-            if (!cellule.estOccupee ||
-                !cellule.date) {
+        (filiere.cellules || []).forEach(function (cellule) {
 
+            if (!cellule.estOccupee || !cellule.date) {
                 return;
             }
 
-            // -------------------------------------------------
-            // Construire une clé de date stable
-            // -------------------------------------------------
-
-            let dateCle;
-
-            if (typeof cellule.date.seconds === "number") {
-
-                dateCle =
-                    String(cellule.date.seconds);
-
-            } else {
-
-                dateCle =
-                    String(
-                        new Date(cellule.date).getTime()
-                    );
-            }
+            const dateCle =
+                cellule.dateAffichage ||
+                (
+                    typeof cellule.date.seconds === "number"
+                        ? new Date(
+                            cellule.date.seconds * 1000
+                        ).toLocaleDateString("fr-FR", {
+                            timeZone: "Africa/Tunis"
+                        })
+                        : String(cellule.date)
+                );
 
             const creneauCle =
                 String(cellule.creneauOrdre);
 
             const cle =
-                dateCle + "|" + creneauCle;
+                niveauCode + "|" +
+                dateCle + "|" +
+                creneauCle;
 
-            // -------------------------------------------------
-            // Créer le groupe correspondant au créneau
-            // -------------------------------------------------
-
-            if (!examensParDateCreneau[cle]) {
-
-                examensParDateCreneau[cle] = [];
-
+            if (creneauxFiliere.has(cle)) {
+                return;
             }
 
-            examensParDateCreneau[cle].push({
+            creneauxFiliere.add(cle);
 
-                filiereCode:
-                    filiere.filiereCode,
+            if (!groupesParDateCreneau[cle]) {
+                groupesParDateCreneau[cle] = {
+                    niveauCode: niveauCode,
+                    date: dateCle,
+                    creneauOrdre: cellule.creneauOrdre,
+                    filieres: []
+                };
+            }
 
-                effectif:
-                    effectif,
-
-                matiereLibelle:
-                    cellule.matiereLibelle
-
+            groupesParDateCreneau[cle].filieres.push({
+                filiereCode: filiere.filiereCode,
+                effectif: Number(ligneEffectif.effectif)
             });
 
         });
@@ -1303,61 +1304,35 @@ function construireGroupesFilieres(planning, effectifs) {
     });
 
     // -------------------------------------------------
-    // Transformer les groupes en tableau
+    // Conserver les créneaux avec au moins deux filières
     // -------------------------------------------------
 
-    Object.keys(examensParDateCreneau)
-        .forEach(function (cle) {
-
-            const examens =
-                examensParDateCreneau[cle];
-
-            // Un seul examen à ce créneau :
-            // pas de regroupement nécessaire.
-
-            if (examens.length < 2) {
-                return;
-            }
-
-            const filieres = examens.map(
-                function (examen) {
-                    return examen.filiereCode;
-                }
-            );
-
-            const effectifsGroupe = examens.map(
-                function (examen) {
-                    return examen.effectif;
-                }
-            );
+    return Object.values(groupesParDateCreneau)
+        .filter(function (groupe) {
+            return groupe.filieres.length >= 2;
+        })
+        .map(function (groupe) {
 
             const effectifTotal =
-                effectifsGroupe.reduce(
-                    function (total, effectif) {
-                        return total + effectif;
-                    },
-                    0
-                );
+                groupe.filieres.reduce(function (total, filiere) {
+                    return total + filiere.effectif;
+                }, 0);
 
-            groupes.push({
+            const dateCreneau =
+                groupe.date + "|" + groupe.creneauOrdre;
 
-                filieres:
-                    filieres,
-
-                effectifs:
-                    effectifsGroupe,
-
-                effectifTotal:
-                    effectifTotal,
-
-                datesCreneaux:
-                    [cle]
-
-            });
-
+            return {
+                niveauCode: groupe.niveauCode,
+                filieres: groupe.filieres.map(
+                    filiere => filiere.filiereCode
+                ),
+                effectifs: groupe.filieres.map(
+                    filiere => filiere.effectif
+                ),
+                effectifTotal: effectifTotal,
+                datesCreneaux: [dateCreneau]
+            };
         });
-
-    return groupes;
 }
 
 window.construireGroupesFilieres =
