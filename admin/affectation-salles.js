@@ -2123,20 +2123,20 @@ document.addEventListener(
                             }
 
                             // ---------------------------------
-// 2. Vérifier que les locaux sont disponibles
-// ---------------------------------
+                          // 2. Vérifier que les locaux sont disponibles
+                           // ---------------------------------
 
-affectation.locaux.forEach(
-    function (codeLocal) {
+                   affectation.locaux.forEach(
+                         function (codeLocal) {
 
-        const local =
-            window.generationExamens
-                .obtenirDonnees()
-                .sallesAmphis
-                .find(
-                    function (salle) {
+                            const local =
+                            window.generationExamens
+                              .obtenirDonnees()
+                                 .sallesAmphis
+                              .find(
+                                   function (salle) {
 
-                        return salle.code === codeLocal;
+                           return salle.code === codeLocal;
 
                     }
                 );
