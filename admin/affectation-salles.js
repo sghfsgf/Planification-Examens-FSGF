@@ -1762,7 +1762,7 @@ document.addEventListener(
                     // =========================================
                     // RÉCUPÉRER LE CALENDRIER ACTUELLEMENT AFFICHÉ
                     // =========================================
-```javascript
+
 console.log(
     "TEST — calendrier disponible au clic :",
     window.planningCalendrierAdmin
@@ -1770,7 +1770,7 @@ console.log(
 
 const planning =
     window.planningCalendrierAdmin;
-```
+
 
 
                     if (!planning) {
