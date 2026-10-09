@@ -662,23 +662,20 @@ function construireConflitsFilieres(planning) {
             // Examens occupés de chaque filière
             // -------------------------------------------------
 
-            const examensA =
-                filiereA.cellules.filter(
-                    function (cellule) {
+           
+const examensA =
+    (filiereA.cellules || []).filter(
+        function (cellule) {
+            return cellule.estOccupee && cellule.date;
+        }
+    );
 
-                        return cellule.estOccupee;
-
-                    }
-                );
-
-            const examensB =
-                filiereB.cellules.filter(
-                    function (cellule) {
-
-                        return cellule.estOccupee;
-
-                    }
-                );
+const examensB =
+    (filiereB.cellules || []).filter(
+        function (cellule) {
+            return cellule.estOccupee && cellule.date;
+        }
+    );
 
             let conflitTrouve = false;
 
