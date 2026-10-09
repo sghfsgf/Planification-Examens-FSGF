@@ -1766,6 +1766,11 @@ document.addEventListener(
                     const planning =
                         window.planningCalendrierAdmin;
 
+                    console.log(
+    "TEST — calendrier disponible au clic :",
+    window.planningCalendrierAdmin
+);
+
                     if (!planning) {
 
                         throw new Error(
