@@ -1801,7 +1801,18 @@ document.addEventListener(
         "semestreCalendrierAdmin"
     ).value
 );
+// AJOUTER JUSTE APRÈS
+console.log(
+    "Année universitaire du planning :",
+    planning.anneeUniversitaire
+);
 
+console.log(
+    "Année universitaire du calendrier affiché :",
+    document.getElementById(
+        "anneeUniversitaireAdmin"
+    )?.textContent.trim()
+);
 console.log(
     "Régime :",
     document.getElementById(
