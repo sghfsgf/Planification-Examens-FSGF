@@ -1867,7 +1867,8 @@ console.log(
                      affectationCourante = resultat;
                            planningAffectationCourant = planning;
 
-                    
+                    window.affectationCourante = resultat;
+                     window.planningAffectationCourant = planning;
                     console.log(
                         "Résultat affectation :",
                         resultat
