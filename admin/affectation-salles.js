@@ -1358,10 +1358,6 @@ window.construireGroupesFilieres =
 
 // =================================================
 // AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
-// =================================================
-
-// =================================================
-// AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
 // EN TENANT COMPTE DES REGROUPEMENTS
 // =================================================
 
