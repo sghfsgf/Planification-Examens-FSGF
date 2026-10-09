@@ -2399,7 +2399,13 @@ async function chargerCalendrier(
         idCalendrier
     );
 
-    return donnees.planning;
+   
+return {
+    ...donnees.planning,
+    anneeUniversitaire:
+        donnees.anneeUniversitaire ||
+        anneeUniversitaire
+};
 }
 
 
