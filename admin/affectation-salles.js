@@ -2233,86 +2233,90 @@ document.addEventListener(
 
                         }
                     );
+                   
+ // =========================================
+ // CONTRÔLE DES CONFLITS DE SALLES
+ // =========================================
 
-                    // =========================================
-                    // CONTRÔLE DES CONFLITS DE SALLES
-                    // =========================================
+ const conflits =
+     construireConflitsFilieres(
+         planningAffectationCourant
+     );
 
-                    const conflits =
-                        construireConflitsFilieres(
-                            planningAffectationCourant
-                        );
+ const carteConflits =
+     construireCarteConflits(
+         conflits
+     );
 
-                    const carteConflits =
-                        construireCarteConflits(
-                            conflits
-                        );
+ for (let i = 0; i < affectations.length; i++) {
 
-                    for (
-                        let i = 0;
-                        i < affectations.length;
-                        i++
-                    ) {
+     const affectationA = affectations[i];
 
-                        const affectationA =
-                            affectations[i];
+     const conflitsA =
+         carteConflits[affectationA.filiereCode] || [];
 
-                        const conflitsA =
-                            carteConflits[
-                                affectationA.filiereCode
-                            ] || [];
+     for (let j = i + 1; j < affectations.length; j++) {
 
-                        for (
-                            let j = 0;
-                            j < affectations.length;
-                            j++
-                        ) {
+         const affectationB = affectations[j];
 
-                            if (i === j) {
-                                continue;
-                            }
+         // Ignorer une filière comparée avec elle-même.
+         if (
+             affectationA.filiereCode ===
+             affectationB.filiereCode
+         ) {
+             continue;
+         }
 
-                            const affectationB =
-                                affectations[j];
+         // Les filières d'un même groupe partagent
+         // volontairement les mêmes locaux.
+         const memeGroupe =
+             Array.isArray(affectationA.groupe) &&
+             Array.isArray(affectationB.groupe) &&
+             affectationA.groupe.length > 0 &&
+             affectationA.groupe.length ===
+                 affectationB.groupe.length &&
+             affectationA.groupe.every(function (code) {
+                 return affectationB.groupe.includes(code);
+             });
 
-                            if (
-                                conflitsA.includes(
-                                    affectationB.filiereCode
-                                )
-                            ) {
+         if (memeGroupe) {
+             continue;
+         }
 
-                                const locauxCommuns =
-                                    affectationA.locaux.filter(
-                                        function (local) {
+         if (
+             conflitsA.includes(
+                 affectationB.filiereCode
+             )
+         ) {
 
-                                            return affectationB.locaux.includes(
-                                                local
-                                            );
+             const locauxCommuns =
+                 (affectationA.locaux || []).filter(
+                     function (local) {
+                         return (
+                             (affectationB.locaux || [])
+                                 .includes(local)
+                         );
+                     }
+                 );
 
-                                        }
-                                    );
+             if (locauxCommuns.length > 0) {
 
-                                if (
-                                    locauxCommuns.length > 0
-                                ) {
+                 erreurs.push(
+                     "Conflit de salle entre " +
+                     affectationA.filiereCode +
+                     " et " +
+                     affectationB.filiereCode +
+                     " : " +
+                     locauxCommuns.join(" || ")
+                 );
 
-                                    erreurs.push(
-                                        "Conflit de salle entre " +
-                                        affectationA.filiereCode +
-                                        " et " +
-                                        affectationB.filiereCode +
-                                        " : " +
-                                        locauxCommuns.join(" || ")
-                                    );
+             }
+         }
+     }
+ }
 
-                                }
 
-                            }
-
-                        }
-
-                    }
-
+                    
                     // =========================================
                     // AFFICHER LE RÉSULTAT
                     // =========================================
