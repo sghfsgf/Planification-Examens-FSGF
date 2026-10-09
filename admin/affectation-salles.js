@@ -1762,13 +1762,15 @@ document.addEventListener(
                     // =========================================
                     // RÉCUPÉRER LE CALENDRIER ACTUELLEMENT AFFICHÉ
                     // =========================================
+console.log(
+    "TEST — calendrier disponible au clic :",
+    window.planningCalendrierAdmin
 
+                    
                     const planning =
                         window.planningCalendrierAdmin;
 
-                    console.log(
-    "TEST — calendrier disponible au clic :",
-    window.planningCalendrierAdmin
+                    
 );
 
                     if (!planning) {
