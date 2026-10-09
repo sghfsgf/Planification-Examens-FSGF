@@ -1531,20 +1531,21 @@ function affecterLocauxFixes(
 
             }
 
-            const ligneEffectif =
-                effectifs.find(
-                    function (ligne) {
+           
+const niveauFiliere =
+    filiere.niveauCode || planning.niveauCode;
 
-                        return (
-                            ligne.niveauCode ===
-                                planning.niveauCode &&
-
-                            ligne.filiereCode ===
-                                filiere.filiereCode
-                        );
-
-                    }
-                );
+const ligneEffectif =
+    effectifs.find(
+        function (ligne) {
+            return (
+                ligne.niveauCode === niveauFiliere &&
+                ligne.filiereCode === filiere.filiereCode &&
+                ligne.anneeUniversitaire ===
+                    planning.anneeUniversitaire
+            );
+        }
+    );
 
             // -------------------------------------------------
             // Effectif introuvable
