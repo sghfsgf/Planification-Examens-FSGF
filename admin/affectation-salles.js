@@ -1229,7 +1229,16 @@ function construireGroupesFilieres(planning, effectifs) {
         console.log("🔎 Exemple de document effectif :", effectifs[0]);
         console.log("🔎 Année du planning :", planning.anneeUniversitaire);
         console.log("🔎 Filière du calendrier :", filiere);
-        
+
+        console.log(
+    "🔎 Année affichée dans Admin :",
+    document.getElementById("anneeUniversitaireAdmin")?.textContent.trim()
+      );
+
+    console.log(
+    "🔎 Années présentes dans les effectifs :",
+    [...new Set(effectifs.map(ligne => ligne.anneeUniversitaire))]
+    );
         const ligneEffectif = effectifs.find(function (ligne) {
             return (
                 ligne.niveauCode === niveauCode &&
