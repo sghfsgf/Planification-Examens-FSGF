@@ -29,6 +29,7 @@
 
 import { app } from "../firebase-config.js";
 
+
 import {
     getFirestore,
     collection,
@@ -36,9 +37,9 @@ import {
     getDoc,
     doc,
     setDoc,
+    updateDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
 
 // =====================================================
 // FIRESTORE
