@@ -550,31 +550,34 @@ function preparerAffectationsFilieres(
                     sallesAmphis
                 );
 
-            // -------------------------------------------------
-            // Mémoriser l'affectation
-            // -------------------------------------------------
+           
+ // -------------------------------------------------
+ // Mémoriser l'affectation
+ // -------------------------------------------------
 
-            affectations.push(
-                {
-                    filiereCode:
-                        filiere.filiereCode,
+ affectations.push({
+     filiereCode:
+         filiere.filiereCode,
 
-                    effectif:
-                        Number(ligneEffectif.effectif),
+     effectif:
+         Number(ligneEffectif.effectif),
 
-                    succes:
-                        resultat.succes,
+     succes:
+         resultat.succes,
 
-                    locaux:
-                        resultat.locaux,
+     locaux:
+         resultat.locaux,
 
-                    capaciteTotale:
-                        resultat.capaciteTotale,
+     capaciteTotale:
+         resultat.capaciteTotale,
 
-                    message:
-                        resultat.message
-                }
-            );
+     message:
+         resultat.message,
+
+     // Identifier le groupe d'affectation
+     groupe:
+         resultat.groupe || filiere.filiereCode
+ });
 
         }
     );
