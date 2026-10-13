@@ -1231,13 +1231,14 @@ function construireGroupesFilieres(
 
     const groupesParDateCreneau = {};
 
-    if (
-        !planning ||
-        !Array.isArray(planning.filieres) ||
-        !Array.isArray(effectifs)
-    ) {
-        return [];
-    }
+   if (
+    !planning ||
+    !Array.isArray(planning.filieres) ||
+    !Array.isArray(effectifs) ||
+    !Array.isArray(sallesAmphis)
+) {
+    return [];
+}
 
     planning.filieres.forEach(function (filiere) {
 
