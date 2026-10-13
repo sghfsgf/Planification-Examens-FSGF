@@ -1420,6 +1420,60 @@ function affecterLocauxFixes(
         return Number(effectif) /
             Number(locauxAdaptes[0].capacite);
     }
+
+    
+    // -------------------------------------------------
+    // Identifier les filières prioritaires :
+    // taux d'occupation strictement supérieur à 83 %
+    // et inférieur ou égal à 100 %
+    // -------------------------------------------------
+
+    const filieresPrioritaires = [];
+
+    planning.filieres.forEach(function (filiere) {
+
+        const niveauFiliere =
+            filiere.niveauCode || planning.niveauCode;
+
+        const ligneEffectif = effectifs.find(function (ligne) {
+            return (
+                ligne.niveauCode === niveauFiliere &&
+                ligne.filiereCode === filiere.filiereCode &&
+                ligne.anneeUniversitaire ===
+                    (
+                        planning.anneeUniversitaire ||
+                        document.getElementById(
+                            "anneeUniversitaireAdmin"
+                        )?.textContent.trim()
+                    )
+            );
+        });
+
+        if (!ligneEffectif) {
+            return;
+        }
+
+        const effectif = Number(ligneEffectif.effectif);
+
+        if (!Number.isFinite(effectif) || effectif <= 0) {
+            return;
+        }
+
+        const taux = calculerTauxMeilleurLocal(effectif);
+
+        if (taux !== null && taux > 0.83 && taux <= 1) {
+            filieresPrioritaires.push({
+                filiereCode: filiere.filiereCode,
+                effectif: effectif,
+                tauxOccupation: taux
+            });
+        }
+    });
+
+    console.log(
+        "🎯 Filières prioritaires (> 83 %) :",
+        filieresPrioritaires
+    );
     
     // -------------------------------------------------
     // 1. AFFECTATION DES GROUPES
