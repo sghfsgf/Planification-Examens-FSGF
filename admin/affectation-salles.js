@@ -1474,6 +1474,43 @@ function affecterLocauxFixes(
         "🎯 Filières prioritaires (> 83 %) :",
         filieresPrioritaires
     );
+
+    
+    // -------------------------------------------------
+    // 1. AFFECTATION PRIORITAIRE DES FILIÈRES
+    // -------------------------------------------------
+
+    filieresPrioritaires.forEach(function (filiere) {
+
+        console.log(
+            "🎯 Affectation prioritaire :",
+            filiere.filiereCode,
+            "| Effectif :",
+            filiere.effectif,
+            "| Occupation :",
+            (filiere.tauxOccupation * 100).toFixed(2) + " %"
+        );
+
+        const resultat = rechercherMeilleureCombinaisonLocaux(
+            filiere.filiereCode,
+            filiere.effectif,
+            sallesAmphis
+        );
+
+        resultats.push({
+            filiereCode: filiere.filiereCode,
+            succes: resultat.succes,
+            locaux: resultat.locaux,
+            capaciteTotale: resultat.capaciteTotale,
+            tauxOccupation: resultat.tauxOccupation,
+            effectif: filiere.effectif,
+            groupe: null,
+            message: resultat.message
+        });
+
+        filieresDejaAffectees.add(filiere.filiereCode);
+
+    });
     
     // -------------------------------------------------
     // 1. AFFECTATION DES GROUPES
