@@ -1292,6 +1292,26 @@ function construireGroupesFilieres(
                 filiere.filiereCode,
                 planning.anneeUniversitaire
             );
+            
+            return;
+        }
+
+        // -------------------------------------------------
+        // Exclure des groupes les filières prioritaires
+        // dont le taux d'occupation dépasse strictement 83 %
+        // -------------------------------------------------
+
+        const effectifFiliere =
+            Number(ligneEffectif.effectif);
+
+        const tauxOccupation =
+            calculerTauxOccupation(effectifFiliere);
+
+        if (
+            tauxOccupation !== null &&
+            tauxOccupation > 0.83 &&
+            tauxOccupation <= 1
+        ) {
             return;
         }
 
