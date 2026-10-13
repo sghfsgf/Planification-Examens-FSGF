@@ -1129,19 +1129,37 @@ select:focus-visible {
 
 @media print {
 
-   
+    /* Masquer les éléments inutiles à l'impression */
+    .menu-principal,
+    .pied-page,
+    button,
+    select,
+    .filtres-calendrier,
+    .actions,
+    .aide-calendrier,
+    #accueil {
+        display: none !important;
+    }
 
-/* Masquer les éléments inutiles à l'impression */
-.menu-principal,
-.pied-page,
-button,
-select,
-.filtres-calendrier,
-.actions-calendrier,
-.aide-calendrier,
-#accueil {
-    display: none !important;
-}
+    /* Afficher uniquement la section des calendriers */
+    body > * {
+        visibility: hidden;
+    }
+
+    #calendriers,
+    #calendriers * {
+        visibility: visible;
+    }
+
+    #calendriers {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
 
     /* Page */
     html,
@@ -1172,11 +1190,15 @@ select,
     }
 
     /* Titre */
-    .carte h2 {
+   
+    #calendriers .carte h2 {
+        display: block !important;
         color: #000000 !important;
+        text-align: center;
         border-bottom: 1px solid #000000;
-        font-size: 14pt;
-        margin: 0 0 5px 0;
+        font-size: 16pt;
+        margin: 0 0 5mm 0;
+        padding: 0 0 2mm 0;
     }
 
     /* Conteneur du calendrier */
