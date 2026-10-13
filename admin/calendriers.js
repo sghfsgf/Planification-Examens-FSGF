@@ -758,16 +758,12 @@ console.log(
     // =================================================
     // CHANGEMENT SEMESTRE
     // =================================================
-
-    selectSemestre.addEventListener(
+selectSemestre.addEventListener(
         "change",
         function () {
-
             mettreAJourSessions();
-
         }
     );
-
 
     // =================================================
     // CHANGEMENT RÉGIME
@@ -776,12 +772,24 @@ console.log(
     selectRegime.addEventListener(
         "change",
         function () {
-
             mettreAJourSessions();
-
         }
     );
 
+    // =================================================
+    // MISE À JOUR DU TITRE DU CALENDRIER
+    // =================================================
+
+    [
+        selectNiveau,
+        selectSemestre,
+        selectRegime,
+        selectSession
+    ].forEach(function (select) {
+        select.addEventListener("change", function () {
+            mettreAJourTitreCalendrier();
+        });
+    });
 
     // =================================================
     // AFFICHER LE CALENDRIER
@@ -909,9 +917,14 @@ console.log(
 // AFFICHAGE
 // =========================================
 
-window.planningCalendrierAdmin = planning;            
+
+window.planningCalendrierAdmin = planning;
+
 afficherPlanning(planning);
-boutonEnregistrer.disabled = false;        
+
+mettreAJourTitreCalendrier(planning);
+
+boutonEnregistrer.disabled = false;  
 
 console.log(
     "✓ Calendrier affiché."
@@ -1009,7 +1022,7 @@ boutonRegenerer.addEventListener(
                 planning;
 
             afficherPlanning(planning);
-
+            mettreAJourTitreCalendrier(planning);
             boutonEnregistrer.disabled = false;
 
             console.log(
