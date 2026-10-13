@@ -1168,3 +1168,29 @@ body {
     }
 
 }
+
+/* =====================================================
+   TITRE DU CALENDRIER AFFICHÉ
+===================================================== */
+
+.titre-calendrier {
+    background: #f28c00;
+    color: #ffffff;
+    padding: 14px 18px;
+    border-radius: 9px;
+    margin-bottom: 12px;
+}
+
+.titre-calendrier h2 {
+    color: #ffffff;
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.titre-calendrier p {
+    color: #ffffff;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
