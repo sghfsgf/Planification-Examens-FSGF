@@ -500,7 +500,22 @@ function initialiserFiltresCalendrierAdmin() {
     const boutonRegenerer =
     document.getElementById("btnRegenererCalendrierAdmin");
 
-    if (
+
+// =================================================
+// ACTUALISER LE TITRE DU CALENDRIER
+// =================================================
+
+function mettreAJourTitreCalendrier(planning = null) {
+
+    // Le code complet de la fonction
+    // que je vous ai donné précédemment
+    // doit être placé ici.
+
+}
+
+
+if (
+   
         !selectNiveau ||
         !selectSemestre ||
         !selectRegime ||
