@@ -1223,7 +1223,11 @@ window.rechercherMeilleureCombinaisonLocaux =
 
 
 
-function construireGroupesFilieres(planning, effectifs) {
+function construireGroupesFilieres(
+    planning,
+    effectifs,
+    sallesAmphis
+) {
 
     const groupesParDateCreneau = {};
 
