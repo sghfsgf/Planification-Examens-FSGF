@@ -1818,10 +1818,17 @@ const ligneEffectif =
 
                 groupe: null,
 
-                message:
+                 message:
                     resultat.message
 
             });
+
+            // Marquer la filière si l'affectation a réussi.
+            if (resultat.succes) {
+                filieresDejaAffectees.add(
+                    filiere.filiereCode
+                );
+            }
 
         }
     );
