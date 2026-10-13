@@ -23,8 +23,8 @@ const db =
 // PARAMÈTRE D'AFFECTATION
 // =================================================
 
-// Taux minimum d'occupation pour un local unique
-const TAUX_OCCUPATION_MINIMUM = 0.66;
+// Taux minimum d'occupation : 83 %
+const TAUX_OCCUPATION_MINIMUM = 0.83;
 
 
 console.log(
