@@ -1096,32 +1096,21 @@ function rechercherMeilleureCombinaisonLocaux(
     // Garder uniquement les combinaisons valides
     // -------------------------------------------------
 
+ 
     const combinaisonsValides =
         combinaisons.filter(
             function (combinaison) {
 
-                // Un seul local :
-                // il doit respecter les 66 %
-
-                if (
-                    combinaison.locaux.length === 1
-                ) {
-
-                    return (
-                        effectifNumerique /
-                        combinaison.capaciteTotale >=
-                        TAUX_OCCUPATION_MINIMUM
-                    );
-
-                }
-
-                // Plusieurs locaux :
-                // la capacité totale doit simplement
-                // être suffisante
+                // Un ou plusieurs locaux :
+                // occupation minimale de 83 %
 
                 return (
                     combinaison.capaciteTotale >=
-                    effectifNumerique
+                        effectifNumerique &&
+
+                    effectifNumerique /
+                        combinaison.capaciteTotale >=
+                        TAUX_OCCUPATION_MINIMUM
                 );
 
             }
