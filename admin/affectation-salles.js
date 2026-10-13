@@ -1240,6 +1240,33 @@ function construireGroupesFilieres(
     return [];
 }
 
+ 
+    // -------------------------------------------------
+    // Calculer le taux d'occupation du plus petit
+    // local disponible pouvant accueillir l'effectif
+    // -------------------------------------------------
+
+    function calculerTauxOccupation(effectif) {
+
+        const locauxAdaptes = sallesAmphis
+            .filter(function (salle) {
+                return (
+                    salle.disponible === "Oui" &&
+                    Number(salle.capacite) >= Number(effectif) &&
+                    Number(salle.capacite) > 0
+                );
+            })
+            .sort(function (a, b) {
+                return Number(a.capacite) - Number(b.capacite);
+            });
+
+        if (locauxAdaptes.length === 0) {
+            return null;
+        }
+
+        return Number(effectif) /
+            Number(locauxAdaptes[0].capacite);
+    }   
     planning.filieres.forEach(function (filiere) {
 
         const niveauCode =
