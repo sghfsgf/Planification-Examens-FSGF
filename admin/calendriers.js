@@ -1172,7 +1172,7 @@ boutonRegenerer.addEventListener(
     // =================================================
 
     mettreAJourSessions();
-
+    mettreAJourTitreCalendrier();
 }
 
 
