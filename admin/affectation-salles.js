@@ -1375,10 +1375,11 @@ function affecterLocauxFixes(
     // -------------------------------------------------
 
     const groupes =
-        construireGroupesFilieres(
-            planning,
-            effectifs
-        );
+    construireGroupesFilieres(
+        planning,
+        effectifs,
+        sallesAmphis
+    );
 
     console.log(
         "🔎 Groupes de filières détectés :",
