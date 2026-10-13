@@ -501,18 +501,156 @@ function initialiserFiltresCalendrierAdmin() {
     document.getElementById("btnRegenererCalendrierAdmin");
 
 
-// =================================================
+   // =================================================
 // ACTUALISER LE TITRE DU CALENDRIER
 // =================================================
 
 function mettreAJourTitreCalendrier(planning = null) {
 
-    // Le code complet de la fonction
-    // que je vous ai donné précédemment
-    // doit être placé ici.
+    const titre =
+        document.getElementById("titreCalendrierAdmin");
 
+    const sousTitre =
+        document.getElementById("sousTitreCalendrierAdmin");
+
+    if (!titre || !sousTitre) {
+        return;
+    }
+
+    // Niveau sélectionné
+    const niveau = selectNiveau.value;
+
+    titre.textContent =
+        "Calendrier des examens — " + niveau;
+
+    // Semestre sélectionné
+    const semestreTexte =
+        selectSemestre.options[
+            selectSemestre.selectedIndex
+        ].textContent.trim();
+
+    const semestre =
+        semestreTexte === "S1"
+            ? "Semestre 1"
+            : semestreTexte === "S2"
+                ? "Semestre 2"
+                : semestreTexte;
+
+    // Session sélectionnée
+    const sessionOption =
+        selectSession.options[
+            selectSession.selectedIndex
+        ];
+
+    const sessionTexte = sessionOption
+        ? sessionOption.textContent.trim()
+        : "";
+
+    let sousTitreTexte =
+        semestre + " · " + sessionTexte;
+
+    // Déterminer le mois et l'année depuis
+    // les dates du planning réellement affiché
+    if (planning && Array.isArray(planning.filieres)) {
+
+        const dates = [];
+
+        planning.filieres.forEach(function (filiere) {
+
+            if (!Array.isArray(filiere.cellules)) {
+                return;
+            }
+
+            filiere.cellules.forEach(function (cellule) {
+
+                if (!cellule.estOccupee) {
+                    return;
+                }
+
+                const valeurDate =
+                    cellule.dateAffichage || cellule.date;
+
+                if (!valeurDate) {
+                    return;
+                }
+
+                let correspondance;
+
+                // Format AAAA-MM-JJ
+                if (
+                    (correspondance =
+                        valeurDate.match(
+                            /^(\d{4})-(\d{2})-(\d{2})$/
+                        ))
+                ) {
+                    dates.push(new Date(
+                        Number(correspondance[1]),
+                        Number(correspondance[2]) - 1,
+                        Number(correspondance[3])
+                    ));
+                }
+
+                // Formats JJ-MM-AAAA ou JJ/MM/AAAA
+                else if (
+                    (correspondance =
+                        valeurDate.match(
+                            /^(\d{2})[-/](\d{2})[-/](\d{4})$/
+                        ))
+                ) {
+                    dates.push(new Date(
+                        Number(correspondance[3]),
+                        Number(correspondance[2]) - 1,
+                        Number(correspondance[1])
+                    ));
+                }
+
+            });
+
+        });
+
+        if (dates.length > 0) {
+
+            const moisFrancais = [
+                "Janvier", "Février", "Mars",
+                "Avril", "Mai", "Juin",
+                "Juillet", "Août", "Septembre",
+                "Octobre", "Novembre", "Décembre"
+            ];
+
+            const clesMois = [
+                ...new Set(
+                    dates.map(function (date) {
+                        return (
+                            date.getFullYear() + "-" +
+                            date.getMonth()
+                        );
+                    })
+                )
+            ].sort(function (a, b) {
+
+                const [anneeA, moisA] = a.split("-").map(Number);
+                const [anneeB, moisB] = b.split("-").map(Number);
+
+                return anneeA - anneeB || moisA - moisB;
+            });
+
+            const libellesMois = clesMois.map(
+                function (cle) {
+
+                    const [annee, mois] =
+                        cle.split("-").map(Number);
+
+                    return moisFrancais[mois] + " " + annee;
+                }
+            );
+
+            sousTitreTexte +=
+                " · " + libellesMois.join(" – ");
+        }
+    }
+
+    sousTitre.textContent = sousTitreTexte;
 }
-
 
 if (
    
@@ -1026,14 +1164,6 @@ boutonRegenerer.addEventListener(
 
 
 // =====================================================
-// ATTENDRE LE CHARGEMENT DES DONNÉES
-// =====================================================
-
-// =====================================================
-// ATTENDRE LE CHARGEMENT DES DONNÉES FIRESTORE
-// =====================================================
-
-// =====================================================
 // ATTENDRE LE CHARGEMENT DU MOTEUR DE GÉNÉRATION
 // =====================================================
 
@@ -1126,12 +1256,6 @@ async function initialiserCalendriersApresFirestore() {
 }
     
 initialiserCalendriersApresFirestore();
-
-// =====================================================
-// MODIFICATION MANUELLE DU CALENDRIER
-// Échange de deux cellules par clic
-// =====================================================
-
 
 // =====================================================
 // MODIFICATION MANUELLE DU CALENDRIER
