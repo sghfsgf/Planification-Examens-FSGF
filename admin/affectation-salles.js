@@ -1590,6 +1590,16 @@ function affecterLocauxFixes(
     groupes.forEach(
         function (groupe) {
 
+                       // Ignorer un groupe contenant une filière
+            // déjà affectée en priorité.
+            if (
+                groupe.filieres.some(function (filiereCode) {
+                    return filieresDejaAffectees.has(filiereCode);
+                })
+            ) {
+                return;
+            } 
+
             console.log(
                 "🔄 Affectation du groupe :",
                 groupe.filieres.join(" + "),
