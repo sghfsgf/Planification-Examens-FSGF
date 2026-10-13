@@ -1367,6 +1367,7 @@ function construireGroupesFilieres(
 
     });
 
+    
     return Object.values(groupesParDateCreneau)
         .filter(function (groupe) {
             return groupe.filieres.length >= 2;
@@ -1391,6 +1392,24 @@ function construireGroupesFilieres(
                     groupe.date + "|" + groupe.creneauOrdre
                 ]
             };
+        })
+        .filter(function (groupe) {
+
+            // Un groupe doit tenir dans un seul local disponible.
+            // Le taux d'occupation doit être au moins de 83 %.
+
+            return sallesAmphis.some(function (salle) {
+
+                const capacite = Number(salle.capacite);
+
+                return (
+                    salle.disponible === "Oui" &&
+                    Number.isFinite(capacite) &&
+                    capacite > 0 &&
+                    capacite >= groupe.effectifTotal &&
+                    groupe.effectifTotal / capacite >= 0.83
+                );
+            });
         });
 }
 
