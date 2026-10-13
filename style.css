@@ -1129,17 +1129,17 @@ select:focus-visible {
 
 @media print {
 
-    /* Masquer les éléments inutiles */
-    .entete,
-    .menu-principal,
-    .pied-page,
-    button,
-    select,
-    .filtres-calendrier,
-    .actions-calendrier,
-    .aide-calendrier {
-        display: none !important;
-    }
+   
+/* Masquer les éléments inutiles à l'impression */
+.menu-principal,
+.pied-page,
+button,
+select,
+.filtres-calendrier,
+.actions-calendrier,
+.aide-calendrier {
+    display: none !important;
+}
 
     /* Page */
     html,
