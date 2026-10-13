@@ -1130,6 +1130,7 @@ select:focus-visible {
 @media print {
 
    
+
 /* Masquer les éléments inutiles à l'impression */
 .menu-principal,
 .pied-page,
@@ -1137,7 +1138,8 @@ button,
 select,
 .filtres-calendrier,
 .actions-calendrier,
-.aide-calendrier {
+.aide-calendrier,
+#accueil {
     display: none !important;
 }
 
