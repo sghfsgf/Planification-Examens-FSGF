@@ -1568,7 +1568,11 @@ function affecterLocauxFixes(
             message: resultat.message
         });
 
-        filieresDejaAffectees.add(filiere.filiereCode);
+        if (resultat.succes) {
+            filieresDejaAffectees.add(
+                filiere.filiereCode
+            );
+        }
 
     });
     
