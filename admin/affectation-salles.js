@@ -1185,54 +1185,53 @@ function construireGroupesFilieres(
             return;
         }
 
-        const creneauxFiliere = new Set();
 
-        (filiere.cellules || []).forEach(function (cellule) {
+        // -------------------------------------------------
+        // Retenir un seul créneau candidat par filière
+        // -------------------------------------------------
 
-            if (!cellule.estOccupee || !cellule.date) {
-                return;
-            }
-
-            const dateCle =
-                cellule.dateAffichage ||
-                (
-                    typeof cellule.date.seconds === "number"
-                        ? new Date(
-                            cellule.date.seconds * 1000
-                        ).toLocaleDateString("fr-FR", {
-                            timeZone: "Africa/Tunis"
-                        })
-                        : String(cellule.date)
-                );
-
-            const creneauCle =
-                String(cellule.creneauOrdre);
-
-            const cle =
-                niveauCode + "|" +
-                dateCle + "|" +
-                creneauCle;
-
-            if (creneauxFiliere.has(cle)) {
-                return;
-            }
-
-            creneauxFiliere.add(cle);
-
-            if (!groupesParDateCreneau[cle]) {
-                groupesParDateCreneau[cle] = {
-                    niveauCode: niveauCode,
-                    date: dateCle,
-                    creneauOrdre: cellule.creneauOrdre,
-                    filieres: []
-                };
-            }
-
-            groupesParDateCreneau[cle].filieres.push({
-                filiereCode: filiere.filiereCode,
-                effectif: Number(ligneEffectif.effectif)
+        const cellulesOccupees = (filiere.cellules || [])
+            .filter(function (cellule) {
+                return cellule.estOccupee && cellule.date;
             });
 
+        if (cellulesOccupees.length === 0) {
+            return;
+        }
+
+        const cellule = cellulesOccupees[0];
+
+        const dateCle =
+            cellule.dateAffichage ||
+            (
+                typeof cellule.date.seconds === "number"
+                    ? new Date(
+                        cellule.date.seconds * 1000
+                    ).toLocaleDateString("fr-FR", {
+                        timeZone: "Africa/Tunis"
+                    })
+                    : String(cellule.date)
+            );
+
+        const creneauCle = String(cellule.creneauOrdre);
+
+        const cle =
+            niveauCode + "|" +
+            dateCle + "|" +
+            creneauCle;
+
+        if (!groupesParDateCreneau[cle]) {
+            groupesParDateCreneau[cle] = {
+                niveauCode: niveauCode,
+                date: dateCle,
+                creneauOrdre: cellule.creneauOrdre,
+                filieres: []
+            };
+        }
+
+        groupesParDateCreneau[cle].filieres.push({
+            filiereCode: filiere.filiereCode,
+            effectif: Number(ligneEffectif.effectif)
         });
 
     });
