@@ -235,6 +235,7 @@ setTimeout(
 // RECHERCHER DES LOCAUX POUR UNE FILIÈRE
 // =================================================
 
+
 function trouverLocauxPourFiliere(
     filiereCode,
     effectif,
@@ -242,159 +243,38 @@ function trouverLocauxPourFiliere(
 ) {
 
     // -------------------------------------------------
-    // Vérifier les données
+    // 1. Vérifier les données
     // -------------------------------------------------
 
     if (
-        !effectif ||
-        !sallesAmphis ||
+        !Number.isFinite(Number(effectif)) ||
+        Number(effectif) <= 0 ||
+        !Array.isArray(sallesAmphis) ||
         sallesAmphis.length === 0
     ) {
 
         return {
             succes: false,
             locaux: [],
-            message: "Aucun local disponible."
+            capaciteTotale: 0,
+            effectif: Number(effectif) || 0,
+            tauxOccupation: 0,
+            message: "Données insuffisantes ou effectif invalide."
         };
 
     }
 
     // -------------------------------------------------
-    // Garder uniquement les locaux disponibles
+    // 2. Utiliser l'algorithme central
     // -------------------------------------------------
 
-    const locauxDisponibles =
-        sallesAmphis.filter(
-            function (salle) {
-
-                return (
-                    salle.disponible === "Oui" &&
-                    Number(salle.capacite) > 0
-                );
-
-            }
-        );
-
-    // -------------------------------------------------
-    // 1. Chercher un seul local suffisamment grand
-    // -------------------------------------------------
-
-    const localUnique =
-        locauxDisponibles
-            .filter(
-                function (salle) {
-
-                    return (
-                        Number(salle.capacite) >=
-                        Number(effectif)
-                    );
-
-                }
-            )
-            .sort(
-                function (a, b) {
-
-                    return (
-                        Number(a.capacite) -
-                        Number(b.capacite)
-                    );
-
-                }
-            )[0];
-
-    if (localUnique) {
-
-        return {
-            succes: true,
-            locaux: [
-                localUnique.code
-            ],
-            capaciteTotale:
-                Number(localUnique.capacite),
-            effectif:
-                Number(effectif),
-            message:
-                "Un seul local suffit."
-        };
-
-    }
-
-    // -------------------------------------------------
-    // 2. Chercher plusieurs locaux
-    // -------------------------------------------------
-
-    const locauxTries =
-        locauxDisponibles
-            .slice()
-            .sort(
-                function (a, b) {
-
-                    return (
-                        Number(b.capacite) -
-                        Number(a.capacite)
-                    );
-
-                }
-            );
-
-    const locauxChoisis = [];
-
-    let capaciteTotale = 0;
-
-    for (
-        let i = 0;
-        i < locauxTries.length;
-        i++
-    ) {
-
-        const salle =
-            locauxTries[i];
-
-        locauxChoisis.push(
-            salle.code
-        );
-
-        capaciteTotale +=
-            Number(salle.capacite);
-
-        if (
-            capaciteTotale >=
-            Number(effectif)
-        ) {
-
-            return {
-                succes: true,
-                locaux:
-                    locauxChoisis,
-                capaciteTotale:
-                    capaciteTotale,
-                effectif:
-                    Number(effectif),
-                message:
-                    "Plusieurs locaux sont nécessaires."
-            };
-
-        }
-
-    }
-
-    // -------------------------------------------------
-    // 3. Aucun ensemble de locaux suffisant
-    // -------------------------------------------------
-
-    return {
-        succes: false,
-        locaux: [],
-        capaciteTotale:
-            capaciteTotale,
-        effectif:
-            Number(effectif),
-        message:
-            "Affectation impossible."
-    };
+    return rechercherMeilleureCombinaisonLocaux(
+        filiereCode,
+        Number(effectif),
+        sallesAmphis
+    );
 
 }
-
 
 // =================================================
 // EXPOSER LA FONCTION POUR LES TESTS F12
@@ -1521,13 +1401,18 @@ function affecterLocauxFixes(
 
         const taux = calculerTauxMeilleurLocal(effectif);
 
-        if (taux !== null && taux > 0.83 && taux <= 1) {
-            filieresPrioritaires.push({
-                filiereCode: filiere.filiereCode,
-                effectif: effectif,
-                tauxOccupation: taux
-            });
-        }
+      
+if (
+    taux !== null &&
+    taux >= TAUX_OCCUPATION_MINIMUM &&
+    taux <= 1
+) {
+    filieresPrioritaires.push({
+        filiereCode: filiere.filiereCode,
+        effectif: effectif,
+        tauxOccupation: taux
+    });
+}
     });
 
     console.log(
