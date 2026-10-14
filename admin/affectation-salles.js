@@ -2039,18 +2039,14 @@ console.log(
     "TEST — affectation exposée :",
     window.affectationCourante
 );
-                    console.log(
-                        "Résultat affectation :",
-                        resultat
-                    );
 
-                    if (!resultat.succes) {
+console.log(
+    "Résultat affectation :",
+    resultat
+);
 
-                        throw new Error(
-                            resultat.message
-                        );
-
-                    }
+// Ne pas interrompre ici :
+// le tableau des problèmes sera affiché plus bas.
 
                     // =========================================
                     // AFFICHER LE RÉSUMÉ
