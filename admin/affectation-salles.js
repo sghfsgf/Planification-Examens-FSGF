@@ -25,6 +25,8 @@ const db =
 
 // Taux minimum d'occupation : 83 %
 const TAUX_OCCUPATION_MINIMUM = 0.83;
+// Seuil minimal autorisé pour une affectation valide
+const TAUX_OCCUPATION_ACCEPTABLE = 0.66;
 
 
 console.log(
@@ -853,11 +855,10 @@ function rechercherMeilleureCombinaisonLocaux(
 
                     return (
                         capacite >= effectifNumerique &&
-
-                        effectifNumerique /
-                            capacite >=
-                        TAUX_OCCUPATION_MINIMUM
-                    );
+                                effectifNumerique /
+                                 capacite >=
+                           TAUX_OCCUPATION_ACCEPTABLE
+                     );
 
                 }
             )
@@ -988,9 +989,9 @@ function rechercherMeilleureCombinaisonLocaux(
                     combinaison.capaciteTotale >=
                         effectifNumerique &&
 
-                    effectifNumerique /
-                        combinaison.capaciteTotale >=
-                        TAUX_OCCUPATION_MINIMUM
+                     effectifNumerique /
+                     combinaison.capaciteTotale >=
+                     TAUX_OCCUPATION_ACCEPTABLE
                 );
 
             }
@@ -1315,25 +1316,28 @@ console.table(
             };
         })
       
-        .filter(function (groupe) {
+.filter(function (groupe) {
 
-            // Un groupe doit tenir dans un seul local disponible.
-            // Le taux d'occupation doit être au moins de 83 %.
+    // Un groupe doit tenir dans un seul local disponible.
+    // Le taux d'occupation minimal acceptable est de 66 %.
 
-            return sallesAmphis.some(function (salle) {
+    return sallesAmphis.some(function (salle) {
 
-                const capacite = Number(salle.capacite);
+        const capacite = Number(salle.capacite);
 
-                return (
-                    salle.disponible === "Oui" &&
-                    Number.isFinite(capacite) &&
-                    capacite > 0 &&
-                    capacite >= groupe.effectifTotal &&
-                    groupe.effectifTotal / capacite >=
-                    TAUX_OCCUPATION_MINIMUM
-                );
-            });
-        })
+        return (
+            salle.disponible === "Oui" &&
+            Number.isFinite(capacite) &&
+            capacite > 0 &&
+            capacite >= groupe.effectifTotal &&
+            groupe.effectifTotal / capacite >=
+            TAUX_OCCUPATION_ACCEPTABLE
+        );
+    });
+})
+
+
+        
         // Priorité au plus grand nombre de filières,
  // puis au meilleur taux d'occupation du groupe.
 .sort(function (a, b) {
