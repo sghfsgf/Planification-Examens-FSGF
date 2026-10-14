@@ -1285,10 +1285,42 @@ function construireGroupesFilieres(
                 );
             });
         })
-        // Priorité aux groupes qui regroupent le plus de filières.
-        .sort(function (a, b) {
-            return b.filieres.length - a.filieres.length;
-        })
+        // Priorité au plus grand nombre de filières,
+ // puis au meilleur taux d'occupation du groupe.
+.sort(function (a, b) {
+    if (b.filieres.length !== a.filieres.length) {
+        return b.filieres.length - a.filieres.length;
+    }
+
+    function calculerMeilleurTaux(groupe) {
+        let meilleurTaux = 0;
+
+        sallesAmphis.forEach(function (salle) {
+            const capacite = Number(salle.capacite);
+
+            if (
+                salle.disponible === "Oui" &&
+                Number.isFinite(capacite) &&
+                capacite >= groupe.effectifTotal &&
+                capacite > 0
+            ) {
+                const taux = groupe.effectifTotal / capacite;
+
+                if (
+                    taux >= TAUX_OCCUPATION_MINIMUM &&
+                    taux <= 1 &&
+                    taux > meilleurTaux
+                ) {
+                    meilleurTaux = taux;
+                }
+            }
+        });
+
+        return meilleurTaux;
+    }
+
+    return calculerMeilleurTaux(b) - calculerMeilleurTaux(a);
+})
         // Une filière ne peut être retenue que dans un seul groupe.
         .reduce(function (groupesRetenus, groupe) {
 
