@@ -1768,12 +1768,7 @@ const ligneEffectif =
         function (ligne) {
             return (
                 ligne.niveauCode === niveauFiliere &&
-                ligne.filiereCode === filiere.filiereCode &&
-                ligne.anneeUniversitaire ===
-                      (
-                      planning.anneeUniversitaire ||
-                     document.getElementById("anneeUniversitaireAdmin")?.textContent.trim()
-                      )
+                ligne.filiereCode === filiere.filiereCode
             );
         }
     );
