@@ -1552,6 +1552,7 @@ if (!ligneEffectif) {
     return;
 }
 
+
 const effectif = Number(ligneEffectif.effectif);
 
 if (!Number.isFinite(effectif) || effectif <= 0) {
@@ -1559,7 +1560,14 @@ if (!Number.isFinite(effectif) || effectif <= 0) {
 }
 
 const taux = calculerTauxMeilleurLocal(effectif);
-      
+
+console.log("Taux de priorité :", {
+    filiere: filiere.filiereCode,
+    effectif: effectif,
+    taux: taux,
+    seuil: TAUX_OCCUPATION_MINIMUM
+});
+
 if (
     taux !== null &&
     taux >= TAUX_OCCUPATION_MINIMUM &&
@@ -1571,7 +1579,7 @@ if (
         tauxOccupation: taux
     });
 }
-    });
+});
 
     console.log(
       "🎯 Filières prioritaires (>= 83 %) :",
