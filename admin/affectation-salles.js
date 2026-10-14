@@ -2168,20 +2168,189 @@ console.log(
 
                     }
 
+
+                    
                     // =========================================
-                    // STATUT
+                    // AFFICHER LES PROBLÈMES D'AFFECTATION
                     // =========================================
 
-                    if (statut) {
+                    let blocProblemes = document.getElementById(
+                        "tableauProblemesAffectationSalles"
+                    );
 
-                        statut.textContent =
-                            "✅ Affectations générées avec succès.";
+                    if (!blocProblemes && tableau) {
+                        blocProblemes = document.createElement("div");
+                        blocProblemes.id =
+                            "tableauProblemesAffectationSalles";
 
+                        tableau.insertAdjacentElement(
+                            "afterend",
+                            blocProblemes
+                        );
                     }
 
-                    console.log(
-                        "✓ Affectations générées avec succès."
-                    );
+                    if (blocProblemes) {
+                        blocProblemes.innerHTML = "";
+
+                        const echecs = (
+                            resultat.affectations || []
+                        ).filter(function (affectation) {
+                            return affectation.succes !== true;
+                        });
+
+                        if (echecs.length > 0) {
+                            const titre = document.createElement("h3");
+                            titre.textContent =
+                                "⚠️ Problèmes d'affectation détectés";
+                            blocProblemes.appendChild(titre);
+
+                            const tableProblemes =
+                                document.createElement("table");
+
+                            tableProblemes.className =
+                                "tableau-donnees";
+
+                            const thead =
+                                document.createElement("thead");
+
+                            [
+                                "Niveau",
+                                "Filière",
+                                "Date",
+                                "Créneau",
+                                "Matière",
+                                "Effectif",
+                                "Problème détecté"
+                            ].forEach(function (libelle) {
+                                const th = document.createElement("th");
+                                th.textContent = libelle;
+                                thead.appendChild(th);
+                            });
+
+                            tableProblemes.appendChild(thead);
+
+                            const tbody =
+                                document.createElement("tbody");
+
+                            function ajouterLigneProbleme(
+                                niveau,
+                                filiere,
+                                date,
+                                creneau,
+                                matiere,
+                                effectif,
+                                probleme
+                            ) {
+                                const tr = document.createElement("tr");
+
+                                [
+                                    niveau,
+                                    filiere,
+                                    date,
+                                    creneau,
+                                    matiere,
+                                    effectif,
+                                    probleme
+                                ].forEach(function (valeur) {
+                                    const td =
+                                        document.createElement("td");
+
+                                    td.textContent =
+                                        valeur == null ? "" : String(valeur);
+
+                                    tr.appendChild(td);
+                                });
+
+                                tbody.appendChild(tr);
+                            }
+
+                            echecs.forEach(function (affectation) {
+                                const filiere = (
+                                    planning.filieres || []
+                                ).find(function (f) {
+                                    return f.filiereCode ===
+                                        affectation.filiereCode;
+                                });
+
+                                const cellulesOccupees = (
+                                    filiere?.cellules || []
+                                ).filter(function (cellule) {
+                                    return cellule.estOccupee &&
+                                        cellule.date &&
+                                        cellule.matiereLibelle;
+                                });
+
+                                const probleme =
+                                    affectation.message ||
+                                    affectation.raison ||
+                                    "Aucun local admissible : affectation impossible.";
+
+                                if (cellulesOccupees.length === 0) {
+                                    ajouterLigneProbleme(
+                                        filiere?.niveauCode ||
+                                            planning.niveauCode || "",
+                                        affectation.filiereCode,
+                                        "",
+                                        "",
+                                        "Aucun examen occupé identifié",
+                                        affectation.effectif ?? "",
+                                        probleme
+                                    );
+
+                                    return;
+                                }
+
+                                cellulesOccupees.forEach(function (cellule) {
+                                    let date = cellule.dateAffichage || "";
+
+                                    if (!date && typeof cellule.date === "string") {
+                                        date = cellule.date;
+                                    }
+
+                                    if (
+                                        !date &&
+                                        typeof cellule.date?.seconds === "number"
+                                    ) {
+                                        date = new Date(
+                                            cellule.date.seconds * 1000
+                                        ).toLocaleDateString("fr-FR", {
+                                            timeZone: "Africa/Tunis"
+                                        });
+                                    }
+
+                                    ajouterLigneProbleme(
+                                        filiere.niveauCode ||
+                                            planning.niveauCode || "",
+                                        affectation.filiereCode,
+                                        date,
+                                        cellule.creneauOrdre ?? "",
+                                        cellule.matiereLibelle,
+                                        affectation.effectif ?? "",
+                                        probleme
+                                    );
+                                });
+                            });
+
+                            tableProblemes.appendChild(tbody);
+                            blocProblemes.appendChild(tableProblemes);
+                        }
+                    }
+                    // =========================================
+// STATUT
+// =========================================
+
+if (statut) {
+    statut.textContent = resultat.succes
+        ? "✅ Affectations générées avec succès."
+        : "⚠️ Des problèmes d'affectation ont été détectés. Consultez le tableau détaillé en dessous.";
+}
+
+console.log(
+    resultat.succes
+        ? "✓ Affectations générées avec succès."
+        : "⚠️ Problèmes d'affectation détectés.",
+    resultat
+);
 
                 } catch (erreur) {
 
