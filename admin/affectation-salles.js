@@ -1265,6 +1265,7 @@ function construireGroupesFilieres(
                 ]
             };
         })
+      
         .filter(function (groupe) {
 
             // Un groupe doit tenir dans un seul local disponible.
@@ -1279,12 +1280,31 @@ function construireGroupesFilieres(
                     Number.isFinite(capacite) &&
                     capacite > 0 &&
                     capacite >= groupe.effectifTotal &&
-                   groupe.effectifTotal / capacite >=
-                   TAUX_OCCUPATION_MINIMUM
+                    groupe.effectifTotal / capacite >=
+                    TAUX_OCCUPATION_MINIMUM
                 );
             });
-        });
-}
+        })
+        // Priorité aux groupes qui regroupent le plus de filières.
+        .sort(function (a, b) {
+            return b.filieres.length - a.filieres.length;
+        })
+        // Une filière ne peut être retenue que dans un seul groupe.
+        .reduce(function (groupesRetenus, groupe) {
+
+            const conflit = groupe.filieres.some(function (code) {
+                return groupesRetenus.some(function (groupeRetenu) {
+                    return groupeRetenu.filieres.includes(code);
+                });
+            });
+
+            if (!conflit) {
+                groupesRetenus.push(groupe);
+            }
+
+            return groupesRetenus;
+
+        }, []);
 
 window.construireGroupesFilieres =
     construireGroupesFilieres;
