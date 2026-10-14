@@ -828,22 +828,34 @@ function rechercherMeilleureCombinaisonLocaux(
     // Locaux disponibles
     // -------------------------------------------------
 
-    const locauxDisponibles =
-        sallesAmphis
-            .filter(
-                function (salle) {
+    
+const locauxDisponibles =
+    sallesAmphis
+        .filter(
+            function (salle) {
+                return (
+                    salle.disponible === "Oui" &&
+                    Number(salle.capacite) > 0
+                );
+            }
+        );
 
-                    return (
-                        salle.disponible === "Oui" &&
-                        Number(salle.capacite) > 0
-                    );
+// DIAGNOSTIC TEMPORAIRE
+console.log("Diagnostic locaux disponibles :", {
+    filiere: filiereCode,
+    effectif: effectifNumerique,
+    locaux: locauxDisponibles.map(function (salle) {
+        return {
+            code: salle.code,
+            capacite: salle.capacite,
+            disponible: salle.disponible
+        };
+    })
+});
 
-                }
-            );
-
-    // -------------------------------------------------
-    // 1. Chercher un seul local respectant les 66 %
-    // -------------------------------------------------
+// -------------------------------------------------
+// 1. Chercher un seul local respectant les 66 %
+// -------------------------------------------------
 
     const locauxUniques =
         locauxDisponibles
