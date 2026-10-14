@@ -1259,7 +1259,25 @@ function construireGroupesFilieres(
         };
     })
 );
+console.table(
+    Object.values(groupesParDateCreneau).map(function (groupe) {
+        return {
+            date: groupe.date,
+            creneau: groupe.creneauOrdre,
+            filieres: groupe.filieres.map(function (f) {
+                return f.filiereCode;
+            }).join(" + "),
+            effectifTotal: groupe.filieres.reduce(
+                function (total, f) {
+                    return total + f.effectif;
+                },
+                0
+            )
+        };
+    })
+);
 
+    
     return Object.values(groupesParDateCreneau)
         .filter(function (groupe) {
             return groupe.filieres.length >= 2;
