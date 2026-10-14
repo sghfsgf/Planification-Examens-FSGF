@@ -1316,24 +1316,62 @@ console.table(
             };
         })
       
+
 .filter(function (groupe) {
 
-    // Un groupe doit tenir dans un seul local disponible.
-    // Le taux d'occupation minimal acceptable est de 66 %.
+    // Un groupe peut utiliser un ou plusieurs locaux disponibles.
+    // La capacité totale doit suffire et l'occupation globale
+    // doit atteindre au moins 66 %.
 
-    return sallesAmphis.some(function (salle) {
-
+    const locauxDisponibles = sallesAmphis.filter(function (salle) {
         const capacite = Number(salle.capacite);
 
         return (
             salle.disponible === "Oui" &&
             Number.isFinite(capacite) &&
-            capacite > 0 &&
-            capacite >= groupe.effectifTotal &&
-            groupe.effectifTotal / capacite >=
-            TAUX_OCCUPATION_ACCEPTABLE
+            capacite > 0
         );
     });
+
+    const capacites = locauxDisponibles
+        .map(function (salle) {
+            return Number(salle.capacite);
+        })
+        .sort(function (a, b) {
+            return a - b;
+        });
+
+    function rechercherCombinaison(index, capaciteTotale) {
+
+        if (capaciteTotale >= groupe.effectifTotal) {
+            return (
+                groupe.effectifTotal / capaciteTotale >=
+                TAUX_OCCUPATION_ACCEPTABLE
+            );
+        }
+
+        if (index >= capacites.length) {
+            return false;
+        }
+
+        // Essayer d'ajouter le local courant.
+        if (
+            rechercherCombinaison(
+                index + 1,
+                capaciteTotale + capacites[index]
+            )
+        ) {
+            return true;
+        }
+
+        // Essayer sans le local courant.
+        return rechercherCombinaison(
+            index + 1,
+            capaciteTotale
+        );
+    }
+
+    return rechercherCombinaison(0, 0);
 })
 
 
