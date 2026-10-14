@@ -1360,7 +1360,7 @@ console.table(
                 const taux = groupe.effectifTotal / capacite;
 
                 if (
-                    taux >= TAUX_OCCUPATION_MINIMUM &&
+                   taux >= TAUX_OCCUPATION_ACCEPTABLE &&
                     taux <= 1 &&
                     taux > meilleurTaux
                 ) {
