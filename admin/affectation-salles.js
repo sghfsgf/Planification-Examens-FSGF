@@ -1176,9 +1176,10 @@ function construireGroupesFilieres(
         const tauxOccupation =
             calculerTauxOccupation(effectifFiliere);
 
+       
         if (
             tauxOccupation !== null &&
-            tauxOccupation > 0.83 &&
+            tauxOccupation >= TAUX_OCCUPATION_MINIMUM &&
             tauxOccupation <= 1
         ) {
             return;
