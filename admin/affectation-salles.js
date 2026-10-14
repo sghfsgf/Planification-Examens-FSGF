@@ -1142,14 +1142,13 @@ function construireGroupesFilieres(
         const niveauCode =
             filiere.niveauCode || planning.niveauCode;
 
-        const ligneEffectif = effectifs.find(function (ligne) {
-            return (
-                ligne.niveauCode === niveauCode &&
-                ligne.filiereCode === filiere.filiereCode &&
-                ligne.anneeUniversitaire ===
-                    planning.anneeUniversitaire
-            );
-        });
+       
+const ligneEffectif = effectifs.find(function (ligne) {
+    return (
+        ligne.niveauCode === niveauCode &&
+        ligne.filiereCode === filiere.filiereCode
+    );
+});
 
         if (
             !ligneEffectif ||
