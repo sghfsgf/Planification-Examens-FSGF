@@ -1238,8 +1238,8 @@ function construireGroupesFilieres(
             });
 
         });
+    }); // Fin de planning.filieres.forEach
 
-    
     return Object.values(groupesParDateCreneau)
         .filter(function (groupe) {
             return groupe.filieres.length >= 2;
@@ -1304,7 +1304,8 @@ function construireGroupesFilieres(
 
             return groupesRetenus;
 
-        }, []);
+       }, []);
+}
 
 window.construireGroupesFilieres =
     construireGroupesFilieres;
