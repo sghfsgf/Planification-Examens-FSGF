@@ -1363,11 +1363,9 @@ function affecterLocauxFixes(
     }
 
     
-    // -------------------------------------------------
-    // Identifier les filières prioritaires :
-    // taux d'occupation strictement supérieur à 83 %
-    // et inférieur ou égal à 100 %
-    // -------------------------------------------------
+  // Identifier les filières prioritaires :
+// taux d'occupation supérieur ou égal à 83 %
+// et inférieur ou égal à 100 %
 
     const filieresPrioritaires = [];
 
@@ -1417,7 +1415,7 @@ if (
     });
 
     console.log(
-        "🎯 Filières prioritaires (> 83 %) :",
+      "🎯 Filières prioritaires (>= 83 %) :",
         filieresPrioritaires
     );
 
