@@ -187,22 +187,22 @@ body {
 
 
 
+
 /* =====================================================
-   5. ESPACE ADMIN — ALIGNEMENT À GAUCHE
+   5. ESPACE ADMIN — LARGEUR DISPONIBLE
 ===================================================== */
 
 .espace-admin {
 
     width: 100%;
 
-    max-width: 1600px;
+    max-width: none;
 
     margin: 0;
 
     padding: 25px 24px 40px;
 
 }
-
 
 /* =====================================================
    6. SECTIONS
