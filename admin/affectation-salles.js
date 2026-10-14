@@ -1239,6 +1239,26 @@ function construireGroupesFilieres(
 
         });
     }); // Fin de planning.filieres.forEach
+    //+++++ajout 1
+    console.log(
+    "🔍 Diagnostic des groupes par date et créneau :",
+    Object.values(groupesParDateCreneau).map(function (groupe) {
+        return {
+            niveau: groupe.niveauCode,
+            date: groupe.date,
+            creneau: groupe.creneauOrdre,
+            filieres: groupe.filieres.map(function (f) {
+                return f.filiereCode;
+            }),
+            effectifTotal: groupe.filieres.reduce(
+                function (total, f) {
+                    return total + f.effectif;
+                },
+                0
+            )
+        };
+    })
+);
 
     return Object.values(groupesParDateCreneau)
         .filter(function (groupe) {
