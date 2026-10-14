@@ -1187,54 +1187,57 @@ function construireGroupesFilieres(
 
 
         // -------------------------------------------------
-        // Retenir un seul créneau candidat par filière
+        // Ajouter la filière à chacun de ses créneaux occupés
         // -------------------------------------------------
 
-        const cellulesOccupees = (filiere.cellules || [])
-            .filter(function (cellule) {
-                return cellule.estOccupee && cellule.date;
+        const creneauxFiliere = new Set();
+
+        (filiere.cellules || []).forEach(function (cellule) {
+
+            if (!cellule.estOccupee || !cellule.date) {
+                return;
+            }
+
+            const dateCle =
+                cellule.dateAffichage ||
+                (
+                    typeof cellule.date.seconds === "number"
+                        ? new Date(
+                            cellule.date.seconds * 1000
+                        ).toLocaleDateString("fr-FR", {
+                            timeZone: "Africa/Tunis"
+                        })
+                        : String(cellule.date)
+                );
+
+            const creneauCle = String(cellule.creneauOrdre);
+
+            const cle =
+                niveauCode + "|" +
+                dateCle + "|" +
+                creneauCle;
+
+            if (creneauxFiliere.has(cle)) {
+                return;
+            }
+
+            creneauxFiliere.add(cle);
+
+            if (!groupesParDateCreneau[cle]) {
+                groupesParDateCreneau[cle] = {
+                    niveauCode: niveauCode,
+                    date: dateCle,
+                    creneauOrdre: cellule.creneauOrdre,
+                    filieres: []
+                };
+            }
+
+            groupesParDateCreneau[cle].filieres.push({
+                filiereCode: filiere.filiereCode,
+                effectif: effectifFiliere
             });
 
-        if (cellulesOccupees.length === 0) {
-            return;
-        }
-
-        const cellule = cellulesOccupees[0];
-
-        const dateCle =
-            cellule.dateAffichage ||
-            (
-                typeof cellule.date.seconds === "number"
-                    ? new Date(
-                        cellule.date.seconds * 1000
-                    ).toLocaleDateString("fr-FR", {
-                        timeZone: "Africa/Tunis"
-                    })
-                    : String(cellule.date)
-            );
-
-        const creneauCle = String(cellule.creneauOrdre);
-
-        const cle =
-            niveauCode + "|" +
-            dateCle + "|" +
-            creneauCle;
-
-        if (!groupesParDateCreneau[cle]) {
-            groupesParDateCreneau[cle] = {
-                niveauCode: niveauCode,
-                date: dateCle,
-                creneauOrdre: cellule.creneauOrdre,
-                filieres: []
-            };
-        }
-
-        groupesParDateCreneau[cle].filieres.push({
-            filiereCode: filiere.filiereCode,
-            effectif: Number(ligneEffectif.effectif)
         });
-
-    });
 
     
     return Object.values(groupesParDateCreneau)
