@@ -1521,32 +1521,47 @@ function affecterLocauxFixes(
         const niveauFiliere =
             filiere.niveauCode || planning.niveauCode;
 
-        const ligneEffectif = effectifs.find(function (ligne) {
-            return (
-                ligne.niveauCode === niveauFiliere &&
-                ligne.filiereCode === filiere.filiereCode &&
-                ligne.anneeUniversitaire ===
-                    (
-                        planning.anneeUniversitaire ||
-                        document.getElementById(
-                            "anneeUniversitaireAdmin"
-                        )?.textContent.trim()
-                    )
-            );
-        });
+       
+console.log("Diagnostic effectif :", {
+    niveauRecherche: niveauFiliere,
+    filiereRecherche: filiere.filiereCode,
+    anneePlanning: planning.anneeUniversitaire,
+    anneeAdmin: document.getElementById(
+        "anneeUniversitaireAdmin"
+    )?.textContent.trim(),
+    effectifsCorrespondants: effectifs.filter(function (ligne) {
+        return (
+            ligne.niveauCode === niveauFiliere &&
+            ligne.filiereCode === filiere.filiereCode
+        );
+    })
+});
 
-        if (!ligneEffectif) {
-            return;
-        }
+const ligneEffectif = effectifs.find(function (ligne) {
+    return (
+        ligne.niveauCode === niveauFiliere &&
+        ligne.filiereCode === filiere.filiereCode &&
+        ligne.anneeUniversitaire ===
+            (
+                planning.anneeUniversitaire ||
+                document.getElementById(
+                    "anneeUniversitaireAdmin"
+                )?.textContent.trim()
+            )
+    );
+});
 
-        const effectif = Number(ligneEffectif.effectif);
+if (!ligneEffectif) {
+    return;
+}
 
-        if (!Number.isFinite(effectif) || effectif <= 0) {
-            return;
-        }
+const effectif = Number(ligneEffectif.effectif);
 
-        const taux = calculerTauxMeilleurLocal(effectif);
+if (!Number.isFinite(effectif) || effectif <= 0) {
+    return;
+}
 
+const taux = calculerTauxMeilleurLocal(effectif);
       
 if (
     taux !== null &&
