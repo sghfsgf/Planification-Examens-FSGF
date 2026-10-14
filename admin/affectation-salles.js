@@ -1276,7 +1276,8 @@ function construireGroupesFilieres(
                     Number.isFinite(capacite) &&
                     capacite > 0 &&
                     capacite >= groupe.effectifTotal &&
-                    groupe.effectifTotal / capacite >= 0.83
+                   groupe.effectifTotal / capacite >=
+                   TAUX_OCCUPATION_MINIMUM
                 );
             });
         });
