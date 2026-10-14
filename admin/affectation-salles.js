@@ -1494,49 +1494,17 @@ if (
 
             // -------------------------------------------------
             // Si aucune combinaison n'est possible
+            // Réessayer ensuite chaque filière individuellement
             // -------------------------------------------------
 
             if (!resultat.succes) {
 
-                groupe.filieres.forEach(
-                    function (filiereCode) {
-
-                        resultats.push({
-
-                            filiereCode:
-                                filiereCode,
-
-                            succes:
-                                false,
-
-                            locaux: [],
-
-                            capaciteTotale: 0,
-
-                            tauxOccupation: 0,
-
-                            effectif:
-                                groupe.effectifs[
-                                    groupe.filieres.indexOf(
-                                        filiereCode
-                                    )
-                                ],
-
-                            groupe:
-                                groupe.filieres,
-
-                            message:
-                                "Aucune combinaison de locaux ne permet d'accueillir le groupe de " +
-                                groupe.effectifTotal +
-                                " étudiants."
-
-                        });
-
-                        filieresDejaAffectees.add(
-                            filiereCode
-                        );
-
-                    }
+                console.warn(
+                    "⚠️ Groupe impossible à affecter :",
+                    groupe.filieres.join(" + "),
+                    "| Effectif total :",
+                    groupe.effectifTotal,
+                    "| Nouvelle tentative individuelle."
                 );
 
                 return;
