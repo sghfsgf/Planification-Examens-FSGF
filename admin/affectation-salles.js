@@ -1194,6 +1194,17 @@ function construireGroupesFilieres(
 
         (filiere.cellules || []).forEach(function (cellule) {
 
+        // DIAGNOSTIC TEMPORAIRE
+    if (cellule.estOccupee && cellule.date) {
+        console.log("🔎 Créneau réel :", {
+            filiere: filiere.filiereCode,
+            niveau: niveauCode,
+            date: cellule.dateAffichage || cellule.date,
+            creneauOrdre: cellule.creneauOrdre,
+            matiere: cellule.matiereLibelle
+        });
+    }
+            
             if (!cellule.estOccupee || !cellule.date) {
                 return;
             }
