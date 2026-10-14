@@ -1540,18 +1540,16 @@ console.log("Diagnostic effectif :", {
 const ligneEffectif = effectifs.find(function (ligne) {
     return (
         ligne.niveauCode === niveauFiliere &&
-        ligne.filiereCode === filiere.filiereCode &&
-        ligne.anneeUniversitaire ===
-            (
-                planning.anneeUniversitaire ||
-                document.getElementById(
-                    "anneeUniversitaireAdmin"
-                )?.textContent.trim()
-            )
+        ligne.filiereCode === filiere.filiereCode
     );
 });
 
 if (!ligneEffectif) {
+    console.warn(
+        "Effectif introuvable dans les données sources :",
+        niveauFiliere,
+        filiere.filiereCode
+    );
     return;
 }
 
