@@ -3177,11 +3177,11 @@ document.addEventListener(
                 // PLACEMENT DES MATIÈRES SPÉCIFIQUES
                 // =================================================
 
-                placerMatieresSpecifiques(
-                    planning
-                );
-console.log("🔎 DÉBUT DU BILAN FINAL");
-                
+               console.log("🔎 AVANT PLACEMENT SPÉCIFIQUE");
+
+placerMatieresSpecifiques(planning);
+
+console.log("🔎 APRÈS PLACEMENT SPÉCIFIQUE");
                 const chargesFinales = calculerChargeDesCreneaux(planning);
 const valeursCharges = Object.values(chargesFinales);
 
