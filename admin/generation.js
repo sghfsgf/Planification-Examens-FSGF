@@ -1826,6 +1826,12 @@ function placerMatieresCommunes(planning) {
 
 function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
 
+    const ECART_MAX_AUTORISE = 1;
+
+    // -------------------------------------------------
+    // 1. Rechercher la filière
+    // -------------------------------------------------
+
     const filiere = planning.filieres.find(function (f) {
         return f.filiereCode === filiereCode;
     });
@@ -1835,14 +1841,16 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
             "❌ Filière introuvable dans le planning :",
             filiereCode
         );
+
         return null;
     }
 
     // -------------------------------------------------
-    // Charge globale du niveau
+    // 2. Calculer la charge globale des créneaux
     // -------------------------------------------------
 
-    const chargesCreneaux = calculerChargeDesCreneaux(planning);
+    const chargesCreneaux =
+        calculerChargeDesCreneaux(planning);
 
     console.log(
         "Charge globale utilisée pour",
@@ -1852,47 +1860,68 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     );
 
     // -------------------------------------------------
-    // Recherche des cellules libres
+    // 3. Rechercher les cellules disponibles
     // -------------------------------------------------
 
-    const positionsPossibles = filiere.cellules.filter(function (cellule) {
+    const positionsPossibles = filiere.cellules.filter(
+        function (cellule) {
 
-        // 1. La cellule doit être libre
-        if (cellule.estOccupee) {
-            return false;
+            // Une cellule déjà occupée ne peut pas être utilisée.
+            if (cellule.estOccupee) {
+                return false;
+            }
+
+            // Rechercher les cellules du même jour.
+            const cellulesMemeJour = filiere.cellules.filter(
+                function (autre) {
+                    return autre.dateAffichage ===
+                        cellule.dateAffichage;
+                }
+            );
+
+            // Vérifier le créneau précédent.
+            const cellulePrecedente = cellulesMemeJour.find(
+                function (autre) {
+                    return autre.creneauOrdre ===
+                        cellule.creneauOrdre - 1;
+                }
+            );
+
+            // Vérifier le créneau suivant.
+            const celluleSuivante = cellulesMemeJour.find(
+                function (autre) {
+                    return autre.creneauOrdre ===
+                        cellule.creneauOrdre + 1;
+                }
+            );
+
+            // Interdire deux examens successifs le même jour.
+            if (
+                cellulePrecedente &&
+                cellulePrecedente.estOccupee
+            ) {
+                return false;
+            }
+
+            if (
+                celluleSuivante &&
+                celluleSuivante.estOccupee
+            ) {
+                return false;
+            }
+
+            return true;
         }
+    );
 
-        // -------------------------------------------------
-        // 2. Vérifier les créneaux successifs du même jour
-        // -------------------------------------------------
-
-        const cellulesMemeJour = filiere.cellules.filter(function (autre) {
-            return autre.dateAffichage === cellule.dateAffichage;
-        });
-
-        const cellulePrecedente = cellulesMemeJour.find(function (autre) {
-            return autre.creneauOrdre === cellule.creneauOrdre - 1;
-        });
-
-        const celluleSuivante = cellulesMemeJour.find(function (autre) {
-            return autre.creneauOrdre === cellule.creneauOrdre + 1;
-        });
-
-        if (cellulePrecedente && cellulePrecedente.estOccupee) {
-            return false;
-        }
-
-        if (celluleSuivante && celluleSuivante.estOccupee) {
-            return false;
-        }
-
-        return true;
-    });
+    // -------------------------------------------------
+    // 4. Vérifier qu'une cellule est disponible
+    // -------------------------------------------------
 
     if (positionsPossibles.length === 0) {
 
-        console.warn(
-            "⚠️ Aucune position disponible pour la filière :",
+        console.error(
+            "❌ Aucune cellule disponible pour :",
             filiereCode
         );
 
@@ -1900,57 +1929,87 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     }
 
     // -------------------------------------------------
-// Choisir une position en respectant un écart maximal de 1
-// -------------------------------------------------
-
- // -------------------------------------------------
-    // Choisir la position libre la moins chargée
+    // 5. Classer les positions par charge croissante
     // -------------------------------------------------
 
-// -------------------------------------------------
-// Choisir une position en respectant un écart maximal de 1
-// -------------------------------------------------
+    positionsPossibles.sort(function (a, b) {
 
-const ECART_MAX_AUTORISE = 1;
+        const chargeA =
+            chargesCreneaux[a.creneauOrdre] || 0;
 
-positionsPossibles.sort(function (a, b) {
-    const chargeA = chargesCreneaux[a.creneauOrdre] || 0;
-    const chargeB = chargesCreneaux[b.creneauOrdre] || 0;
+        const chargeB =
+            chargesCreneaux[b.creneauOrdre] || 0;
 
-    return chargeA - chargeB;
-});
+        // En priorité, le créneau le moins chargé.
+        if (chargeA !== chargeB) {
+            return chargeA - chargeB;
+        }
 
-let positionChoisie = null;
+        // À charge égale, conserver l'ordre naturel
+        // des cellules du planning.
+        return 0;
+    });
 
-for (const position of positionsPossibles) {
+    // -------------------------------------------------
+    // 6. Essayer de respecter l'écart maximal de 1
+    // -------------------------------------------------
 
-    const chargesSimulees = {
-        ...chargesCreneaux
-    };
+    let positionChoisie = null;
 
-    chargesSimulees[position.creneauOrdre] =
-        (chargesSimulees[position.creneauOrdre] || 0) + 1;
+    for (const position of positionsPossibles) {
 
-    const valeursCharges = Object.values(chargesSimulees);
-    const minimum = Math.min(...valeursCharges);
-    const maximum = Math.max(...valeursCharges);
+        // Simuler le placement sans modifier le planning.
+        const chargesSimulees = {
+            ...chargesCreneaux
+        };
 
-    if (maximum - minimum <= ECART_MAX_AUTORISE) {
-        positionChoisie = position;
-        break;
+        chargesSimulees[position.creneauOrdre] =
+            (chargesSimulees[position.creneauOrdre] || 0) + 1;
+
+        const valeursCharges =
+            Object.values(chargesSimulees);
+
+        const chargeMin =
+            Math.min(...valeursCharges);
+
+        const chargeMax =
+            Math.max(...valeursCharges);
+
+        const ecartSimule =
+            chargeMax - chargeMin;
+
+        if (ecartSimule <= ECART_MAX_AUTORISE) {
+
+            positionChoisie = position;
+
+            break;
+        }
     }
-}
 
-if (!positionChoisie) {
-    console.warn(
-        "⚠️ Aucune position ne respecte l'écart maximal de 1 pour :",
-        filiereCode
-    );
+    // -------------------------------------------------
+    // 7. Solution de secours
+    // -------------------------------------------------
+    // Si aucune position ne respecte l'écart de 1,
+    // retenir la cellule libre la moins chargée.
+    // Ne pas abandonner la matière pour cette seule raison.
 
-    return null;
-}
+    if (!positionChoisie) {
 
-    
+        positionChoisie = positionsPossibles[0];
+
+        console.warn(
+            "⚠️ Écart maximal de 1 impossible à respecter.",
+            "Solution de secours pour :",
+            filiereCode,
+            "| Créneau choisi :",
+            positionChoisie.creneauOrdre
+        );
+    }
+
+    // -------------------------------------------------
+    // 8. Afficher la position retenue
+    // -------------------------------------------------
+
     console.log(
         "✓ Position trouvée :",
         filiereCode,
@@ -1962,13 +2021,12 @@ if (!positionChoisie) {
         positionChoisie.heureDebutAffichage,
         "-",
         positionChoisie.heureFinAffichage,
-        "| Charge globale :",
+        "| Charge avant placement :",
         chargesCreneaux[positionChoisie.creneauOrdre] || 0
     );
 
     return positionChoisie;
 }
-
 function placerMatieresSpecifiques(planning) {
 
     console.log("------------------------------------------");
