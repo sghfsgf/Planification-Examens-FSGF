@@ -1929,42 +1929,26 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     }
 
     // -------------------------------------------------
-    // 5. Classer les positions par charge croissante
-    // -------------------------------------------------
-
-    positionsPossibles.sort(function (a, b) {
-
-        const chargeA =
-            chargesCreneaux[a.creneauOrdre] || 0;
-
-        const chargeB =
-            chargesCreneaux[b.creneauOrdre] || 0;
-
-        // En priorité, le créneau le moins chargé.
-        if (chargeA !== chargeB) {
-            return chargeA - chargeB;
-        }
-
-        // À charge égale, conserver l'ordre naturel
-        // des cellules du planning.
-        return 0;
-    });
-
-    // -------------------------------------------------
-    // 6. Essayer de respecter l'écart maximal de 1
+    // 5. Choisir la position qui équilibre le mieux
+    //    les charges globales après le placement
     // -------------------------------------------------
 
     let positionChoisie = null;
+    let meilleurEcart = Infinity;
+    let meilleureDispersion = Infinity;
+    let meilleureChargeAvant = Infinity;
 
-    for (const position of positionsPossibles) {
+    positionsPossibles.forEach(function (position) {
 
         // Simuler le placement sans modifier le planning.
         const chargesSimulees = {
             ...chargesCreneaux
         };
 
-        chargesSimulees[position.creneauOrdre] =
-            (chargesSimulees[position.creneauOrdre] || 0) + 1;
+        const creneau = position.creneauOrdre;
+
+        chargesSimulees[creneau] =
+            (chargesSimulees[creneau] || 0) + 1;
 
         const valeursCharges =
             Object.values(chargesSimulees);
@@ -1975,34 +1959,63 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         const chargeMax =
             Math.max(...valeursCharges);
 
-        const ecartSimule =
+        const ecart =
             chargeMax - chargeMin;
 
-        if (ecartSimule <= ECART_MAX_AUTORISE) {
+        // À écart égal, privilégier la répartition
+        // globale la plus homogène.
+        const moyenne =
+            valeursCharges.reduce(function (somme, charge) {
+                return somme + charge;
+            }, 0) / valeursCharges.length;
 
+        const dispersion =
+            valeursCharges.reduce(function (somme, charge) {
+                return somme + Math.pow(charge - moyenne, 2);
+            }, 0);
+
+        const chargeAvant =
+            chargesCreneaux[creneau] || 0;
+
+        // Priorité 1 : minimiser l'écart maximal.
+        // Priorité 2 : minimiser la dispersion.
+        // Priorité 3 : préférer le créneau le moins chargé
+        // avant placement.
+        if (
+            ecart < meilleurEcart ||
+            (
+                ecart === meilleurEcart &&
+                dispersion < meilleureDispersion
+            ) ||
+            (
+                ecart === meilleurEcart &&
+                dispersion === meilleureDispersion &&
+                chargeAvant < meilleureChargeAvant
+            )
+        ) {
             positionChoisie = position;
-
-            break;
+            meilleurEcart = ecart;
+            meilleureDispersion = dispersion;
+            meilleureChargeAvant = chargeAvant;
         }
-    }
+    });
 
     // -------------------------------------------------
-    // 7. Solution de secours
+    // 6. Signaler si l'équilibre idéal reste impossible
     // -------------------------------------------------
-    // Si aucune position ne respecte l'écart de 1,
-    // retenir la cellule libre la moins chargée.
-    // Ne pas abandonner la matière pour cette seule raison.
 
-    if (!positionChoisie) {
-
-        positionChoisie = positionsPossibles[0];
+    if (meilleurEcart > ECART_MAX_AUTORISE) {
 
         console.warn(
-            "⚠️ Écart maximal de 1 impossible à respecter.",
-            "Solution de secours pour :",
+            "⚠️ Écart global supérieur à",
+            ECART_MAX_AUTORISE,
+            "après le meilleur placement possible.",
+            "| Filière :",
             filiereCode,
             "| Créneau choisi :",
-            positionChoisie.creneauOrdre
+            positionChoisie.creneauOrdre,
+            "| Écart obtenu :",
+            meilleurEcart
         );
     }
 
