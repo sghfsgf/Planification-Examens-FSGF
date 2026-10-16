@@ -3291,14 +3291,17 @@ document.addEventListener(
 
 placerMatieresSpecifiques(planning);
 
-                console.log(
-                    "✓ Matières spécifiques placées."
-                );
+console.log("🔎 APRÈS PLACEMENT SPÉCIFIQUE");
 
-                console.log(
-                    "Planning après placement des matières spécifiques :",
-                    planning
-                );
+// Vérification finale de l'équilibre global.
+verifierEquilibreGlobalCreneaux(planning);
+
+console.log("✓ Matières spécifiques placées.");
+
+console.log(
+    "Planning après placement des matières spécifiques :",
+    planning
+);
 
                 // =================================================
                 // CONTRÔLE GLOBAL DU PLANNING
