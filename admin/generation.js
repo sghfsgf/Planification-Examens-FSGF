@@ -2183,6 +2183,64 @@ function calculerChargeDesCreneaux(planning) {
     return charges;
 }
 
+
+function verifierEquilibreGlobalCreneaux(planning) {
+
+    const charges = calculerChargeDesCreneaux(planning);
+    const valeursCharges = Object.values(charges);
+
+    if (valeursCharges.length === 0) {
+        console.warn(
+            "⚠️ Aucune charge de créneau à vérifier."
+        );
+        return null;
+    }
+
+    const chargeMin = Math.min(...valeursCharges);
+    const chargeMax = Math.max(...valeursCharges);
+    const ecart = chargeMax - chargeMin;
+
+    const equilibreAtteint = ecart <= 1;
+
+    console.log(
+        "Équilibre global des créneaux :",
+        charges,
+        "| Écart :",
+        ecart
+    );
+
+    if (!equilibreAtteint) {
+
+        const detail = Object.entries(charges)
+            .sort(function (a, b) {
+                return Number(a[0]) - Number(b[0]);
+            })
+            .map(function ([creneau, charge]) {
+                return "Créneau " + creneau +
+                    " : " + charge + " épreuve(s)";
+            })
+            .join("\n");
+
+        alert(
+            "L'équilibre global des créneaux non atteint.\n\n" +
+            "Écart global : " + ecart + " épreuve(s).\n\n" +
+            detail +
+            "\n\nUne correction manuelle du planning est recommandée."
+        );
+
+    } else {
+
+        console.log(
+            "✓ Équilibre global des créneaux atteint."
+        );
+    }
+
+    return {
+        equilibreAtteint: equilibreAtteint,
+        ecart: ecart,
+        charges: charges
+    };
+}
 // =====================================================
 // CONSTRUIRE LA STRUCTURE DU NIVEAU
 // =====================================================
