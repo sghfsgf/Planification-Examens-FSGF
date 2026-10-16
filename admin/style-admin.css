@@ -497,20 +497,14 @@ body {
    TABLEAU
 ===================================================== */
 
+
 .tableau-calendrier {
-
     border-collapse: separate;
-
     border-spacing: 0;
-
     min-width: 1700px;
-
-    width: max-content;
-
+    width: max(100%, 1700px);
     background: #ffffff;
-
     font-size: 14px;
-
 }
 
 
