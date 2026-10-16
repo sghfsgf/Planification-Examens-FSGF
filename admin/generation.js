@@ -3180,7 +3180,8 @@ document.addEventListener(
                 placerMatieresSpecifiques(
                     planning
                 );
-
+console.log("🔎 DÉBUT DU BILAN FINAL");
+                
                 const chargesFinales = calculerChargeDesCreneaux(planning);
 const valeursCharges = Object.values(chargesFinales);
 
