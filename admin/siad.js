@@ -659,10 +659,6 @@ function construireTableauSIAD(
     html += `</tr></thead><tbody>`;
 
     const lignes = [
-    {
-        nom: "Examens par créneau",
-        valeur: cle => obtenirValeur(cle, "total")
-    },
     ...NIVEAUX_SIAD.map(niveau => ({
         nom: niveau,
         valeur: cle => obtenirValeur(cle, niveau)
