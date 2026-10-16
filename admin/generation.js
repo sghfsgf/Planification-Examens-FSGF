@@ -3291,23 +3291,6 @@ document.addEventListener(
 
 placerMatieresSpecifiques(planning);
 
-console.log("🔎 APRÈS PLACEMENT SPÉCIFIQUE");
-                const chargesFinales = calculerChargeDesCreneaux(planning);
-const valeursCharges = Object.values(chargesFinales);
-
-const chargeMin = Math.min(...valeursCharges);
-const chargeMax = Math.max(...valeursCharges);
-const ecartFinal = chargeMax - chargeMin;
-
-console.log("------------------------------------------");
-console.log("BILAN FINAL DE L'ÉQUILIBRAGE");
-console.log("------------------------------------------");
-console.log("Charges finales :", chargesFinales);
-console.log("Charge minimale :", chargeMin);
-console.log("Charge maximale :", chargeMax);
-console.log("Écart final :", ecartFinal);
-console.log("Objectif écart ≤ 1 :", ecartFinal <= 1);
-
                 console.log(
                     "✓ Matières spécifiques placées."
                 );
