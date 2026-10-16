@@ -1907,18 +1907,50 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     // Choisir la position libre la moins chargée
     // -------------------------------------------------
 
-    positionsPossibles.sort(function (a, b) {
+// -------------------------------------------------
+// Choisir une position en respectant un écart maximal de 1
+// -------------------------------------------------
 
-        const chargeA =
-            chargesCreneaux[a.creneauOrdre] || 0;
+const ECART_MAX_AUTORISE = 1;
 
-        const chargeB =
-            chargesCreneaux[b.creneauOrdre] || 0;
+positionsPossibles.sort(function (a, b) {
+    const chargeA = chargesCreneaux[a.creneauOrdre] || 0;
+    const chargeB = chargesCreneaux[b.creneauOrdre] || 0;
 
-        return chargeA - chargeB;
-    });
+    return chargeA - chargeB;
+});
 
-    const positionChoisie = positionsPossibles[0];
+let positionChoisie = null;
+
+for (const position of positionsPossibles) {
+
+    const chargesSimulees = {
+        ...chargesCreneaux
+    };
+
+    chargesSimulees[position.creneauOrdre] =
+        (chargesSimulees[position.creneauOrdre] || 0) + 1;
+
+    const valeursCharges = Object.values(chargesSimulees);
+    const minimum = Math.min(...valeursCharges);
+    const maximum = Math.max(...valeursCharges);
+
+    if (maximum - minimum <= ECART_MAX_AUTORISE) {
+        positionChoisie = position;
+        break;
+    }
+}
+
+if (!positionChoisie) {
+    console.warn(
+        "⚠️ Aucune position ne respecte l'écart maximal de 1 pour :",
+        filiereCode
+    );
+
+    return null;
+}
+
+    
     console.log(
         "✓ Position trouvée :",
         filiereCode,
