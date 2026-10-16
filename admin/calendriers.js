@@ -61,8 +61,13 @@ function afficherPlanning(planning) {
     zoneCalendrier.appendChild(tableau);
 
     console.log(
-        "✓ Calendrier inséré dans la page."
+       "✓ Calendrier inséré dans la page."
     );
+
+    console.log(
+    "CONTENU APRÈS INSERTION :",
+    zoneCalendrier.innerHTML
+);
 }
 
 function formaterDateLongue(date) {
