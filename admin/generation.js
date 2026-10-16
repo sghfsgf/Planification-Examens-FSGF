@@ -2077,8 +2077,20 @@ const matieresSpecifiques =
 function calculerChargeDesCreneaux(planning) {
 
     const charges = {};
+    const examensComptes = new Set();
 
-    // Parcourir toutes les filières du niveau
+    // Initialiser tous les créneaux à zéro
+    planning.filieres.forEach(function (filiere) {
+        filiere.cellules.forEach(function (cellule) {
+            const creneau = cellule.creneauOrdre;
+
+            if (charges[creneau] === undefined) {
+                charges[creneau] = 0;
+            }
+        });
+    });
+
+    // Compter les épreuves réellement placées
     planning.filieres.forEach(function (filiere) {
 
         filiere.cellules.forEach(function (cellule) {
@@ -2089,29 +2101,29 @@ function calculerChargeDesCreneaux(planning) {
 
             const creneau = cellule.creneauOrdre;
 
-            if (!charges[creneau]) {
-                charges[creneau] = 0;
+            // Une épreuve commune est comptée une seule fois
+            const cleExamen = cellule.estCommune
+                ? "COMMUNE|" +
+                  cellule.dateAffichage + "|" +
+                  creneau + "|" +
+                  cellule.matiereLibelle
+                : "SPECIFIQUE|" +
+                  filiere.filiereCode + "|" +
+                  cellule.dateAffichage + "|" +
+                  creneau + "|" +
+                  cellule.matiereLibelle;
+
+            if (examensComptes.has(cleExamen)) {
+                return;
             }
 
+            examensComptes.add(cleExamen);
             charges[creneau]++;
         });
     });
 
-    // S'assurer que tous les créneaux existants apparaissent
-    planning.filieres.forEach(function (filiere) {
-
-        filiere.cellules.forEach(function (cellule) {
-
-            const creneau = cellule.creneauOrdre;
-
-            if (charges[creneau] === undefined) {
-                charges[creneau] = 0;
-            }
-        });
-    });
-
     console.log("------------------------------------------");
-    console.log("CHARGE DES CRÉNEAUX");
+    console.log("CHARGE DES CRÉNEAUX — ÉPREUVES DISTINCTES");
     console.log("------------------------------------------");
 
     console.table(charges);
