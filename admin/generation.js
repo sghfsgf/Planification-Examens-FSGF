@@ -2000,27 +2000,8 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         }
     });
 
-    // -------------------------------------------------
-    // 6. Signaler si l'équilibre idéal reste impossible
-    // -------------------------------------------------
-
-    if (meilleurEcart > ECART_MAX_AUTORISE) {
-
-        console.warn(
-            "⚠️ Écart global supérieur à",
-            ECART_MAX_AUTORISE,
-            "après le meilleur placement possible.",
-            "| Filière :",
-            filiereCode,
-            "| Créneau choisi :",
-            positionChoisie.creneauOrdre,
-            "| Écart obtenu :",
-            meilleurEcart
-        );
-    }
-
-    // -------------------------------------------------
-    // 8. Afficher la position retenue
+// -------------------------------------------------
+    // 6. Afficher la position retenue
     // -------------------------------------------------
 
     console.log(
