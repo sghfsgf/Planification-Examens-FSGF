@@ -22,10 +22,10 @@
 // - éviter deux matières successives d'une même filière
 //   le même jour
 // - équilibrer les matières entre les créneaux
-// - écart maximum entre créneau le plus chargé
-//   et créneau le moins chargé : 2
+// - équilibre global considéré atteint si l'écart
+//   entre le créneau le plus chargé et le moins chargé
+//   est inférieur ou égal à 1
 // =====================================================
-
 
 import { app } from "../firebase-config.js";
 
