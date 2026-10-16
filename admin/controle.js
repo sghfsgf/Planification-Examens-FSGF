@@ -666,7 +666,7 @@ function verifierEquilibrageCreneaux(planning) {
     const ecart =
         maximum - minimum;
 
-    const seuil = 2;
+    const seuil = 1;
 
     const resultat = {
 
