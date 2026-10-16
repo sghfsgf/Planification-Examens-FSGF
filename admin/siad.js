@@ -463,18 +463,29 @@ function remplirFiltresSIAD() {
 // -----------------------------------------
 
 function construireDonneesSIAD(calendriers) {
+
     const examens = new Map();
     const locaux = new Map();
     const creneaux = new Map();
+
+    // -----------------------------------------
+    // CONSTRUIRE LA CLÉ D'UN CRÉNEAU
+    // -----------------------------------------
 
     function obtenirCle(date, ordre) {
         return `${date}|${ordre}`;
     }
 
+    // -----------------------------------------
+    // INITIALISER LE CRÉNEAU SI NÉCESSAIRE
+    // -----------------------------------------
+
     function assurerCreneau(date, ordre, cellule) {
+
         const cle = obtenirCle(date, ordre);
 
         if (!creneaux.has(cle)) {
+
             creneaux.set(cle, {
                 cle,
                 date,
@@ -482,27 +493,51 @@ function construireDonneesSIAD(calendriers) {
                 debut: cellule.heureDebutAffichage || "",
                 fin: cellule.heureFinAffichage || ""
             });
+
         }
 
         return cle;
     }
 
+    // -----------------------------------------
+    // PARCOURIR LES CALENDRIERS PUBLIÉS
+    // -----------------------------------------
+
     for (const calendrier of calendriers) {
+
         const niveau = calendrier.niveauCode;
 
-        if (!NIVEAUX_SIAD.includes(niveau)) continue;
+        // Ignorer les niveaux non gérés par le SIAD
+        if (!NIVEAUX_SIAD.includes(niveau)) {
+            continue;
+        }
 
         const filieres = calendrier.planning?.filieres;
 
-        if (!Array.isArray(filieres)) continue;
+        if (!Array.isArray(filieres)) {
+            continue;
+        }
+
+        // -----------------------------------------
+        // PARCOURIR LES FILIÈRES
+        // -----------------------------------------
 
         for (const filiere of filieres) {
+
             const cellules = obtenirCellulesSIAD(filiere);
 
+            // -----------------------------------------
+            // PARCOURIR LES CELLULES DE LA FILIÈRE
+            // -----------------------------------------
+
             for (const cellule of cellules) {
+
                 const date = cleDateSIAD(cellule.date);
 
-                if (!date || cellule.creneauOrdre == null) {
+                if (
+                    !date ||
+                    cellule.creneauOrdre == null
+                ) {
                     continue;
                 }
 
@@ -512,69 +547,137 @@ function construireDonneesSIAD(calendriers) {
                     cellule
                 );
 
+                // -----------------------------------------
+                // INITIALISER LES COMPTEURS DU CRÉNEAU
+                // -----------------------------------------
+
                 if (!examens.has(cle)) {
+
                     examens.set(cle, {
                         total: 0,
                         niveaux: Object.fromEntries(
                             NIVEAUX_SIAD.map(n => [n, 0])
                         )
                     });
+
                 }
 
                 if (!locaux.has(cle)) {
-                    locaux.set(cle, creerEnsembleLocauxSIAD());
+
+                    locaux.set(
+                        cle,
+                        creerEnsembleLocauxSIAD()
+                    );
+
                 }
 
-                // Chaque cellule occupée correspond à un examen
-                // pour la filière concernée.
-                // Une matière commune dans deux filières est donc
-                // comptée deux fois, une fois par filière.
-                if (estOccupeeSIAD(cellule)) {
-                    examens.get(cle).total++;
-                    examens.get(cle).niveaux[niveau]++;
+                // -----------------------------------------
+                // TRAITER UNIQUEMENT LES EXAMENS OCCUPÉS
+                // -----------------------------------------
+
+                if (!estOccupeeSIAD(cellule)) {
+                    continue;
                 }
 
-                // Recherche des affectations présentes dans la cellule.
+                // Un examen est compté pour chaque filière.
+                // Une matière commune à deux filières est donc
+                // comptée une fois dans chacune de ces filières.
+
+                examens.get(cle).total++;
+
+                examens.get(cle).niveaux[niveau]++;
+
+                // -----------------------------------------
+                // 1. RECHERCHER LES LOCAUX DANS LA CELLULE
+                // -----------------------------------------
+
                 extraireLocauxSIAD(
                     cellule,
                     locaux.get(cle)
                 );
 
-                // Certaines versions stockent les amphithéâtres
-                // dans filiere.amphis, avec date et créneau.
+                // -----------------------------------------
+                // 2. LIRE LES LOCAUX DE LA FILIÈRE
+                // -----------------------------------------
+                // Firestore peut contenir, par exemple :
+                // filiere.amphis = ["A01", "S01"]
+                //
+                // A... : amphithéâtre
+                // S... : salle
+                //
+                // Les Set empêchent de compter deux fois
+                // un même local pour un même créneau.
+
                 if (Array.isArray(filiere.amphis)) {
-                    for (const affectation of filiere.amphis) {
-                        if (!affectation || typeof affectation !== "object") {
+
+                    const ensemble = locaux.get(cle);
+
+                    for (const valeur of filiere.amphis) {
+
+                        if (valeur == null) {
                             continue;
                         }
 
-                        const dateAffectation =
-                            cleDateSIAD(affectation.date);
+                        const code = String(valeur).trim();
 
-                        if (
-                            dateAffectation === date &&
-                            String(affectation.creneauOrdre) ===
-                                String(cellule.creneauOrdre)
-                        ) {
-                            extraireLocauxSIAD(
-                                affectation,
-                                locaux.get(cle)
-                            );
+                        if (!code) {
+                            continue;
                         }
+
+                        // Amphithéâtres : A01, A02, etc.
+                        if (/^A/i.test(code)) {
+
+                            ensemble.amphis.add(code);
+
+                        }
+
+                        // Salles : S01, S02, etc.
+                        else if (/^S/i.test(code)) {
+
+                            ensemble.salles.add(code);
+
+                        }
+
+                        // Signaler les codes non reconnus
+                        else {
+
+                            console.warn(
+                                "SIAD : code de local non reconnu :",
+                                code,
+                                "| Filière :",
+                                filiere.filiereCode
+                            );
+
+                        }
+
                     }
+
                 }
+
             }
+
         }
+
     }
 
+    // -----------------------------------------
+    // RETOURNER LES DONNÉES AGRÉGÉES
+    // -----------------------------------------
+
     return {
-        creneaux: [...creneaux.values()].sort((a, b) =>
-            a.date.localeCompare(b.date) ||
-            Number(a.ordre) - Number(b.ordre)
+
+        creneaux: [...creneaux.values()].sort(
+            (a, b) =>
+                a.date.localeCompare(b.date) ||
+                Number(a.ordre) - Number(b.ordre)
         ),
+
         examens,
+
         locaux
+
     };
+
 }
 
 // -----------------------------------------
@@ -790,13 +893,15 @@ function afficherSIAD() {
     // Le second tableau utilise des lignes Salles et Amphis,
     // plutôt que les niveaux du premier tableau.
     const tableauLocauxCorrige = tableauLocaux
-        .replaceAll("Examens par créneau", "Salles")
-        .replaceAll("<th>L1</th>", "<th>Amphis</th>")
-        .replaceAll(/<tr><th>L2<\/th>.*?<\/tr>/gs, "")
-        .replaceAll(/<tr><th>L3<\/th>.*?<\/tr>/gs, "")
-        .replaceAll(/<tr><th>MP<\/th>.*?<\/tr>/gs, "")
-        .replaceAll(/<tr><th>MR<\/th>.*?<\/tr>/gs, "")
-        .replaceAll("Total par créneau", "Total locaux par créneau");
+    .replaceAll("<th>L1</th>", "<th>Salles</th>")
+    .replaceAll("<th>L2</th>", "<th>Amphis</th>")
+    .replaceAll(/<tr><th>L3<\/th>.*?<\/tr>/gs, "")
+    .replaceAll(/<tr><th>MP<\/th>.*?<\/tr>/gs, "")
+    .replaceAll(/<tr><th>MR<\/th>.*?<\/tr>/gs, "")
+    .replaceAll(
+        "Total par créneau",
+        "Total locaux par créneau"
+    );
 
     resultat.innerHTML = tableauExamens + tableauLocauxCorrige;
 
