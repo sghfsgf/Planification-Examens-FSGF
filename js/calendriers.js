@@ -1005,14 +1005,60 @@ if (btnExportExcel) {
 
             const workbook =
                 XLSX.utils.book_new();
-
             const feuille =
-                XLSX.utils.table_to_sheet(
-                    tableauExcel,
-                    {
-                        raw: true
-                    }
-                );
+    XLSX.utils.table_to_sheet(
+        tableauExcel,
+        {
+            raw: true,
+            origin: "A2"
+        }
+    );
+
+// -------------------------------------------------
+// Titre du calendrier au-dessus du tableau
+// -------------------------------------------------
+
+const titreCalendrier =
+    document.querySelector("#calendriers .carte h2");
+
+if (titreCalendrier) {
+
+    feuille.A1 = {
+        t: "s",
+        v: titreCalendrier.textContent.trim(),
+        s: {
+            font: {
+                name: "Arial",
+                sz: 16,
+                bold: true
+            },
+            alignment: {
+                horizontal: "center",
+                vertical: "center",
+                wrapText: true
+            },
+            border: {
+                bottom: {
+                    style: "thin",
+                    color: { rgb: "000000" }
+                }
+            }
+        }
+    };
+
+    const plageTitre =
+        XLSX.utils.decode_range(feuille["!ref"]);
+
+    feuille["!merges"] = feuille["!merges"] || [];
+
+    feuille["!merges"].push({
+        s: { r: 0, c: 0 },
+        e: { r: 0, c: plageTitre.e.c }
+    });
+
+    feuille["!rows"] = feuille["!rows"] || [];
+    feuille["!rows"][0] = { hpt: 30 };
+}
 
 
             // -------------------------------------------------
@@ -1027,10 +1073,12 @@ if (btnExportExcel) {
                     );
 
                 // Nombre de lignes d'en-tête du tableau HTML
-                const nombreLignesEntete =
-                    tableauExcel.tHead
-                        ? tableauExcel.tHead.rows.length
-                        : 0;
+                  const nombreLignesEntete =
+                          1 + (
+                     tableauExcel.tHead
+                      ? tableauExcel.tHead.rows.length
+                        : 0
+                        );
 
                 // Matières présentes dans le calendrier
                 const matieresCalendrier =
