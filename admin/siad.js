@@ -385,34 +385,105 @@ function initialiserInterfaceSIAD() {
 }
 
 
+
 @media print {
+    @page {
+        size: A4 landscape;
+        margin: 7mm;
+    }
+
+    html,
+    body {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        color: black !important;
+        font-size: 8px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     #actualiserSIAD,
     #imprimerSIAD,
-    #exportPDFSIAD {
+    #exportPDFSIAD,
+    .siad-filtres {
         display: none !important;
     }
 
-    body {
-        background: white !important;
+    .siad-entete {
+        margin-bottom: 5px !important;
+    }
+
+    .siad-entete h3 {
+        font-size: 13px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .siad-entete p,
+    #etatSIAD {
+        font-size: 8px !important;
+    }
+
+    .siad-section-titre {
+        font-size: 10px !important;
+        margin: 8px 0 4px !important;
+        page-break-after: avoid;
+        break-after: avoid;
     }
 
     .siad-table-wrapper {
+        width: 100% !important;
+        max-width: none !important;
         overflow: visible !important;
+        margin: 0 0 8px !important;
         border: none !important;
+        border-radius: 0 !important;
     }
 
     .siad-table {
-        min-width: 0 !important;
         width: 100% !important;
-        font-size: 10px;
+        min-width: 0 !important;
+        table-layout: auto !important;
+        border-collapse: collapse !important;
+        font-size: 7px !important;
     }
 
     .siad-table th,
     .siad-table td {
-        padding: 4px;
-        white-space: normal;
+        font-size: 7px !important;
+        padding: 2px 3px !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        border: 1px solid #999 !important;
+    }
+
+    .siad-table thead th {
+        background: #eaf1f8 !important;
+        color: black !important;
+    }
+
+    .siad-table tbody th {
+        background: #f8fafc !important;
+    }
+
+    .siad-table .siad-total,
+    .siad-table .siad-ligne-total th,
+    .siad-table .siad-ligne-total td {
+        background: #e8eef7 !important;
+    }
+
+    .siad-table small {
+        font-size: 6px !important;
+    }
+
+    .siad-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 }
+
+
     `;
 
     document.head.appendChild(style);
