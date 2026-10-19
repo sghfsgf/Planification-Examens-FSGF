@@ -213,28 +213,31 @@ function initialiserInterfaceSIAD() {
         <select id="sessionSIAD"></select>
     </label>
 
-    <label>
-        PoidsSalle
-        <input
-            id="poidsSalleSIAD"
-            type="number"
-            min="0"
-            max="5"
-            step="0.5"
-            value="1"
-        >
-    </label>
+    
+<label>
+    PoidsSalle
+    <select id="poidsSalleSIAD">
+        <option value="0">0</option>
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+    </select>
+</label>
 
-    <label>
-        PoidsAmphi
-        <input
-            id="poidsAmphiSIAD"
-            type="number"
-            min="0"
-            max="5"
-            step="0.5"
-            value="1"
-        >
+<label>
+    PoidsAmphi
+    <select id="poidsAmphiSIAD">
+        <option value="0">0</option>
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+    </select>
+</label>
+
     </label>
 </div>
 
@@ -367,10 +370,10 @@ function initialiserInterfaceSIAD() {
         .addEventListener("change", afficherSIAD);
 
     document.getElementById("poidsSalleSIAD")
-    .addEventListener("input", afficherSIAD);
+    .addEventListener("change", afficherSIAD);
 
-document.getElementById("poidsAmphiSIAD")
-    .addEventListener("input", afficherSIAD);
+   document.getElementById("poidsAmphiSIAD")
+    .addEventListener("change", afficherSIAD);
 }
 
 // -----------------------------------------
