@@ -201,17 +201,43 @@ function initialiserInterfaceSIAD() {
             </button>
         </div>
 
-        <div class="siad-filtres">
-            <label>
-                Année universitaire
-                <select id="anneeSIAD"></select>
-            </label>
+       
+<div class="siad-filtres">
+    <label>
+        Année universitaire
+        <select id="anneeSIAD"></select>
+    </label>
 
-            <label>
-                Session
-                <select id="sessionSIAD"></select>
-            </label>
-        </div>
+    <label>
+        Session
+        <select id="sessionSIAD"></select>
+    </label>
+
+    <label>
+        PoidsSalle
+        <input
+            id="poidsSalleSIAD"
+            type="number"
+            min="0"
+            max="5"
+            step="0.5"
+            value="1"
+        >
+    </label>
+
+    <label>
+        PoidsAmphi
+        <input
+            id="poidsAmphiSIAD"
+            type="number"
+            min="0"
+            max="5"
+            step="0.5"
+            value="1"
+        >
+    </label>
+</div>
+
 
         <p id="etatSIAD" role="status">
             Chargement des calendriers publiés...
@@ -255,8 +281,10 @@ function initialiserInterfaceSIAD() {
             font-weight: 600;
         }
 
-        .siad-filtres select,
-        #actualiserSIAD {
+     .siad-filtres select,
+.siad-filtres input,
+#actualiserSIAD {
+       
             padding: 9px 12px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
@@ -337,6 +365,12 @@ function initialiserInterfaceSIAD() {
 
     document.getElementById("sessionSIAD")
         .addEventListener("change", afficherSIAD);
+
+    document.getElementById("poidsSalleSIAD")
+    .addEventListener("input", afficherSIAD);
+
+document.getElementById("poidsAmphiSIAD")
+    .addEventListener("input", afficherSIAD);
 }
 
 // -----------------------------------------
@@ -687,7 +721,9 @@ function construireTableauSIAD(
     titre,
     creneaux,
     obtenirValeur,
-    totalParLigne
+    totalParLigne,
+    lignesPersonnalisees = null,
+    libelleTotal = "Total par créneau"
 ) {
     if (!creneaux.length) {
         return `
@@ -760,12 +796,11 @@ function construireTableauSIAD(
 
     html += `</tr></thead><tbody>`;
 
-    const lignes = [
-    ...NIVEAUX_SIAD.map(niveau => ({
+         const lignes = lignesPersonnalisees ??
+    NIVEAUX_SIAD.map(niveau => ({
         nom: niveau,
         valeur: cle => obtenirValeur(cle, niveau)
-    }))
-];
+    }));
 
     for (const ligne of lignes) {
         let totalLigne = 0;
@@ -785,7 +820,7 @@ function construireTableauSIAD(
 
     html += `
         <tr class="siad-ligne-total">
-            <th>Total par créneau</th>
+           <th>${echapperSIAD(libelleTotal)}</th>
     `;
 
     let totalGeneral = 0;
@@ -863,46 +898,78 @@ function afficherSIAD() {
 
     // Le tableau des locaux compte les locaux distincts
     // dont l'affectation a été retrouvée pour chaque créneau.
+   
+    // -----------------------------------------
+    // TABLEAU DES LOCAUX : VALEURS PONDÉRÉES
+    // -----------------------------------------
+
+    const poidsSalle = Math.min(5, Math.max(
+        0,
+        Number(document.getElementById("poidsSalleSIAD")?.value) || 0
+    ));
+
+    const poidsAmphi = Math.min(5, Math.max(
+        0,
+        Number(document.getElementById("poidsAmphiSIAD")?.value) || 0
+    ));
+
     const tableauLocaux = construireTableauSIAD(
-        "🏫 Salles et amphithéâtres",
+        "🏫 Utilisation pondérée des salles et amphithéâtres",
         donnees.creneaux,
+
         (cle, indicateur) => {
             const ensemble = donnees.locaux.get(cle);
 
             if (!ensemble) return 0;
 
-            if (indicateur === "total") {
-                return ensemble.salles.size + ensemble.amphis.size;
+            if (indicateur === "Salles") {
+                return ensemble.salles.size * poidsSalle;
             }
 
-            if (indicateur === "L1") return ensemble.salles.size;
-            if (indicateur === "L2") return ensemble.amphis.size;
+            if (indicateur === "Amphis") {
+                return ensemble.amphis.size * poidsAmphi;
+            }
 
             return 0;
         },
+
         cle => {
             const ensemble = donnees.locaux.get(cle);
 
-            return ensemble
-                ? ensemble.salles.size + ensemble.amphis.size
-                : 0;
-        }
+            if (!ensemble) return 0;
+
+            return (
+                ensemble.salles.size * poidsSalle +
+                ensemble.amphis.size * poidsAmphi
+            );
+        },
+
+        [
+            {
+                nom: "Salles",
+                valeur: cle => {
+                    const ensemble = donnees.locaux.get(cle);
+                    return ensemble
+                        ? ensemble.salles.size * poidsSalle
+                        : 0;
+                }
+            },
+            {
+                nom: "Amphis",
+                valeur: cle => {
+                    const ensemble = donnees.locaux.get(cle);
+                    return ensemble
+                        ? ensemble.amphis.size * poidsAmphi
+                        : 0;
+                }
+            }
+        ],
+
+        "Total pondéré par créneau"
     );
 
-    // Le second tableau utilise des lignes Salles et Amphis,
-    // plutôt que les niveaux du premier tableau.
-    const tableauLocauxCorrige = tableauLocaux
-    .replaceAll("<th>L1</th>", "<th>Salles</th>")
-    .replaceAll("<th>L2</th>", "<th>Amphis</th>")
-    .replaceAll(/<tr><th>L3<\/th>.*?<\/tr>/gs, "")
-    .replaceAll(/<tr><th>MP<\/th>.*?<\/tr>/gs, "")
-    .replaceAll(/<tr><th>MR<\/th>.*?<\/tr>/gs, "")
-    .replaceAll(
-        "Total par créneau",
-        "Total locaux par créneau"
-    );
+    resultat.innerHTML = tableauExamens + tableauLocaux;
 
-    resultat.innerHTML = tableauExamens + tableauLocauxCorrige;
 
     if (etat) {
         etat.textContent =
