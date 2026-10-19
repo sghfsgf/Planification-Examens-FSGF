@@ -1025,26 +1025,45 @@ const titreCalendrier =
 if (titreCalendrier) {
 
    
-    feuille.A1 = {
-        t: "s",
-        v: titreCalendrier.textContent
-    .replace(/\s+/g, " ")
-    .trim(),
-        
-        s: {
-            font: {
-                name: "Arial",
-                sz: 18,
-                bold: true
+  
+feuille.A1 = {
+    t: "s",
+    v: titreCalendrier.textContent
+        .replace(/\s+/g, " ")
+        .trim(),
+    s: {
+        font: {
+            name: "Times New Roman",
+            sz: 16,
+            bold: true
+        },
+        alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: false,
+            shrinkToFit: true
+        },
+        border: {
+            top: {
+                style: "thin",
+                color: { rgb: "000000" }
             },
-            alignment: {
-                horizontal: "center",
-                vertical: "center",
-                wrapText: false,
-                shrinkToFit: true
+            bottom: {
+                style: "thin",
+                color: { rgb: "000000" }
+            },
+            left: {
+                style: "thin",
+                color: { rgb: "000000" }
+            },
+            right: {
+                style: "thin",
+                color: { rgb: "000000" }
             }
         }
-    };
+    }
+};
+
 
     // Fusionner le titre sur toute la largeur du calendrier
     const plageCalendrier =
