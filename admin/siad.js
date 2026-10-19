@@ -248,7 +248,6 @@ function initialiserInterfaceSIAD() {
     </select>
 </label>
 
-    </label>
 </div>
 
 
@@ -262,7 +261,7 @@ function initialiserInterfaceSIAD() {
     const style = document.createElement("style");
 
     style.textContent = `
-        .siad-entete {
+              .siad-entete {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -273,43 +272,74 @@ function initialiserInterfaceSIAD() {
 
         .siad-entete h3 {
             margin: 0 0 6px;
+            font-size: 20px;
         }
 
         .siad-entete p {
             margin: 0;
             color: #64748b;
+            line-height: 1.5;
         }
 
+        /* Filtres */
         .siad-filtres {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
             gap: 16px;
-            margin-bottom: 16px;
+            margin: 20px 0;
+            align-items: end;
         }
 
         .siad-filtres label {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            min-width: 0;
             font-weight: 600;
+            color: #1e293b;
         }
 
-     .siad-filtres select,
-.siad-filtres input,
-#actualiserSIAD {
-       
+        .siad-filtres select,
+        .siad-filtres input {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: white;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        /* Boutons */
+        .siad-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .siad-actions button {
             padding: 9px 12px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             background: white;
             color: #1e293b;
-        }
-
-        #actualiserSIAD {
             cursor: pointer;
             font-weight: 600;
         }
 
+        .siad-actions button:hover {
+            background: #f1f5f9;
+        }
+
+        .siad-actions button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        /* Tableaux */
         .siad-table-wrapper {
             overflow-x: auto;
             margin: 18px 0 28px;
@@ -364,25 +394,15 @@ function initialiserInterfaceSIAD() {
         .siad-message {
             padding: 12px;
             border-radius: 6px;
-            background: #f1f5f9;          
+            background: #f1f5f9;
         }
 
-
-        .siad-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.siad-actions button {
-    padding: 9px 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    background: white;
-    color: #1e293b;
-    cursor: pointer;
-    font-weight: 600;
-}
+        /* Adaptation aux petits écrans */
+        @media (max-width: 600px) {
+            .siad-filtres {
+                grid-template-columns: 1fr;
+            }
+        }
 
 
 
