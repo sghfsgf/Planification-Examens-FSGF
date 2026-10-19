@@ -1200,20 +1200,29 @@ if (titreCalendrier) {
                         }
 
                         // Matières : conserver 11 pt et le fond bleu
-                        if (estMatiere) {
+                       
+                if (estMatiere) {
+                 
+                feuille[adresse].s.font = {
+                name: "Arial",
+                   sz: 11,
+                bold: false
+                     };
 
-                            feuille[adresse].s.font = {
-                                name: "Arial",
-                                sz: 11,
-                                bold: false
-                            };
+    feuille[adresse].s.fill = {
+        fgColor: {
+            rgb: "99CCFF"
+        }
+    };
 
-                            feuille[adresse].s.fill = {
-                                fgColor: {
-                                    rgb: "99CCFF"
-                                }
-                            };
-                        }
+    feuille[adresse].s.alignment = {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: false,
+        textRotation: 90
+    };
+}
+
                     }
                 }
 
