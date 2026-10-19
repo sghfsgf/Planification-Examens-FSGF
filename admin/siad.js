@@ -313,6 +313,21 @@ async function chargerSIAD() {
 
     try {
         const resultat = await getDocs(collection(db, "calendriers"));
+        // DIAGNOSTIC TEMPORAIRE SIAD
+console.log(
+    "Premier document calendrier :",
+    resultat.docs[0]?.id
+);
+
+console.log(
+    "Données du calendrier :",
+    resultat.docs[0]?.data()
+);
+
+console.log(
+    "Champs disponibles :",
+    Object.keys(resultat.docs[0]?.data() ?? {})
+);
 
         calendriersPubliesSIAD = resultat.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
