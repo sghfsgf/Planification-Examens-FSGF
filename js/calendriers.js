@@ -1024,6 +1024,7 @@ const titreCalendrier =
 
 if (titreCalendrier) {
 
+   
     feuille.A1 = {
         t: "s",
         v: titreCalendrier.textContent.trim(),
@@ -1036,11 +1037,13 @@ if (titreCalendrier) {
             alignment: {
                 horizontal: "center",
                 vertical: "center",
-                wrapText: false
+                wrapText: false,
+                shrinkToFit: true
             }
         }
     };
 
+    // Fusionner le titre sur toute la largeur du calendrier
     const plageCalendrier =
         XLSX.utils.decode_range(feuille["!ref"]);
 
@@ -1054,6 +1057,7 @@ if (titreCalendrier) {
         }
     });
 
+    // Hauteur de la ligne du titre
     feuille["!rows"] = feuille["!rows"] || [];
     feuille["!rows"][0] = { hpt: 30 };
 }
