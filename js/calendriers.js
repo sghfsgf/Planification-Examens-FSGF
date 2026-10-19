@@ -1097,12 +1097,12 @@ feuille.A1 = {
                     );
 
               // Nombre de lignes avant et dans l'en-tête du tableau Excel
-               const nombreLignesEntete =
-                 3 + (
-                   tableauExcel.tHead
-                          ? tableauExcel.tHead.rows.length
-                             : 0
-                            );
+              const nombreLignesEntete =
+    3 + (
+        tableauExcel.tHead
+            ? tableauExcel.tHead.rows.length
+            : 0
+    );
                 // Matières présentes dans le calendrier
                 const matieresCalendrier =
                     new Set(
@@ -1310,7 +1310,9 @@ feuille.A1 = {
                 workbook,
                 nomFichier
             );
-
+console.log("Style du titre A1 :", feuille.A1?.s);
+console.log("Valeur du titre A1 :", feuille.A1?.v);
+console.log("Plage Excel :", feuille["!ref"]);
             console.log(
                 "✓ Calendrier exporté en Excel :",
                 nomFichier
