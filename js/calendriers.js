@@ -1306,6 +1306,21 @@ feuille.A1 = {
             // Export
             // -------------------------------------------------
 
+            console.log(
+    "STYLE A1 :",
+    JSON.stringify(feuille.A1.s, null, 2)
+);
+
+console.log(
+    "FUSIONS :",
+    JSON.stringify(feuille["!merges"], null, 2)
+);
+
+XLSX.writeFile(
+    workbook,
+    nomFichier
+);
+            
             XLSX.writeFile(
                 workbook,
                 nomFichier
