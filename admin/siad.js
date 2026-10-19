@@ -403,6 +403,95 @@ function initialiserInterfaceSIAD() {
         }
 
 
+/* ===== Apparence SIAD à l'écran ===== */
+#zoneSIAD {
+    background: #F4F7FB;
+    color: #243447;
+    padding: 18px;
+    border-radius: 10px;
+}
+
+.siad-entete h3 {
+    color: #163A5F;
+}
+
+.siad-entete p {
+    color: #64748B;
+}
+
+/* Boutons */
+.siad-actions button {
+    border: 1px solid #CBD5E1;
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#actualiserSIAD {
+    background: #16805D;
+    color: white;
+    border-color: #16805D;
+}
+
+#actualiserSIAD:hover {
+    background: #116747;
+}
+
+#imprimerSIAD {
+    background: #163A5F;
+    color: white;
+    border-color: #163A5F;
+}
+
+#imprimerSIAD:hover {
+    background: #102C49;
+}
+
+#exportPDFSIAD {
+    background: #D97706;
+    color: white;
+    border-color: #D97706;
+}
+
+#exportPDFSIAD:hover {
+    background: #B45309;
+}
+
+/* Filtres */
+.siad-filtres select,
+.siad-filtres input {
+    border-color: #C5D2E0;
+    border-radius: 7px;
+    background: #FFFFFF;
+}
+
+/* Tableaux */
+.siad-table-wrapper {
+    border-color: #D5DFEA;
+    border-radius: 8px;
+}
+
+.siad-table thead th {
+    background: #DCEAF7;
+    color: #163A5F;
+}
+
+.siad-table tbody th {
+    background: #F0F5FA;
+}
+
+.siad-table tbody tr:nth-child(even) td {
+    background: #F7FAFD;
+}
+
+.siad-table .siad-total,
+.siad-table .siad-ligne-total th,
+.siad-table .siad-ligne-total td {
+    background: #DDEFE6;
+    color: #174D3B;
+}
+
 
 
 @page {
