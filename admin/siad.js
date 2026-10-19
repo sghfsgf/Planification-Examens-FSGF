@@ -404,12 +404,41 @@ function initialiserInterfaceSIAD() {
         print-color-adjust: exact;
     }
 
-    #actualiserSIAD,
-    #imprimerSIAD,
-    #exportPDFSIAD,
-    .siad-filtres {
-        display: none !important;
-    }
+  /* Masquer uniquement les boutons */
+#actualiserSIAD,
+#imprimerSIAD,
+#exportPDFSIAD {
+    display: none !important;
+}
+
+/* Conserver les filtres pour afficher l'année et la session */
+.siad-filtres {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin: 4px 0 !important;
+}
+
+/* Masquer les listes déroulantes, mais conserver leurs valeurs */
+.siad-filtres select,
+.siad-filtres input {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    color: black !important;
+    font-size: 8px !important;
+    padding: 0 !important;
+}
+
+/* Conserver le titre et le sous-titre */
+.siad-entete h3 {
+    display: block !important;
+}
+
+.siad-entete p {
+    display: block !important;
+}
 
     .siad-entete {
         margin-bottom: 5px !important;
