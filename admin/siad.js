@@ -196,9 +196,19 @@ function initialiserInterfaceSIAD() {
                 </p>
             </div>
 
-            <button id="actualiserSIAD" type="button">
-                ↻ Actualiser
-            </button>
+            <div class="siad-actions">
+    <button id="actualiserSIAD" type="button">
+        ↻ Actualiser
+    </button>
+
+    <button id="imprimerSIAD" type="button">
+        🖨️ Imprimer
+    </button>
+
+    <button id="exportPDFSIAD" type="button">
+        📄 Export PDF
+    </button>
+</div>
         </div>
 
        
@@ -354,14 +364,71 @@ function initialiserInterfaceSIAD() {
         .siad-message {
             padding: 12px;
             border-radius: 6px;
-            background: #f1f5f9;
+            background: #f1f5f9;          
         }
+
+
+        .siad-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.siad-actions button {
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+
+@media print {
+    #actualiserSIAD,
+    #imprimerSIAD,
+    #exportPDFSIAD {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    .siad-table-wrapper {
+        overflow: visible !important;
+        border: none !important;
+    }
+
+    .siad-table {
+        min-width: 0 !important;
+        width: 100% !important;
+        font-size: 10px;
+    }
+
+    .siad-table th,
+    .siad-table td {
+        padding: 4px;
+        white-space: normal;
+    }
+}
     `;
 
     document.head.appendChild(style);
 
     document.getElementById("actualiserSIAD")
         .addEventListener("click", chargerSIAD);
+
+    document.getElementById("imprimerSIAD")
+    .addEventListener("click", () => {
+        window.print();
+    });
+
+    document.getElementById("exportPDFSIAD")
+    .addEventListener("click", () => {
+        window.print();
+    });
 
     document.getElementById("anneeSIAD")
         .addEventListener("change", afficherSIAD);
