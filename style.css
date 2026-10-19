@@ -1371,15 +1371,29 @@ button,
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 }
-
-    /* Cellules vides */
+/* Cellules vides */
 #tableauCalendrier tbody td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
     background: #ffffff !important;
     color: #000000 !important;
 }
-    /* Éviter de couper une ligne */
-    #tableauCalendrier tr {
-        page-break-inside: avoid;
-        break-inside: avoid;
-    }
+
+/* Éviter de couper une ligne */
+#tableauCalendrier tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+/* Réduire les en-têtes et les noms des filières à l'impression */
+#tableauCalendrier thead th {
+    font-size: 7pt !important;
+    line-height: 1 !important;
+    padding: 2px !important;
+}
+
+#tableauCalendrier th:first-child,
+#tableauCalendrier td:first-child {
+    font-size: 7pt !important;
+    line-height: 1 !important;
+    padding: 2px !important;
+}
 }
