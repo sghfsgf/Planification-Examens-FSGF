@@ -1027,7 +1027,10 @@ if (titreCalendrier) {
    
     feuille.A1 = {
         t: "s",
-        v: titreCalendrier.textContent.trim(),
+        v: titreCalendrier.textContent
+    .replace(/\s+/g, " ")
+    .trim(),
+        
         s: {
             font: {
                 name: "Arial",
