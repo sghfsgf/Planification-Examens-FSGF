@@ -1014,140 +1014,171 @@ if (btnExportExcel) {
                     }
                 );
 
-            // -------------------------------------------------
-            // Style général des cellules
-            // -------------------------------------------------
-
-           if (feuille["!ref"]) {
-
-    const plage =
-        XLSX.utils.decode_range(
-            feuille["!ref"]
-        );
-
-    // -------------------------------------------------
-    // Récupération des matières présentes dans le tableau
-    // -------------------------------------------------
-
-    const matieresCalendrier =
-        new Set(
-            Array.from(
-                tableauExcel.querySelectorAll(
-                    ".cellule-examen"
-                )
-            ).map(function (cellule) {
-                return cellule.textContent.trim();
-            })
-        );
-
-    for (
-        let ligne = plage.s.r;
-        ligne <= plage.e.r;
-        ligne++
-    ) {
-
-        for (
-            let colonne = plage.s.c;
-            colonne <= plage.e.c;
-            colonne++
-        ) {
-
-            const adresse =
-                XLSX.utils.encode_cell({
-                    r: ligne,
-                    c: colonne
-                });
-
-            if (!feuille[adresse]) {
-                continue;
-            }
 
             // -------------------------------------------------
-            // Style général
+            // Style des cellules pour reproduire l'impression
             // -------------------------------------------------
 
-            feuille[adresse].s = {
+            if (feuille["!ref"]) {
 
-                font: {
-                    name: "Arial",
-                    sz: 11
-                },
+                const plage =
+                    XLSX.utils.decode_range(
+                        feuille["!ref"]
+                    );
 
-                alignment: {
-                    horizontal: "center",
-                    vertical: "center",
-                    wrapText: true
-                },
+                // Nombre de lignes d'en-tête du tableau HTML
+                const nombreLignesEntete =
+                    tableauExcel.tHead
+                        ? tableauExcel.tHead.rows.length
+                        : 0;
 
-                border: {
-                    top: {
-                        style: "thin",
-                        color: {
-                            rgb: "000000"
+                // Matières présentes dans le calendrier
+                const matieresCalendrier =
+                    new Set(
+                        Array.from(
+                            tableauExcel.querySelectorAll(
+                                ".cellule-examen"
+                            )
+                        ).map(function (cellule) {
+                            return cellule.textContent.trim();
+                        })
+                    );
+
+                for (
+                    let ligne = plage.s.r;
+                    ligne <= plage.e.r;
+                    ligne++
+                ) {
+
+                    for (
+                        let colonne = plage.s.c;
+                        colonne <= plage.e.c;
+                        colonne++
+                    ) {
+
+                        const adresse =
+                            XLSX.utils.encode_cell({
+                                r: ligne,
+                                c: colonne
+                            });
+
+                        if (!feuille[adresse]) {
+                            continue;
                         }
-                    },
 
-                    bottom: {
-                        style: "thin",
-                        color: {
-                            rgb: "000000"
+                        const valeurCellule =
+                            feuille[adresse].v != null
+                                ? String(
+                                    feuille[adresse].v
+                                ).trim()
+                                : "";
+
+                        const estEntete =
+                            ligne < nombreLignesEntete;
+
+                        const estFiliere =
+                            colonne === 0 &&
+                            ligne >= nombreLignesEntete;
+
+                        const estAmphi =
+                            colonne === 1 &&
+                            ligne >= nombreLignesEntete;
+
+                        const estMatiere =
+                            valeurCellule !== "" &&
+                            matieresCalendrier.has(
+                                valeurCellule
+                            );
+
+                        // Taille de police selon le type de cellule
+                        let taillePolice = 11;
+
+                        if (estEntete || estFiliere) {
+                            taillePolice = 7;
+                        } else if (estAmphi) {
+                            taillePolice = 9;
                         }
-                    },
 
-                    left: {
-                        style: "thin",
-                        color: {
-                            rgb: "000000"
+                        feuille[adresse].s = {
+
+                            font: {
+                                name: "Arial",
+                                sz: taillePolice,
+                                bold:
+                                    estEntete ||
+                                    estFiliere ||
+                                    estAmphi
+                            },
+
+                            alignment: {
+                                horizontal: "center",
+                                vertical: "center",
+                                wrapText: true
+                            },
+
+                            border: {
+                                top: {
+                                    style: "thin",
+                                    color: { rgb: "000000" }
+                                },
+                                bottom: {
+                                    style: "thin",
+                                    color: { rgb: "000000" }
+                                },
+                                left: {
+                                    style: "thin",
+                                    color: { rgb: "000000" }
+                                },
+                                right: {
+                                    style: "thin",
+                                    color: { rgb: "000000" }
+                                }
+                            }
+                        };
+
+                        // Fond des en-têtes et des deux premières colonnes
+                        if (
+                            ligne === 0 ||
+                            colonne === 0 ||
+                            colonne === 1
+                        ) {
+
+                            feuille[adresse].s.fill = {
+                                fgColor: {
+                                    rgb: "FCE4D6"
+                                }
+                            };
                         }
-                    },
 
-                    right: {
-                        style: "thin",
-                        color: {
-                            rgb: "000000"
+                        // Matières : conserver 11 pt et le fond bleu
+                        if (estMatiere) {
+
+                            feuille[adresse].s.font = {
+                                name: "Arial",
+                                sz: 11,
+                                bold: false
+                            };
+
+                            feuille[adresse].s.fill = {
+                                fgColor: {
+                                    rgb: "99CCFF"
+                                }
+                            };
                         }
                     }
                 }
 
-            };
-
-            // -------------------------------------------------
-            // Couleur uniquement pour les cellules de matières
-            // -------------------------------------------------
-
-            const valeurCellule =
-                feuille[adresse].v
-                    ? String(
-                        feuille[adresse].v
-                    ).trim()
-                    : "";
-
-            if (
-                valeurCellule !== "" &&
-                matieresCalendrier.has(
-                    valeurCellule
-                )
-            ) {
-
-                feuille[adresse].s.font = {
-                    name: "Arial",
-                    sz: 14,
-                    bold: true
+                // Mise en page : A3 paysage
+                feuille["!pageSetup"] = {
+                    paperSize: 8,
+                    orientation: "landscape",
+                    fitToWidth: 1,
+                    fitToHeight: 0
                 };
 
-                feuille[adresse].s.fill = {
-                    fgColor: {
-                        rgb: "99CCFF"
-                    }
-                };
-
+                feuille["!fitToPage"] = true;
             }
 
-        }
-
-    }
-
-}
 
             // -------------------------------------------------
             // Ajout de la feuille au classeur
