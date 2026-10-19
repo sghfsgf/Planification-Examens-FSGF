@@ -386,11 +386,10 @@ function initialiserInterfaceSIAD() {
 
 
 
-@media print {
-    @page {
-        size: A4 landscape;
-        margin: 7mm;
-    }
+@page {
+    size: A3 landscape;
+    margin: 8mm;
+}
 
     html,
     body {
@@ -470,22 +469,23 @@ function initialiserInterfaceSIAD() {
         border-radius: 0 !important;
     }
 
-    .siad-table {
-        width: 100% !important;
-        min-width: 0 !important;
-        table-layout: auto !important;
-        border-collapse: collapse !important;
-        font-size: 7px !important;
-    }
+  .siad-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: 9px !important;
+}
 
-    .siad-table th,
-    .siad-table td {
-        font-size: 7px !important;
-        padding: 2px 3px !important;
-        white-space: normal !important;
-        overflow-wrap: anywhere;
-        border: 1px solid #999 !important;
-    }
+.siad-table th,
+.siad-table td {
+    font-size: 9px !important;
+    padding: 4px 5px !important;
+    white-space: normal !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    border: 1px solid #999 !important;
+}
 
     .siad-table thead th {
         background: #eaf1f8 !important;
@@ -503,9 +503,8 @@ function initialiserInterfaceSIAD() {
     }
 
     .siad-table small {
-        font-size: 6px !important;
-    }
-
+    font-size: 8px !important;
+}
     .siad-table tr {
         break-inside: avoid;
         page-break-inside: avoid;
