@@ -1010,12 +1010,13 @@ if (btnExportExcel) {
         tableauExcel,
         {
             raw: true,
-            origin: "A2"
+            origin: "A4"
         }
     );
 
+
 // -------------------------------------------------
-// Titre du calendrier au-dessus du tableau
+// Titre du calendrier sur une seule ligne
 // -------------------------------------------------
 
 const titreCalendrier =
@@ -1029,31 +1030,28 @@ if (titreCalendrier) {
         s: {
             font: {
                 name: "Arial",
-                sz: 16,
+                sz: 18,
                 bold: true
             },
             alignment: {
                 horizontal: "center",
                 vertical: "center",
-                wrapText: true
-            },
-            border: {
-                bottom: {
-                    style: "thin",
-                    color: { rgb: "000000" }
-                }
+                wrapText: false
             }
         }
     };
 
-    const plageTitre =
+    const plageCalendrier =
         XLSX.utils.decode_range(feuille["!ref"]);
 
     feuille["!merges"] = feuille["!merges"] || [];
 
     feuille["!merges"].push({
         s: { r: 0, c: 0 },
-        e: { r: 0, c: plageTitre.e.c }
+        e: {
+            r: 0,
+            c: plageCalendrier.e.c
+        }
     });
 
     feuille["!rows"] = feuille["!rows"] || [];
@@ -1072,14 +1070,13 @@ if (titreCalendrier) {
                         feuille["!ref"]
                     );
 
-                // Nombre de lignes d'en-tête du tableau HTML
-                  const nombreLignesEntete =
-                          1 + (
-                     tableauExcel.tHead
-                      ? tableauExcel.tHead.rows.length
-                        : 0
-                        );
-
+              // Nombre de lignes avant et dans l'en-tête du tableau Excel
+               const nombreLignesEntete =
+                 3 + (
+                   tableauExcel.tHead
+                          ? tableauExcel.tHead.rows.length
+                             : 0
+                            );
                 // Matières présentes dans le calendrier
                 const matieresCalendrier =
                     new Set(
