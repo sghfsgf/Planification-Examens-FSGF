@@ -1324,11 +1324,7 @@ XLSX.writeFile(
     workbook,
     nomFichier
 );
-            
-            XLSX.writeFile(
-                workbook,
-                nomFichier
-            );
+           
 console.log("Style du titre A1 :", feuille.A1?.s);
 console.log("Valeur du titre A1 :", feuille.A1?.v);
 console.log("Plage Excel :", feuille["!ref"]);
