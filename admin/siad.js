@@ -493,6 +493,44 @@ function initialiserInterfaceSIAD() {
 }
 
 
+/* ===== Fond professionnel de la page SIAD ===== */
+#zoneSIAD {
+    background: #F1F5F9;
+    color: #243447;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* Titres */
+.siad-entete h3 {
+    color: #163A5F;
+}
+
+/* Filtres sur fond blanc */
+.siad-filtres select,
+.siad-filtres input {
+    background: #FFFFFF;
+}
+
+/* Tableaux sur fond blanc */
+.siad-table-wrapper {
+    background: #FFFFFF;
+    border: 1px solid #D5DFEA;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(22, 58, 95, 0.05);
+}
+
+/* En-têtes des tableaux */
+.siad-table thead th {
+    background: #E3EDF7;
+    color: #163A5F;
+}
+
+/* Lignes alternées */
+.siad-table tbody tr:nth-child(even) td {
+    background: #F7FAFD;
+}
+
 
 @page {
     size: A3 landscape;
