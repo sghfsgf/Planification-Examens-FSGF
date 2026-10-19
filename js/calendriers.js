@@ -1133,8 +1133,12 @@ feuille.A1 = {
                                 c: colonne
                             });
 
-                       if (!feuille[adresse]) {
-    continue;
+                       // Créer les cellules vides pour leur appliquer les bordures
+if (!feuille[adresse]) {
+    feuille[adresse] = {
+        t: "s",
+        v: ""
+    };
 }
 
 // Préserver le style spécifique du titre en A1
