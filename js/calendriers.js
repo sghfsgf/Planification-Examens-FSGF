@@ -1262,10 +1262,8 @@ if (!feuille[adresse]) {
         textRotation: 90
     };
 }
-
-                    }
-                }
-
+                    
+               
                 // Mise en page : A3 paysage
                 feuille["!pageSetup"] = {
                     paperSize: 8,
