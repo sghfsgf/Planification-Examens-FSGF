@@ -7,11 +7,7 @@ import { app } from "../firebase-config.js";
 import {
     getFirestore,
     getDocs,
-    collection,
-    doc,
-    setDoc,
-    serverTimestamp,
-    writeBatch
+    collection
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 
@@ -23,16 +19,6 @@ const db =
     getFirestore(app);
 
 
-// =================================================
-// PARAMÈTRE D'AFFECTATION
-// =================================================
-
-// Taux minimum d'occupation : 83 %
-const TAUX_OCCUPATION_MINIMUM = 0.83;
-// Seuil minimal autorisé pour une affectation valide
-const TAUX_OCCUPATION_ACCEPTABLE = 0.66;
-
-
 console.log(
     "✓ affectation-salles.js chargé."
 );
@@ -40,8 +26,6 @@ console.log(
 console.log(
     "✓ Firestore initialisé pour l'affectation des salles."
 );
-
-
 // =================================================
 // LECTURE DES SALLES / AMPHIS DEPUIS FIRESTORE
 // =================================================
@@ -100,8 +84,6 @@ chargerSallesAmphisFirestore()
 
         }
     );
-
-
 // =================================================
 // TEST DES DONNÉES DU MOTEUR
 // =================================================
@@ -156,74 +138,74 @@ function testerDonneesAffectation() {
     );
 
     console.log(
-        "=========================================="
-    );
+    "=========================================="
+);
 
-    console.log(
-        "DÉTAIL DES SALLES / AMPHIS"
-    );
+console.log(
+    "DÉTAIL DES SALLES / AMPHIS"
+);
 
-    console.table(
-        donnees.sallesAmphis
-    );
+console.table(
+    donnees.sallesAmphis
+);
 
-    console.log(
-        "=========================================="
-    );
+console.log(
+    "=========================================="
+);
 
-    console.log(
-        "DÉTAIL DES EFFECTIFS"
-    );
+console.log(
+    "DÉTAIL DES EFFECTIFS"
+);
 
-    console.table(
-        donnees.effectifs
-    );
+console.table(
+    donnees.effectifs
+);
 
-    console.log(
-        "Effectifs détaillés :"
-    );
+console.log(
+    "Effectifs détaillés :"
+);
 
-    donnees.effectifs.forEach(
-        function (effectif) {
+donnees.effectifs.forEach(
+    function (effectif) {
 
-            console.log(
-                effectif.anneeUniversitaire,
-                "|",
-                effectif.niveauCode,
-                "|",
-                effectif.filiereCode,
-                "| Effectif =",
-                effectif.effectif
-            );
+        console.log(
+            effectif.anneeUniversitaire,
+            "|",
+            effectif.niveauCode,
+            "|",
+            effectif.filiereCode,
+            "| Effectif =",
+            effectif.effectif
+        );
 
-        }
-    );
+    }
+);
 
-    console.log(
-        "Salles / amphis détaillés :"
-    );
+console.log(
+    "Salles / amphis détaillés :"
+);
 
-    donnees.sallesAmphis.forEach(
-        function (salle) {
+donnees.sallesAmphis.forEach(
+    function (salle) {
 
-            console.log(
-                salle.code,
-                "|",
-                salle.type,
-                "|",
-                salle.libelle,
-                "| Capacité =",
-                salle.capacite,
-                "| Disponible =",
-                salle.disponible
-            );
+        console.log(
+            salle.code,
+            "|",
+            salle.type,
+            "|",
+            salle.libelle,
+            "| Capacité =",
+            salle.capacite,
+            "| Disponible =",
+            salle.disponible
+        );
 
-        }
-    );
-
-    console.log(
-        "=========================================="
-    );
+    }
+);
+    
+console.log(
+    "=========================================="
+);
 }
 
 
@@ -235,12 +217,9 @@ setTimeout(
     testerDonneesAffectation,
     1000
 );
-
-
 // =================================================
 // RECHERCHER DES LOCAUX POUR UNE FILIÈRE
 // =================================================
-
 
 function trouverLocauxPourFiliere(
     filiereCode,
@@ -249,47 +228,164 @@ function trouverLocauxPourFiliere(
 ) {
 
     // -------------------------------------------------
-    // 1. Vérifier les données
+    // Vérifier les données
     // -------------------------------------------------
 
     if (
-        !Number.isFinite(Number(effectif)) ||
-        Number(effectif) <= 0 ||
-        !Array.isArray(sallesAmphis) ||
+        !effectif ||
+        !sallesAmphis ||
         sallesAmphis.length === 0
     ) {
 
         return {
             succes: false,
             locaux: [],
-            capaciteTotale: 0,
-            effectif: Number(effectif) || 0,
-            tauxOccupation: 0,
-            message: "Données insuffisantes ou effectif invalide."
+            message: "Aucun local disponible."
         };
 
     }
 
     // -------------------------------------------------
-    // 2. Utiliser l'algorithme central
+    // Garder uniquement les locaux disponibles
     // -------------------------------------------------
 
-    return rechercherMeilleureCombinaisonLocaux(
-        filiereCode,
-        Number(effectif),
-        sallesAmphis
-    );
+    const locauxDisponibles =
+        sallesAmphis.filter(
+            function (salle) {
+
+                return (
+                    salle.disponible === "Oui" &&
+                    Number(salle.capacite) > 0
+                );
+
+            }
+        );
+
+    // -------------------------------------------------
+    // 1. Chercher un seul local suffisamment grand
+    // -------------------------------------------------
+
+    const localUnique =
+        locauxDisponibles
+            .filter(
+                function (salle) {
+
+                    return (
+                        Number(salle.capacite) >=
+                        Number(effectif)
+                    );
+
+                }
+            )
+            .sort(
+                function (a, b) {
+
+                    return (
+                        Number(a.capacite) -
+                        Number(b.capacite)
+                    );
+
+                }
+            )[0];
+
+    if (localUnique) {
+
+        return {
+            succes: true,
+            locaux: [
+                localUnique.code
+            ],
+            capaciteTotale:
+                Number(localUnique.capacite),
+            effectif:
+                Number(effectif),
+            message:
+                "Un seul local suffit."
+        };
+
+    }
+
+    // -------------------------------------------------
+    // 2. Chercher plusieurs locaux
+    // -------------------------------------------------
+
+    const locauxTries =
+        locauxDisponibles
+            .slice()
+            .sort(
+                function (a, b) {
+
+                    return (
+                        Number(b.capacite) -
+                        Number(a.capacite)
+                    );
+
+                }
+            );
+
+    const locauxChoisis = [];
+
+    let capaciteTotale = 0;
+
+    for (
+        let i = 0;
+        i < locauxTries.length;
+        i++
+    ) {
+
+        const salle =
+            locauxTries[i];
+
+        locauxChoisis.push(
+            salle.code
+        );
+
+        capaciteTotale +=
+            Number(salle.capacite);
+
+        if (
+            capaciteTotale >=
+            Number(effectif)
+        ) {
+
+            return {
+                succes: true,
+                locaux:
+                    locauxChoisis,
+                capaciteTotale:
+                    capaciteTotale,
+                effectif:
+                    Number(effectif),
+                message:
+                    "Plusieurs locaux sont nécessaires."
+            };
+
+        }
+
+    }
+
+    // -------------------------------------------------
+    // 3. Aucun ensemble de locaux suffisant
+    // -------------------------------------------------
+
+    return {
+        succes: false,
+        locaux: [],
+        capaciteTotale:
+            capaciteTotale,
+        effectif:
+            Number(effectif),
+        message:
+            "Affectation impossible."
+    };
 
 }
-
 // =================================================
 // EXPOSER LA FONCTION POUR LES TESTS F12
 // =================================================
 
 window.trouverLocauxPourFiliere =
     trouverLocauxPourFiliere;
-
-
 // =================================================
 // VÉRIFIER SI UN LOCAL EST DÉJÀ UTILISÉ
 // À UNE DATE ET UN CRÉNEAU
@@ -347,8 +443,6 @@ function localEstDisponiblePourCreneau(
 
 window.localEstDisponiblePourCreneau =
     localEstDisponiblePourCreneau;
-
-
 // =================================================
 // PRÉPARER LES AFFECTATIONS FIXES PAR FILIÈRE
 // =================================================
@@ -411,11 +505,8 @@ function preparerAffectationsFilieres(
                     {
                         filiereCode:
                             filiere.filiereCode,
-
                         succes: false,
-
                         locaux: [],
-
                         message:
                             "Effectif introuvable."
                     }
@@ -436,34 +527,31 @@ function preparerAffectationsFilieres(
                     sallesAmphis
                 );
 
-           
- // -------------------------------------------------
- // Mémoriser l'affectation
- // -------------------------------------------------
+            // -------------------------------------------------
+            // Mémoriser l'affectation
+            // -------------------------------------------------
 
- affectations.push({
-     filiereCode:
-         filiere.filiereCode,
+            affectations.push(
+                {
+                    filiereCode:
+                        filiere.filiereCode,
 
-     effectif:
-         Number(ligneEffectif.effectif),
+                    effectif:
+                        Number(ligneEffectif.effectif),
 
-     succes:
-         resultat.succes,
+                    succes:
+                        resultat.succes,
 
-     locaux:
-         resultat.locaux,
+                    locaux:
+                        resultat.locaux,
 
-     capaciteTotale:
-         resultat.capaciteTotale,
+                    capaciteTotale:
+                        resultat.capaciteTotale,
 
-     message:
-         resultat.message,
-
-     // Identifier le groupe d'affectation
-     groupe:
-         resultat.groupe || filiere.filiereCode
- });
+                    message:
+                        resultat.message
+                }
+            );
 
         }
     );
@@ -499,7 +587,6 @@ function preparerAffectationsFilieres(
 
 window.preparerAffectationsFilieres =
     preparerAffectationsFilieres;
-
 
 // =================================================
 // CONSTRUIRE LA MATRICE DES CONFLITS ENTRE FILIÈRES
@@ -548,20 +635,23 @@ function construireConflitsFilieres(planning) {
             // Examens occupés de chaque filière
             // -------------------------------------------------
 
-           
-const examensA =
-    (filiereA.cellules || []).filter(
-        function (cellule) {
-            return cellule.estOccupee && cellule.date;
-        }
-    );
+            const examensA =
+                filiereA.cellules.filter(
+                    function (cellule) {
 
-const examensB =
-    (filiereB.cellules || []).filter(
-        function (cellule) {
-            return cellule.estOccupee && cellule.date;
-        }
-    );
+                        return cellule.estOccupee;
+
+                    }
+                );
+
+            const examensB =
+                filiereB.cellules.filter(
+                    function (cellule) {
+
+                        return cellule.estOccupee;
+
+                    }
+                );
 
             let conflitTrouve = false;
 
@@ -581,38 +671,20 @@ const examensB =
                     b++
                 ) {
 
-                  const dateA =
-    examensA[a].dateAffichage ||
-    (
-        typeof examensA[a].date?.seconds === "number"
-            ? new Date(
-                examensA[a].date.seconds * 1000
-            ).toLocaleDateString("fr-FR", {
-                timeZone: "Africa/Tunis"
-            })
-            : null
-    );
+                    if (
+    examensA[a].date &&
+    examensB[b].date &&
 
-const dateB =
-    examensB[b].dateAffichage ||
-    (
-        typeof examensB[b].date?.seconds === "number"
-            ? new Date(
-                examensB[b].date.seconds * 1000
-            ).toLocaleDateString("fr-FR", {
-                timeZone: "Africa/Tunis"
-            })
-            : null
-    );
+    examensA[a].date.seconds ===
+        examensB[b].date.seconds &&
 
-if (
-    dateA &&
-    dateB &&
-    dateA === dateB &&
-    Number(examensA[a].creneauOrdre) ===
-        Number(examensB[b].creneauOrdre)
+    Number(
+        examensA[a].creneauOrdre
+    ) ===
+    Number(
+        examensB[b].creneauOrdre
+    )
 ) {
-
                         conflitTrouve = true;
 
                         break;
@@ -662,7 +734,6 @@ if (
 
 window.construireConflitsFilieres =
     construireConflitsFilieres;
-
 
 // =================================================
 // CONSTRUIRE LA LISTE DES CONFLITS PAR FILIÈRE
@@ -716,12 +787,10 @@ function construireCarteConflits(
 
 }
 
-
 window.construireCarteConflits =
     construireCarteConflits;
 
-
-// =================================================
+ // =================================================
 // VÉRIFIER SI UN LOCAL EST COMPATIBLE
 // AVEC LES CONFLITS D'UNE FILIÈRE
 // =================================================
@@ -784,82 +853,262 @@ function localCompatibleAvecConflits(
 
 }
 
-
 window.localCompatibleAvecConflits =
     localCompatibleAvecConflits;
 
-
 // =================================================
-// RECHERCHER LA MEILLEURE COMBINAISON DE LOCAUX
+// AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
 // =================================================
 
+function affecterLocauxFixes(
+    planning,
+    sallesAmphis,
+    effectifs
+) {
 
-// =================================================
+    const resultats = [];
+
+    if (
+        !planning ||
+        !planning.filieres ||
+        !sallesAmphis ||
+        !effectifs
+    ) {
+
+        return {
+            succes: false,
+            affectations: [],
+            message: "Données insuffisantes."
+        };
+
+    }
+
+    const conflits =
+        construireConflitsFilieres(
+            planning
+        );
+
+    const carteConflits =
+        construireCarteConflits(
+            conflits
+        );
+
+    // -------------------------------------------------
+    // Parcourir les filières
+    // -------------------------------------------------
+
+    planning.filieres.forEach(
+        function (filiere) {
+
+            const ligneEffectif =
+                effectifs.find(
+                    function (ligne) {
+
+                        return (
+                            ligne.niveauCode ===
+                                planning.niveauCode &&
+                            ligne.filiereCode ===
+                                filiere.filiereCode
+                        );
+
+                    }
+                );
+
+            if (!ligneEffectif) {
+
+                resultats.push(
+                    {
+                        filiereCode:
+                            filiere.filiereCode,
+
+                        succes: false,
+
+                        locaux: [],
+
+                        message:
+                            "Effectif introuvable."
+                    }
+                );
+
+                return;
+
+            }
+
+            const effectif =
+                Number(
+                    ligneEffectif.effectif
+                );
+
+            // -------------------------------------------------
+            // Rechercher les locaux possibles
+            // -------------------------------------------------
+
+            const locauxPossibles =
+                sallesAmphis
+                    .filter(
+                        function (salle) {
+
+                            const capacite =
+                                Number(
+                                    salle.capacite
+                                );
+
+                            const tauxOccupation =
+                                effectif /
+                                capacite;
+
+                            return (
+                                salle.disponible ===
+                                    "Oui" &&
+
+                                capacite >=
+                                    effectif &&
+
+                                tauxOccupation >=
+                                    0.66
+                            );
+
+                        }
+                    )
+                    .filter(
+                        function (salle) {
+
+                            return localCompatibleAvecConflits(
+                                filiere.filiereCode,
+                                salle.code,
+                                carteConflits,
+                                resultats
+                            );
+
+                        }
+                    )
+                    .sort(
+                        function (a, b) {
+
+                            return (
+                                Number(a.capacite) -
+                                Number(b.capacite)
+                            );
+
+                        }
+                    );
+
+            if (
+                locauxPossibles.length === 0
+            ) {
+
+                resultats.push(
+                    {
+                        filiereCode:
+                            filiere.filiereCode,
+
+                        effectif:
+                            effectif,
+
+                        succes: false,
+
+                        locaux: [],
+
+                        message:
+                            "Affectation impossible."
+                    }
+                );
+
+                return;
+
+            }
+
+            const local =
+                locauxPossibles[0];
+
+            resultats.push(
+                {
+                    filiereCode:
+                        filiere.filiereCode,
+
+                    effectif:
+                        effectif,
+
+                    succes: true,
+
+                    locaux: [
+                        local.code
+                    ],
+
+                    capaciteTotale:
+                        Number(local.capacite),
+
+                    tauxOccupation:
+                        effectif /
+                        Number(local.capacite),
+
+                    message:
+                        "Local fixe affecté."
+                }
+            );
+
+        }
+    );
+
+    const impossible =
+        resultats.some(
+            function (resultat) {
+
+                return !resultat.succes;
+
+            }
+        );
+
+    return {
+        succes: !impossible,
+
+        affectations:
+            resultats,
+
+        message:
+            impossible
+                ? "Une ou plusieurs filières sont impossibles à affecter."
+                : "Toutes les filières sont affectées."
+    };
+
+}
+
+window.affecterLocauxFixes =
+    affecterLocauxFixes;
+ // =================================================
 // RECHERCHER LA MEILLEURE COMBINAISON DE LOCAUX
 // =================================================
 
 function rechercherMeilleureCombinaisonLocaux(
     filiereCode,
     effectif,
-    sallesAmphis
+    sallesAmphis,
+    carteConflits,
+    affectationsFilieres
 ) {
 
-    // -------------------------------------------------
-    // Vérifier les données
-    // -------------------------------------------------
+    const locauxDisponibles =
+        sallesAmphis
+            .filter(
+                function (salle) {
 
-    if (
-        !effectif ||
-        !sallesAmphis ||
-        sallesAmphis.length === 0
-    ) {
+                    return (
+                        salle.disponible === "Oui" &&
+                        Number(salle.capacite) > 0 &&
+                        localCompatibleAvecConflits(
+                            filiereCode,
+                            salle.code,
+                            carteConflits,
+                            affectationsFilieres
+                        )
+                    );
 
-        return {
-            succes: false,
-            locaux: [],
-            capaciteTotale: 0,
-            tauxOccupation: 0,
-            message:
-                "Données insuffisantes."
-        };
-
-    }
-
-    const effectifNumerique =
-        Number(effectif);
+                }
+            );
 
     // -------------------------------------------------
-    // Locaux disponibles
+    // 1. Chercher d'abord un seul local >= 66 %
     // -------------------------------------------------
-
-    
-const locauxDisponibles =
-    sallesAmphis
-        .filter(
-            function (salle) {
-                return (
-                    salle.disponible === "Oui" &&
-                    Number(salle.capacite) > 0
-                );
-            }
-        );
-
-// DIAGNOSTIC TEMPORAIRE
-console.log("Diagnostic locaux disponibles :", {
-    filiere: filiereCode,
-    effectif: effectifNumerique,
-    locaux: locauxDisponibles.map(function (salle) {
-        return {
-            code: salle.code,
-            capacite: salle.capacite,
-            disponible: salle.disponible
-        };
-    })
-});
-
-// -------------------------------------------------
-// 1. Chercher un seul local respectant les 66 %
-// -------------------------------------------------
 
     const locauxUniques =
         locauxDisponibles
@@ -870,11 +1119,9 @@ console.log("Diagnostic locaux disponibles :", {
                         Number(salle.capacite);
 
                     return (
-                        capacite >= effectifNumerique &&
-                                effectifNumerique /
-                                 capacite >=
-                           TAUX_OCCUPATION_ACCEPTABLE
-                     );
+                        capacite >= effectif &&
+                        effectif / capacite >= 0.66
+                    );
 
                 }
             )
@@ -897,7 +1144,6 @@ console.log("Diagnostic locaux disponibles :", {
             locauxUniques[0];
 
         return {
-
             succes: true,
 
             locaux: [
@@ -908,12 +1154,11 @@ console.log("Diagnostic locaux disponibles :", {
                 Number(local.capacite),
 
             tauxOccupation:
-                effectifNumerique /
+                effectif /
                 Number(local.capacite),
 
             message:
                 "Un seul local suffit."
-
         };
 
     }
@@ -930,13 +1175,8 @@ console.log("Diagnostic locaux disponibles :", {
         capaciteTotale
     ) {
 
-        // -------------------------------------------------
-        // Capacité suffisante
-        // -------------------------------------------------
-
         if (
-            capaciteTotale >=
-            effectifNumerique
+            capaciteTotale >= effectif
         ) {
 
             combinaisons.push(
@@ -952,10 +1192,6 @@ console.log("Diagnostic locaux disponibles :", {
             return;
 
         }
-
-        // -------------------------------------------------
-        // Construire les combinaisons
-        // -------------------------------------------------
 
         for (
             let i = debut;
@@ -984,41 +1220,41 @@ console.log("Diagnostic locaux disponibles :", {
     }
 
     rechercherCombinaisons(
-        0,
-        [],
-        0
-    );
+    0,
+    [],
+    0
+);
 
-    // -------------------------------------------------
-    // Garder uniquement les combinaisons valides
-    // -------------------------------------------------
+// -------------------------------------------------
+// Supprimer les combinaisons constituées
+// d'un seul local qui ne respecte pas 66 %
+// -------------------------------------------------
 
- 
-    const combinaisonsValides =
-        combinaisons.filter(
-            function (combinaison) {
+const combinaisonsValides =
+    combinaisons.filter(
+        function (combinaison) {
 
-                // Un ou plusieurs locaux :
-                // occupation minimale de 83 %
+            if (
+                combinaison.locaux.length === 1
+            ) {
 
                 return (
+                    effectif /
                     combinaison.capaciteTotale >=
-                        effectifNumerique &&
-
-                     effectifNumerique /
-                     combinaison.capaciteTotale >=
-                     TAUX_OCCUPATION_ACCEPTABLE
+                    0.66
                 );
 
             }
-        );
 
-    if (
-        combinaisonsValides.length === 0
-    ) {
+            return true;
+
+        }
+    );
+   if (
+    combinaisonsValides.length === 0
+) {
 
         return {
-
             succes: false,
 
             locaux: [],
@@ -1029,7 +1265,6 @@ console.log("Diagnostic locaux disponibles :", {
 
             message:
                 "Aucune combinaison de locaux ne permet d'accueillir l'effectif."
-
         };
 
     }
@@ -1042,7 +1277,7 @@ console.log("Diagnostic locaux disponibles :", {
         function (a, b) {
 
             // Priorité 1 :
-            // nombre minimal de locaux
+            // moins de locaux
 
             if (
                 a.locaux.length !==
@@ -1058,7 +1293,6 @@ console.log("Diagnostic locaux disponibles :", {
 
             // Priorité 2 :
             // capacité totale la plus proche
-            // de l'effectif
 
             return (
                 a.capaciteTotale -
@@ -1069,10 +1303,9 @@ console.log("Diagnostic locaux disponibles :", {
     );
 
     const meilleure =
-        combinaisonsValides[0];
+    combinaisonsValides[0];
 
     return {
-
         succes: true,
 
         locaux:
@@ -1082,1963 +1315,13 @@ console.log("Diagnostic locaux disponibles :", {
             meilleure.capaciteTotale,
 
         tauxOccupation:
-            effectifNumerique /
+            effectif /
             meilleure.capaciteTotale,
 
         message:
-            meilleure.locaux.length === 1
-                ? "Un seul local suffit."
-                : "Plusieurs locaux sont nécessaires."
-
+            "Plusieurs locaux sont nécessaires."
     };
 
 }
-
-
-// =================================================
-// EXPOSER POUR LES TESTS F12
-// =================================================
-
-window.rechercherMeilleureCombinaisonLocaux =
+ window.rechercherMeilleureCombinaisonLocaux =
     rechercherMeilleureCombinaisonLocaux;
-
-
-// =================================================
-// CONSTRUIRE LES GROUPES DE FILIÈRES
-// =================================================
-
-
-
-function construireGroupesFilieres(
-    planning,
-    effectifs,
-    sallesAmphis
-) {
-
-    const groupesParDateCreneau = {};
-
-   if (
-    !planning ||
-    !Array.isArray(planning.filieres) ||
-    !Array.isArray(effectifs) ||
-    !Array.isArray(sallesAmphis)
-) {
-    return [];
-}
-
- 
-    // -------------------------------------------------
-    // Calculer le taux d'occupation du plus petit
-    // local disponible pouvant accueillir l'effectif
-    // -------------------------------------------------
-
-    function calculerTauxOccupation(effectif) {
-
-        const locauxAdaptes = sallesAmphis
-            .filter(function (salle) {
-                return (
-                    salle.disponible === "Oui" &&
-                    Number(salle.capacite) >= Number(effectif) &&
-                    Number(salle.capacite) > 0
-                );
-            })
-            .sort(function (a, b) {
-                return Number(a.capacite) - Number(b.capacite);
-            });
-
-        if (locauxAdaptes.length === 0) {
-            return null;
-        }
-
-        return Number(effectif) /
-            Number(locauxAdaptes[0].capacite);
-    }   
-    planning.filieres.forEach(function (filiere) {
-
-        const niveauCode =
-            filiere.niveauCode || planning.niveauCode;
-
-       
-const ligneEffectif = effectifs.find(function (ligne) {
-    return (
-        ligne.niveauCode === niveauCode &&
-        ligne.filiereCode === filiere.filiereCode
-    );
-});
-
-        if (
-            !ligneEffectif ||
-            !Number.isFinite(Number(ligneEffectif.effectif)) ||
-            Number(ligneEffectif.effectif) <= 0
-        ) {
-            console.warn(
-                "Effectif absent ou invalide :",
-                niveauCode,
-                filiere.filiereCode,
-                planning.anneeUniversitaire
-            );
-            
-            return;
-        }
-
-        // -------------------------------------------------
-        // Exclure des groupes les filières prioritaires
-        // dont le taux d'occupation dépasse strictement 83 %
-        // -------------------------------------------------
-
-        const effectifFiliere =
-            Number(ligneEffectif.effectif);
-
-        const tauxOccupation =
-            calculerTauxOccupation(effectifFiliere);
-
-       
-        if (
-            tauxOccupation !== null &&
-            tauxOccupation >= TAUX_OCCUPATION_MINIMUM &&
-            tauxOccupation <= 1
-        ) {
-            return;
-        }
-
-
-        // -------------------------------------------------
-        // Ajouter la filière à chacun de ses créneaux occupés
-        // -------------------------------------------------
-
-        const creneauxFiliere = new Set();
-
-        (filiere.cellules || []).forEach(function (cellule) {
-
-        // DIAGNOSTIC TEMPORAIRE
-    if (cellule.estOccupee && cellule.date) {
-        console.log("🔎 Créneau réel :", {
-            filiere: filiere.filiereCode,
-            niveau: niveauCode,
-            date: cellule.dateAffichage || cellule.date,
-            creneauOrdre: cellule.creneauOrdre,
-            matiere: cellule.matiereLibelle
-        });
-    }
-            
-            if (!cellule.estOccupee || !cellule.date) {
-                return;
-            }
-
-            const dateCle =
-                cellule.dateAffichage ||
-                (
-                    typeof cellule.date.seconds === "number"
-                        ? new Date(
-                            cellule.date.seconds * 1000
-                        ).toLocaleDateString("fr-FR", {
-                            timeZone: "Africa/Tunis"
-                        })
-                        : String(cellule.date)
-                );
-
-            const creneauCle = String(cellule.creneauOrdre);
-
-            const cle =
-                niveauCode + "|" +
-                dateCle + "|" +
-                creneauCle;
-
-            if (creneauxFiliere.has(cle)) {
-                return;
-            }
-
-            creneauxFiliere.add(cle);
-
-            if (!groupesParDateCreneau[cle]) {
-                groupesParDateCreneau[cle] = {
-                    niveauCode: niveauCode,
-                    date: dateCle,
-                    creneauOrdre: cellule.creneauOrdre,
-                    filieres: []
-                };
-            }
-
-            groupesParDateCreneau[cle].filieres.push({
-                filiereCode: filiere.filiereCode,
-                effectif: effectifFiliere
-            });
-
-        });
-    }); // Fin de planning.filieres.forEach
-    //+++++ajout 1
-    console.log(
-    "🔍 Diagnostic des groupes par date et créneau :",
-    Object.values(groupesParDateCreneau).map(function (groupe) {
-        return {
-            niveau: groupe.niveauCode,
-            date: groupe.date,
-            creneau: groupe.creneauOrdre,
-            filieres: groupe.filieres.map(function (f) {
-                return f.filiereCode;
-            }),
-            effectifTotal: groupe.filieres.reduce(
-                function (total, f) {
-                    return total + f.effectif;
-                },
-                0
-            )
-        };
-    })
-);
-console.table(
-    Object.values(groupesParDateCreneau).map(function (groupe) {
-        return {
-            date: groupe.date,
-            creneau: groupe.creneauOrdre,
-            filieres: groupe.filieres.map(function (f) {
-                return f.filiereCode;
-            }).join(" + "),
-            effectifTotal: groupe.filieres.reduce(
-                function (total, f) {
-                    return total + f.effectif;
-                },
-                0
-            )
-        };
-    })
-);
-
-    
-    return Object.values(groupesParDateCreneau)
-        .filter(function (groupe) {
-            return groupe.filieres.length >= 2;
-        })
-        .map(function (groupe) {
-
-            const effectifTotal =
-                groupe.filieres.reduce(function (total, filiere) {
-                    return total + filiere.effectif;
-                }, 0);
-
-            return {
-                niveauCode: groupe.niveauCode,
-                filieres: groupe.filieres.map(
-                    filiere => filiere.filiereCode
-                ),
-                effectifs: groupe.filieres.map(
-                    filiere => filiere.effectif
-                ),
-                effectifTotal: effectifTotal,
-                datesCreneaux: [
-                    groupe.date + "|" + groupe.creneauOrdre
-                ]
-            };
-        })
-      
-
-.filter(function (groupe) {
-
-    // Un groupe peut utiliser un ou plusieurs locaux disponibles.
-    // La capacité totale doit suffire et l'occupation globale
-    // doit atteindre au moins 66 %.
-
-    const locauxDisponibles = sallesAmphis.filter(function (salle) {
-        const capacite = Number(salle.capacite);
-
-        return (
-            salle.disponible === "Oui" &&
-            Number.isFinite(capacite) &&
-            capacite > 0
-        );
-    });
-
-    const capacites = locauxDisponibles
-        .map(function (salle) {
-            return Number(salle.capacite);
-        })
-        .sort(function (a, b) {
-            return a - b;
-        });
-
-    function rechercherCombinaison(index, capaciteTotale) {
-
-        if (capaciteTotale >= groupe.effectifTotal) {
-            return (
-                groupe.effectifTotal / capaciteTotale >=
-                TAUX_OCCUPATION_ACCEPTABLE
-            );
-        }
-
-        if (index >= capacites.length) {
-            return false;
-        }
-
-        // Essayer d'ajouter le local courant.
-        if (
-            rechercherCombinaison(
-                index + 1,
-                capaciteTotale + capacites[index]
-            )
-        ) {
-            return true;
-        }
-
-        // Essayer sans le local courant.
-        return rechercherCombinaison(
-            index + 1,
-            capaciteTotale
-        );
-    }
-
-    return rechercherCombinaison(0, 0);
-})
-
-
-        
-        // Priorité au plus grand nombre de filières,
- // puis au meilleur taux d'occupation du groupe.
-.sort(function (a, b) {
-    if (b.filieres.length !== a.filieres.length) {
-        return b.filieres.length - a.filieres.length;
-    }
-
-    function calculerMeilleurTaux(groupe) {
-        let meilleurTaux = 0;
-
-        sallesAmphis.forEach(function (salle) {
-            const capacite = Number(salle.capacite);
-
-            if (
-                salle.disponible === "Oui" &&
-                Number.isFinite(capacite) &&
-                capacite >= groupe.effectifTotal &&
-                capacite > 0
-            ) {
-                const taux = groupe.effectifTotal / capacite;
-
-                if (
-                   taux >= TAUX_OCCUPATION_ACCEPTABLE &&
-                    taux <= 1 &&
-                    taux > meilleurTaux
-                ) {
-                    meilleurTaux = taux;
-                }
-            }
-        });
-
-        return meilleurTaux;
-    }
-
-    return calculerMeilleurTaux(b) - calculerMeilleurTaux(a);
-})
-        // Une filière ne peut être retenue que dans un seul groupe.
-        .reduce(function (groupesRetenus, groupe) {
-
-            const conflit = groupe.filieres.some(function (code) {
-                return groupesRetenus.some(function (groupeRetenu) {
-                    return groupeRetenu.filieres.includes(code);
-                });
-            });
-
-            if (!conflit) {
-                groupesRetenus.push(groupe);
-            }
-
-            return groupesRetenus;
-
-       }, []);
-}
-
-window.construireGroupesFilieres =
-    construireGroupesFilieres;
-
-
-// =================================================
-// AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
-// EN TENANT COMPTE DES REGROUPEMENTS
-// =================================================
-
-function affecterLocauxFixes(
-    planning,
-    sallesAmphis,
-    effectifs
-) {
-
-    const resultats = [];
-
-    if (
-        !planning ||
-        !planning.filieres ||
-        !sallesAmphis ||
-        !effectifs
-    ) {
-
-        return resultats;
-
-    }
-
-    // -------------------------------------------------
-    // Construire les groupes de filières
-    // -------------------------------------------------
-
-    const groupes =
-    construireGroupesFilieres(
-        planning,
-        effectifs,
-        sallesAmphis
-    );
-
-    console.log(
-        "🔎 Groupes de filières détectés :",
-        groupes
-    );
-
-    // -------------------------------------------------
-    // Mémoriser les filières déjà affectées
-    // -------------------------------------------------
-
-    const filieresDejaAffectees =
-        new Set();
-
-    
-    // -------------------------------------------------
-    // Calculer le taux d'occupation du plus petit
-    // local disponible pouvant accueillir la filière
-    // -------------------------------------------------
-
-    function calculerTauxMeilleurLocal(effectif) {
-
-        const locauxAdaptes = sallesAmphis
-            .filter(function (salle) {
-                return (
-                    salle.disponible === "Oui" &&
-                    Number(salle.capacite) >= Number(effectif) &&
-                    Number(salle.capacite) > 0
-                );
-            })
-            .sort(function (a, b) {
-                return Number(a.capacite) - Number(b.capacite);
-            });
-
-        if (locauxAdaptes.length === 0) {
-            return null;
-        }
-
-        return Number(effectif) /
-            Number(locauxAdaptes[0].capacite);
-    }
-
-    
-  // Identifier les filières prioritaires :
-// taux d'occupation supérieur ou égal à 83 %
-// et inférieur ou égal à 100 %
-
-    const filieresPrioritaires = [];
-
-    planning.filieres.forEach(function (filiere) {
-
-        const niveauFiliere =
-            filiere.niveauCode || planning.niveauCode;
-
-       
-console.log("Diagnostic effectif :", {
-    niveauRecherche: niveauFiliere,
-    filiereRecherche: filiere.filiereCode,
-    anneePlanning: planning.anneeUniversitaire,
-    anneeAdmin: document.getElementById(
-        "anneeUniversitaireAdmin"
-    )?.textContent.trim(),
-    effectifsCorrespondants: effectifs.filter(function (ligne) {
-        return (
-            ligne.niveauCode === niveauFiliere &&
-            ligne.filiereCode === filiere.filiereCode
-        );
-    })
-});
-
-const ligneEffectif = effectifs.find(function (ligne) {
-    return (
-        ligne.niveauCode === niveauFiliere &&
-        ligne.filiereCode === filiere.filiereCode
-    );
-});
-
-if (!ligneEffectif) {
-    console.warn(
-        "Effectif introuvable dans les données sources :",
-        niveauFiliere,
-        filiere.filiereCode
-    );
-    return;
-}
-
-
-const effectif = Number(ligneEffectif.effectif);
-
-if (!Number.isFinite(effectif) || effectif <= 0) {
-    return;
-}
-
-const taux = calculerTauxMeilleurLocal(effectif);
-
-console.log("Taux de priorité :", {
-    filiere: filiere.filiereCode,
-    effectif: effectif,
-    taux: taux,
-    seuil: TAUX_OCCUPATION_MINIMUM
-});
-
-if (
-    taux !== null &&
-    taux >= TAUX_OCCUPATION_MINIMUM &&
-    taux <= 1
-) {
-    filieresPrioritaires.push({
-        filiereCode: filiere.filiereCode,
-        effectif: effectif,
-        tauxOccupation: taux
-    });
-}
-});
-
-    console.log(
-      "🎯 Filières prioritaires (>= 83 %) :",
-        filieresPrioritaires
-    );
-
-    
-    // -------------------------------------------------
-    // 1. AFFECTATION PRIORITAIRE DES FILIÈRES
-    // -------------------------------------------------
-
-    filieresPrioritaires.forEach(function (filiere) {
-
-        console.log(
-            "🎯 Affectation prioritaire :",
-            filiere.filiereCode,
-            "| Effectif :",
-            filiere.effectif,
-            "| Occupation :",
-            (filiere.tauxOccupation * 100).toFixed(2) + " %"
-        );
-
-        const resultat = rechercherMeilleureCombinaisonLocaux(
-            filiere.filiereCode,
-            filiere.effectif,
-            sallesAmphis
-        );
-
-        resultats.push({
-            filiereCode: filiere.filiereCode,
-            succes: resultat.succes,
-            locaux: resultat.locaux,
-            capaciteTotale: resultat.capaciteTotale,
-            tauxOccupation: resultat.tauxOccupation,
-            effectif: filiere.effectif,
-            groupe: null,
-            message: resultat.message
-        });
-
-        if (resultat.succes) {
-            filieresDejaAffectees.add(
-                filiere.filiereCode
-            );
-        }
-
-    });
-    
-    // -------------------------------------------------
-    // 1. AFFECTATION DES GROUPES
-    // -------------------------------------------------
-
-    groupes.forEach(
-        function (groupe) {
-
-                       // Ignorer un groupe contenant une filière
-            // déjà affectée en priorité.
-            if (
-                groupe.filieres.some(function (filiereCode) {
-                    return filieresDejaAffectees.has(filiereCode);
-                })
-            ) {
-                return;
-            } 
-
-            console.log(
-                "🔄 Affectation du groupe :",
-                groupe.filieres.join(" + "),
-                "| Effectif total :",
-                groupe.effectifTotal
-            );
-
-            const resultat =
-                rechercherMeilleureCombinaisonLocaux(
-                    "GROUPE",
-                    groupe.effectifTotal,
-                    sallesAmphis
-                );
-
-            // -------------------------------------------------
-            // Si aucune combinaison n'est possible
-            // Réessayer ensuite chaque filière individuellement
-            // -------------------------------------------------
-
-            if (!resultat.succes) {
-
-                console.warn(
-                    "⚠️ Groupe impossible à affecter :",
-                    groupe.filieres.join(" + "),
-                    "| Effectif total :",
-                    groupe.effectifTotal,
-                    "| Nouvelle tentative individuelle."
-                );
-
-                return;
-
-            }
-
-            // -------------------------------------------------
-            // Affecter les mêmes locaux à toutes les filières
-            // du groupe
-            // -------------------------------------------------
-
-            groupe.filieres.forEach(
-                function (filiereCode, index) {
-
-                    resultats.push({
-
-                        filiereCode:
-                            filiereCode,
-
-                        succes:
-                            true,
-
-                        locaux:
-                            resultat.locaux.slice(),
-
-                        capaciteTotale:
-                            resultat.capaciteTotale,
-
-                        tauxOccupation:
-                            resultat.tauxOccupation,
-
-                        effectif:
-                            groupe.effectifs[index],
-
-                        groupe:
-                            groupe.filieres.slice(),
-
-                        effectifGroupe:
-                            groupe.effectifTotal,
-
-                        datesCreneaux:
-                            groupe.datesCreneaux.slice(),
-
-                        message:
-                            "Filière affectée avec le groupe : " +
-                            groupe.filieres.join(" + ")
-
-                    });
-
-                    filieresDejaAffectees.add(
-                        filiereCode
-                    );
-
-                }
-            );
-
-        }
-    );
-
-    // -------------------------------------------------
-    // 2. AFFECTATION DES FILIÈRES NON REGROUPÉES
-    // -------------------------------------------------
-
-    planning.filieres.forEach(
-        function (filiere) {
-
-            if (
-                filieresDejaAffectees.has(
-                    filiere.filiereCode
-                )
-            ) {
-
-                return;
-
-            }
-
-           
-const niveauFiliere =
-    filiere.niveauCode || planning.niveauCode;
-
-const ligneEffectif =
-    effectifs.find(
-        function (ligne) {
-            return (
-                ligne.niveauCode === niveauFiliere &&
-                ligne.filiereCode === filiere.filiereCode
-            );
-        }
-    );
-
-            // -------------------------------------------------
-            // Effectif introuvable
-            // -------------------------------------------------
-
-            if (!ligneEffectif) {
-
-                resultats.push({
-
-                    filiereCode:
-                        filiere.filiereCode,
-
-                    succes:
-                        false,
-
-                    locaux: [],
-
-                    capaciteTotale: 0,
-
-                    tauxOccupation: 0,
-
-                    effectif: 0,
-
-                    groupe: null,
-
-                    message:
-                        "Effectif introuvable pour cette filière."
-
-                });
-
-                return;
-
-            }
-
-            const effectif =
-                Number(
-                    ligneEffectif.effectif
-                );
-
-            // -------------------------------------------------
-            // Recherche du meilleur local / combinaison
-            // -------------------------------------------------
-
-            const resultat =
-                rechercherMeilleureCombinaisonLocaux(
-                    filiere.filiereCode,
-                    effectif,
-                    sallesAmphis
-                );
-
-            resultats.push({
-
-                filiereCode:
-                    filiere.filiereCode,
-
-                succes:
-                    resultat.succes,
-
-                locaux:
-                    resultat.locaux,
-
-                capaciteTotale:
-                    resultat.capaciteTotale,
-
-                tauxOccupation:
-                    resultat.tauxOccupation,
-
-                effectif:
-                    effectif,
-
-                groupe: null,
-
-                 message:
-                    resultat.message
-
-            });
-
-            // Marquer la filière si l'affectation a réussi.
-            if (resultat.succes) {
-                filieresDejaAffectees.add(
-                    filiere.filiereCode
-                );
-            }
-
-        }
-    );
-
-    // -------------------------------------------------
-    // Affichage console
-    // -------------------------------------------------
-
-    console.log(
-        "=========================================="
-    );
-
-    console.log(
-        "RÉSULTAT DES AFFECTATIONS"
-    );
-
-    console.table(
-        resultats.map(
-            function (resultat) {
-
-                return {
-
-                    Filiere:
-                        resultat.filiereCode,
-
-                    Effectif:
-                        resultat.effectif,
-
-                    Groupe:
-                        resultat.groupe
-                            ? resultat.groupe.join(" + ")
-                            : "",
-
-                    Locaux:
-                        resultat.locaux.join(" || "),
-
-                    Capacite:
-                        resultat.capaciteTotale,
-
-                    Occupation:
-                        (
-                            resultat.tauxOccupation *
-                            100
-                        ).toFixed(2) + " %",
-
-                    Succes:
-                        resultat.succes
-
-                };
-
-            }
-        )
-    );
-
-    console.log(
-        "=========================================="
-    );
-
-const succes =
-    resultats.length > 0 &&
-    resultats.every(function (resultat) {
-        return resultat.succes === true;
-    });
-
-return {
-    succes: succes,
-    affectations: resultats,
-    message: succes
-        ? "Toutes les filières ont une affectation possible."
-        : "Une ou plusieurs filières n'ont pas d'affectation valide."
-};
-}
-
-window.affecterLocauxFixes =
-    affecterLocauxFixes;
-
-
-
-// =================================================
-// INTERFACE ADMIN — GÉNÉRER LES AFFECTATIONS
-// =================================================
-let affectationCourante = null;
-let planningAffectationCourant = null;
-
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-       const boutonGenerer =
-    document.getElementById(
-        "btnGenererAffectations"
-    );
-
-        const statut =
-            document.getElementById(
-                "statutAffectationSalles"
-            );
-
-        const tableau =
-            document.getElementById(
-                "tableauAffectationSalles"
-            );
-
-      if (!boutonGenerer) {
-    console.warn(
-        "⚠️ Bouton btnGenererAffectations introuvable."
-    );
-    return;
-}
-
-        boutonGenerer.addEventListener(
-            "click",
-            function () {
-
-                console.log(
-                    "🔄 Génération des affectations..."
-                );
-
-                if (statut) {
-
-                    statut.textContent =
-                        "⏳ Génération des affectations en cours...";
-
-                }
-
-                try {
-
-                    // =========================================
-                    // RÉCUPÉRER LE CALENDRIER ACTUELLEMENT AFFICHÉ
-                    // =========================================
-
-console.log(
-    "TEST — calendrier disponible au clic :",
-    window.planningCalendrierAdmin
-);
-
-const planning =
-    window.planningCalendrierAdmin;
-
-
-
-                    if (!planning) {
-
-                        throw new Error(
-                            "Aucun calendrier n'est actuellement affiché. Veuillez d'abord afficher un calendrier dans le volet 📊 Calendriers."
-                        );
-
-                    }
-
-                    console.log(
-                        "✓ Calendrier récupéré :",
-                        planning
-                    );
-
-                    console.log(
-                        "Niveau :",
-                        planning.niveauCode
-                    );
-
-                  console.log(
-    "Semestre :",
-    document.getElementById(
-        "semestreCalendrierAdmin"
-    ).value
-);
-// AJOUTER JUSTE APRÈS
-console.log(
-    "Année universitaire du planning :",
-    planning.anneeUniversitaire
-);
-
-console.log(
-    "Année universitaire du calendrier affiché :",
-    document.getElementById(
-        "anneeUniversitaireAdmin"
-    )?.textContent.trim()
-);
-console.log(
-    "Régime :",
-    document.getElementById(
-        "regimeCalendrierAdmin"
-    ).value
-);
-
-                    console.log(
-                        "Session :",
-                        planning.sessionCode
-                    );
-
-                    // =========================================
-                    // RÉCUPÉRER LES DONNÉES FIRESTORE
-                    // =========================================
-
-                    if (
-                        !window.generationExamens ||
-                        !window.generationExamens.obtenirDonnees
-                    ) {
-
-                        throw new Error(
-                            "Le moteur de génération n'est pas disponible."
-                        );
-
-                    }
-
-                    const donnees =
-                        window.generationExamens.obtenirDonnees();
-
-                    if (
-                        !donnees ||
-                        !donnees.sallesAmphis ||
-                        !donnees.effectifs
-                    ) {
-
-                        throw new Error(
-                            "Les données des salles et des effectifs sont indisponibles."
-                        );
-
-                    }
-
-                    console.log(
-                        "Salles / amphis :",
-                        donnees.sallesAmphis.length
-                    );
-
-                    console.log(
-                        "Effectifs :",
-                        donnees.effectifs.length
-                    );
-
-                    // =========================================
-                    // EFFECTUER L'AFFECTATION
-                    // =========================================
-
-                    const resultat =
-                        affecterLocauxFixes(
-                            planning,
-                            donnees.sallesAmphis,
-                            donnees.effectifs
-                        );
-                     affectationCourante = resultat;
-                           planningAffectationCourant = planning;
-
-                    window.affectationCourante = resultat;
-                     window.planningAffectationCourant = planning;
-
-                    console.log(
-    "TEST — affectation exposée :",
-    window.affectationCourante
-);
-
-console.log(
-    "Résultat affectation :",
-    resultat
-);
-
-// Ne pas interrompre ici :
-// le tableau des problèmes sera affiché plus bas.
-
-                    // =========================================
-                    // AFFICHER LE RÉSUMÉ
-                    // =========================================
-
-                    const resume =
-                        document.getElementById(
-                            "resumeAffectationSalles"
-                        );
-
-                    if (resume) {
-
-                        resume.innerHTML = `
-                            <p>
-                                <strong>Niveau :</strong>
-                                ${planning.niveauCode || ""}
-                            </p>
-
-                            <p>
-                              <strong>Semestre :</strong>
-                              ${document.getElementById(
-                              "semestreCalendrierAdmin"
-                               ).value} 
-                            </p>
-
-                            <p>
-                               <strong>Régime :</strong>
-                                ${document.getElementById(
-                                "regimeCalendrierAdmin"
-                                ).value}
-                            </p>
-
-                            <p>
-                                <strong>Session :</strong>
-                                ${planning.sessionCode || ""}
-                            </p>
-
-                            <p>
-                                <strong>Filières affectées :</strong>
-                                ${resultat.affectations.length}
-                            </p>
-                        `;
-
-                    }
-
-                    // =========================================
-                    // AFFICHER LE TABLEAU
-                    // =========================================
-
-                    if (tableau) {
-
-                        tableau.innerHTML = "";
-
-                        const table =
-                            document.createElement(
-                                "table"
-                            );
-
-                        table.className =
-                            "tableau-donnees";
-
-                        const thead =
-                            document.createElement(
-                                "thead"
-                            );
-
-                        thead.innerHTML = `
-                            <tr>
-                                <th>Filière</th>
-                                <th>Effectif</th>
-                                <th>Local(s)</th>
-                                <th>Capacité</th>
-                                <th>Occupation</th>
-                            </tr>
-                        `;
-
-                        table.appendChild(
-                            thead
-                        );
-
-                        const tbody =
-                            document.createElement(
-                                "tbody"
-                            );
-
-                        resultat.affectations.forEach(
-                            function (affectation) {
-
-                                const ligne =
-                                    document.createElement(
-                                        "tr"
-                                    );
-
-                                ligne.innerHTML = `
-                                    <td>${affectation.filiereCode}</td>
-                                    <td>${affectation.effectif}</td>
-                                    <td>${affectation.locaux.join(" || ")}</td>
-                                    <td>${affectation.capaciteTotale}</td>
-                                    <td>${(
-                                        affectation.tauxOccupation *
-                                        100
-                                    ).toFixed(2)} %</td>
-                                `;
-
-                                tbody.appendChild(
-                                    ligne
-                                );
-
-                            }
-                        );
-
-                        table.appendChild(
-                            tbody
-                        );
-
-                        tableau.appendChild(
-                            table
-                        );
-
-                    }
-
-
-                    
-                    // =========================================
-                    // AFFICHER LES PROBLÈMES D'AFFECTATION
-                    // =========================================
-
-                    let blocProblemes = document.getElementById(
-                        "tableauProblemesAffectationSalles"
-                    );
-
-                    if (!blocProblemes && tableau) {
-                        blocProblemes = document.createElement("div");
-                        blocProblemes.id =
-                            "tableauProblemesAffectationSalles";
-
-                        tableau.insertAdjacentElement(
-                            "afterend",
-                            blocProblemes
-                        );
-                    }
-
-                    if (blocProblemes) {
-                        blocProblemes.innerHTML = "";
-
-                        const echecs = (
-                            resultat.affectations || []
-                        ).filter(function (affectation) {
-                            return affectation.succes !== true;
-                        });
-
-                        if (echecs.length > 0) {
-                            const titre = document.createElement("h3");
-                            titre.textContent =
-                                "⚠️ Problèmes d'affectation détectés";
-                            blocProblemes.appendChild(titre);
-
-                            const tableProblemes =
-                                document.createElement("table");
-
-                            tableProblemes.className =
-                                "tableau-donnees";
-
-                            const thead =
-                                document.createElement("thead");
-
-                            [
-                                "Niveau",
-                                "Filière",
-                                "Date",
-                                "Créneau",
-                                "Matière",
-                                "Effectif",
-                                "Problème détecté"
-                            ].forEach(function (libelle) {
-                                const th = document.createElement("th");
-                                th.textContent = libelle;
-                                thead.appendChild(th);
-                            });
-
-                            tableProblemes.appendChild(thead);
-
-                            const tbody =
-                                document.createElement("tbody");
-
-                            function ajouterLigneProbleme(
-                                niveau,
-                                filiere,
-                                date,
-                                creneau,
-                                matiere,
-                                effectif,
-                                probleme
-                            ) {
-                                const tr = document.createElement("tr");
-
-                                [
-                                    niveau,
-                                    filiere,
-                                    date,
-                                    creneau,
-                                    matiere,
-                                    effectif,
-                                    probleme
-                                ].forEach(function (valeur) {
-                                    const td =
-                                        document.createElement("td");
-
-                                    td.textContent =
-                                        valeur == null ? "" : String(valeur);
-
-                                    tr.appendChild(td);
-                                });
-
-                                tbody.appendChild(tr);
-                            }
-
-                            echecs.forEach(function (affectation) {
-                                const filiere = (
-                                    planning.filieres || []
-                                ).find(function (f) {
-                                    return f.filiereCode ===
-                                        affectation.filiereCode;
-                                });
-
-                                const cellulesOccupees = (
-                                    filiere?.cellules || []
-                                ).filter(function (cellule) {
-                                    return cellule.estOccupee &&
-                                        cellule.date &&
-                                        cellule.matiereLibelle;
-                                });
-
-                                const probleme =
-                                    affectation.message ||
-                                    affectation.raison ||
-                                    "Aucun local admissible : affectation impossible.";
-
-                                if (cellulesOccupees.length === 0) {
-                                    ajouterLigneProbleme(
-                                        filiere?.niveauCode ||
-                                            planning.niveauCode || "",
-                                        affectation.filiereCode,
-                                        "",
-                                        "",
-                                        "Aucun examen occupé identifié",
-                                        affectation.effectif ?? "",
-                                        probleme
-                                    );
-
-                                    return;
-                                }
-
-                                cellulesOccupees.forEach(function (cellule) {
-                                    let date = cellule.dateAffichage || "";
-
-                                    if (!date && typeof cellule.date === "string") {
-                                        date = cellule.date;
-                                    }
-
-                                    if (
-                                        !date &&
-                                        typeof cellule.date?.seconds === "number"
-                                    ) {
-                                        date = new Date(
-                                            cellule.date.seconds * 1000
-                                        ).toLocaleDateString("fr-FR", {
-                                            timeZone: "Africa/Tunis"
-                                        });
-                                    }
-
-                                    ajouterLigneProbleme(
-                                        filiere.niveauCode ||
-                                            planning.niveauCode || "",
-                                        affectation.filiereCode,
-                                        date,
-                                        cellule.creneauOrdre ?? "",
-                                        cellule.matiereLibelle,
-                                        affectation.effectif ?? "",
-                                        probleme
-                                    );
-                                });
-                            });
-
-                            tableProblemes.appendChild(tbody);
-                            blocProblemes.appendChild(tableProblemes);
-                        }
-                    }
-                    // =========================================
-// STATUT
-// =========================================
-
-if (statut) {
-    statut.textContent = resultat.succes
-        ? "✅ Affectations générées avec succès."
-        : "⚠️ Des problèmes d'affectation ont été détectés. Consultez le tableau détaillé en dessous.";
-}
-
-console.log(
-    resultat.succes
-        ? "✓ Affectations générées avec succès."
-        : "⚠️ Problèmes d'affectation détectés.",
-    resultat
-);
-
-                } catch (erreur) {
-
-                    console.error(
-                        "❌ Erreur génération affectations :",
-                        erreur
-                    );
-
-                    if (statut) {
-
-                        statut.textContent =
-                            "❌ " + erreur.message;
-
-                    }
-
-                }
-
-            }
-        );
-
-    }
-);
-
-// =================================================
-// INTERFACE ADMIN — CONTRÔLER LES AFFECTATIONS
-// =================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const boutonControler =
-            document.getElementById(
-                "btnControlerAffectations"
-            );
-
-        const statut =
-            document.getElementById(
-                "statutAffectationSalles"
-            );
-
-        if (!boutonControler) {
-
-            console.warn(
-                "⚠️ Bouton btnControlerAffectations introuvable."
-            );
-
-            return;
-        }
-
-        boutonControler.addEventListener(
-            "click",
-            function () {
-
-                console.log(
-                    "🔍 Contrôle des affectations..."
-                );
-
-                if (statut) {
-
-                    statut.textContent =
-                        "⏳ Contrôle des affectations en cours...";
-
-                }
-
-                try {
-
-                    // =========================================
-                    // VÉRIFIER QU'UNE AFFECTATION EXISTE
-                    // =========================================
-
-                    if (
-                        !affectationCourante ||
-                        !planningAffectationCourant
-                    ) {
-
-                        throw new Error(
-                            "Aucune affectation à contrôler. Veuillez d'abord générer les affectations."
-                        );
-
-                    }
-
-                    const affectations =
-                        affectationCourante.affectations;
-
-                    if (
-                        !Array.isArray(affectations) ||
-                        affectations.length === 0
-                    ) {
-
-                        throw new Error(
-                            "Aucune affectation disponible."
-                        );
-
-                    }
-
-                    const erreurs = [];
-
-                    // =========================================
-                    // CONTRÔLE DE CHAQUE FILIÈRE
-                    // =========================================
-
-                    affectations.forEach(
-                        function (affectation) {
-
-                            // ---------------------------------
-                            // 1. Vérifier les locaux
-                            // ---------------------------------
-
-                            if (
-                                !Array.isArray(
-                                    affectation.locaux
-                                ) ||
-                                affectation.locaux.length === 0
-                            ) {
-
-                                erreurs.push(
-                                    affectation.filiereCode +
-                                    " : aucun local affecté."
-                                );
-
-                                return;
-                            }
-
-                            // ---------------------------------
-                          // 2. Vérifier que les locaux sont disponibles
-                           // ---------------------------------
-
-                   affectation.locaux.forEach(
-                         function (codeLocal) {
-
-                            const local =
-                            window.generationExamens
-                              .obtenirDonnees()
-                                 .sallesAmphis
-                              .find(
-                                   function (salle) {
-
-                           return salle.code === codeLocal;
-
-                    }
-                );
-
-        if (!local) {
-
-            erreurs.push(
-                affectation.filiereCode +
-                " : local " +
-                codeLocal +
-                " introuvable dans les ressources."
-            );
-
-            return;
-        }
-
-        if (local.disponible !== "Oui") {
-
-            erreurs.push(
-                affectation.filiereCode +
-                " : local " +
-                codeLocal +
-                " non disponible."
-            );
-
-        }
-
-    }
-);
-
-                  // ---------------------------------
-                  // 3. Vérifier la capacité
-                  // ---------------------------------
-
-                       if (
-                       affectation.capaciteTotale <
-                       affectation.effectif
-                          ) {
-
-                                erreurs.push(
-                                    affectation.filiereCode +
-                                    " : capacité insuffisante (" +
-                                    affectation.capaciteTotale +
-                                    " pour " +
-                                    affectation.effectif +
-                                    " étudiants)."
-                                );
-
-                            }
-
-                            // ---------------------------------
-                            // 3. Vérifier le taux de 66 %
-                            // ---------------------------------
-
-                            if (
-                                affectation.locaux.length === 1 &&
-                                affectation.tauxOccupation <
-                                0.66
-                            ) {
-
-                                erreurs.push(
-                                    affectation.filiereCode +
-                                    " : occupation inférieure à 66 % avec un seul local."
-                                );
-
-                            }
-
-                        }
-                    );
-                   
- // =========================================
- // CONTRÔLE DES CONFLITS DE SALLES
- // =========================================
-
- const conflits =
-     construireConflitsFilieres(
-         planningAffectationCourant
-     );
-
- const carteConflits =
-     construireCarteConflits(
-         conflits
-     );
-
- for (let i = 0; i < affectations.length; i++) {
-
-     const affectationA = affectations[i];
-
-     const conflitsA =
-         carteConflits[affectationA.filiereCode] || [];
-
-     for (let j = i + 1; j < affectations.length; j++) {
-
-         const affectationB = affectations[j];
-
-         // Ignorer une filière comparée avec elle-même.
-         if (
-             affectationA.filiereCode ===
-             affectationB.filiereCode
-         ) {
-             continue;
-         }
-
-         // Les filières d'un même groupe partagent
-         // volontairement les mêmes locaux.
-         const memeGroupe =
-             Array.isArray(affectationA.groupe) &&
-             Array.isArray(affectationB.groupe) &&
-             affectationA.groupe.length > 0 &&
-             affectationA.groupe.length ===
-                 affectationB.groupe.length &&
-             affectationA.groupe.every(function (code) {
-                 return affectationB.groupe.includes(code);
-             });
-
-         if (memeGroupe) {
-             continue;
-         }
-
-         if (
-             conflitsA.includes(
-                 affectationB.filiereCode
-             )
-         ) {
-
-             const locauxCommuns =
-                 (affectationA.locaux || []).filter(
-                     function (local) {
-                         return (
-                             (affectationB.locaux || [])
-                                 .includes(local)
-                         );
-                     }
-                 );
-
-             if (locauxCommuns.length > 0) {
-
-                 erreurs.push(
-                     "Conflit de salle entre " +
-                     affectationA.filiereCode +
-                     " et " +
-                     affectationB.filiereCode +
-                     " : " +
-                     locauxCommuns.join(" || ")
-                 );
-
-             }
-         }
-     }
- }
-
-
-                    
-                    // =========================================
-                    // AFFICHER LE RÉSULTAT
-                    // =========================================
-
-                    if (erreurs.length > 0) {
-
-                        console.error(
-                            "❌ Contrôle échoué :",
-                            erreurs
-                        );
-
-                        if (statut) {
-
-                            statut.textContent =
-                                "❌ Contrôle échoué : " +
-                                erreurs.length +
-                                " problème(s).";
-
-                        }
-
-                        console.table(
-                            erreurs.map(
-                                function (erreur) {
-
-                                    return {
-                                        Erreur: erreur
-                                    };
-
-                                }
-                            )
-                        );
-
-                        return;
-                    }
-
-                    console.log(
-                        "✓ Contrôle des affectations réussi."
-                    );
-
-                    console.log(
-                        "✓ Nombre de filières contrôlées :",
-                        affectations.length
-                    );
-
-                    if (statut) {
-
-                        statut.textContent =
-                            "✅ Affectations contrôlées avec succès : aucune anomalie détectée.";
-
-                    }
-
-                } catch (erreur) {
-
-                    console.error(
-                        "❌ Erreur lors du contrôle :",
-                        erreur
-                    );
-
-                    if (statut) {
-
-                        statut.textContent =
-                            "❌ " + erreur.message;
-
-                    }
-
-                }
-
-            }
-        );
-
-    }
-);
-
-// =================================================
-// INTERFACE ADMIN — ENREGISTRER LES AFFECTATIONS
-// =================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const boutonEnregistrer =
-            document.getElementById(
-                "btnEnregistrerAffectations"
-            );
-
-        const statut =
-            document.getElementById(
-                "statutAffectationSalles"
-            );
-
-        if (!boutonEnregistrer) {
-
-            console.warn(
-                "⚠️ Bouton btnEnregistrerAffectations introuvable."
-            );
-
-            return;
-        }
-
-        boutonEnregistrer.addEventListener(
-            "click",
-            async function () {
-
-                console.log(
-                    "💾 Enregistrement des affectations..."
-                );
-
-                if (statut) {
-
-                    statut.textContent =
-                        "⏳ Enregistrement des affectations en cours...";
-
-                }
-
-                try {
-
-                    // =========================================
-                    // VÉRIFIER QU'UNE AFFECTATION EXISTE
-                    // =========================================
-
-                    if (
-                        !affectationCourante ||
-                        !planningAffectationCourant
-                    ) {
-
-                        throw new Error(
-                            "Aucune affectation à enregistrer. Veuillez d'abord générer les affectations."
-                        );
-
-                    }
-
-                    const affectations =
-                        affectationCourante.affectations;
-
-                    if (
-                        !Array.isArray(affectations) ||
-                        affectations.length === 0
-                    ) {
-
-                        throw new Error(
-                            "Aucune affectation disponible."
-                        );
-
-                    }
-
-                    // =========================================
-                    // AJOUTER LES LOCAUX AU PLANNING
-                    // =========================================
-
-                    planningAffectationCourant.filieres.forEach(
-                        function (filiere) {
-
-                            const affectation =
-                                affectations.find(
-                                    function (item) {
-
-                                        return (
-                                            item.filiereCode ===
-                                            filiere.filiereCode
-                                        );
-
-                                    }
-                                );
-
-                            if (affectation) {
-
-                                filiere.amphis =
-                                    [...affectation.locaux];
-
-                                console.log(
-                                    "✓ " +
-                                    filiere.filiereCode +
-                                    " → " +
-                                    filiere.amphis.join(
-                                        " || "
-                                    )
-                                );
-
-                            }
-
-                        }
-                    );
-
-                    // =========================================
-                    // VÉRIFIER LE PLANNING AVANT ENREGISTREMENT
-                    // =========================================
-
-                    console.log(
-                        "Planning à enregistrer :",
-                        planningAffectationCourant
-                    );
-
-                    planningAffectationCourant.filieres.forEach(
-                        function (filiere) {
-
-                            console.log(
-                                "Filière :",
-                                filiere.filiereCode,
-                                "| Amphis :",
-                                filiere.amphis
-                            );
-
-                        }
-                    );
-
-                
-                    // =========================================
-                    // ENREGISTRER DANS FIRESTORE
-                    // Préparation séparée : ne pas modifier
-                    // les calendriers publiés.
-                    // =========================================
-
-                    if (
-                        !planningAffectationCourant ||
-                        !Array.isArray(
-                            planningAffectationCourant.filieres
-                        )
-                    ) {
-                        throw new Error(
-                            "Le planning à préparer est invalide."
-                        );
-                    }
-
-                    const anneeUniversitaire =
-                        planningAffectationCourant.anneeUniversitaire;
-
-                    const niveauCode =
-                        planningAffectationCourant.niveauCode;
-
-                    const semestre =
-                        document.getElementById(
-                            "semestreCalendrierAdmin"
-                        )?.value;
-
-                    const regime =
-                        document.getElementById(
-                            "regimeCalendrierAdmin"
-                        )?.value;
-
-                    const sessionCode =
-                        planningAffectationCourant.sessionCode;
-
-                    if (
-                        !anneeUniversitaire ||
-                        !niveauCode ||
-                        !semestre ||
-                        !regime ||
-                        !sessionCode
-                    ) {
-                        throw new Error(
-                            "Impossible d'identifier précisément le calendrier à préparer."
-                        );
-                    }
-
-                    const idPreparation = [
-                        anneeUniversitaire,
-                        niveauCode,
-                        semestre,
-                        regime,
-                        sessionCode
-                    ].join("_").replace(/[\/\\.#$[\]]/g, "-");
-
-                    const referencePreparation = doc(
-                        db,
-                        "preparationsAffectations",
-                        idPreparation
-                    );
-
-                    const copiePlanning =
-                        JSON.parse(
-                            JSON.stringify(
-                                planningAffectationCourant
-                            )
-                        );
-
-                    await setDoc(
-                        referencePreparation,
-                        {
-                            anneeUniversitaire:
-                                anneeUniversitaire,
-                            niveauCode:
-                                niveauCode,
-                            semestre:
-                                semestre,
-                            regime:
-                                regime,
-                            sessionCode:
-                                sessionCode,
-                            planning:
-                                copiePlanning,
-                            statut:
-                                "preparation",
-                            modifieLe:
-                                serverTimestamp()
-                        },
-                        { merge: true }
-                    );
-
-                    console.log(
-                        "✓ Préparation enregistrée séparément :",
-                        idPreparation
-                    );
-
-                    if (statut) {
-                        statut.textContent =
-                            "✅ Préparation enregistrée. Le calendrier publié n'a pas été modifié.";
-                    }
-
-} catch (erreur) {
-                    console.error(
-                        "❌ Erreur lors de l'enregistrement des affectations :",
-                        erreur
-                    );
-
-                    if (statut) {
-
-                        statut.textContent =
-                            "❌ " + erreur.message;
-
-                    }
-
-                }
-
-            }
-        );
-
-    }
-);
