@@ -7,7 +7,11 @@ import { app } from "../firebase-config.js";
 import {
     getFirestore,
     getDocs,
-    collection
+    collection,
+    doc,
+    setDoc,
+    serverTimestamp,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 
@@ -1947,7 +1951,7 @@ document.addEventListener(
 
         const boutonGenerer =
             document.getElementById(
-                "btnGenererAffectations"
+                ""
             );
 
         const statut =
@@ -1963,7 +1967,7 @@ document.addEventListener(
         if (!boutonGenerer) {
 
             console.warn(
-                "⚠️ Bouton btnGenererAffectations introuvable."
+                "⚠️ Bouton  introuvable."
             );
 
             return;
@@ -2918,52 +2922,109 @@ document.addEventListener(
                         }
                     );
 
+                
                     // =========================================
                     // ENREGISTRER DANS FIRESTORE
+                    // Préparation séparée : ne pas modifier
+                    // les calendriers publiés.
                     // =========================================
 
                     if (
-                        !window.generationExamens ||
-                        typeof window.generationExamens.enregistrerCalendrier !==
-                        "function"
+                        !planningAffectationCourant ||
+                        !Array.isArray(
+                            planningAffectationCourant.filieres
+                        )
                     ) {
-
                         throw new Error(
-                            "La fonction enregistrerCalendrier() est introuvable."
+                            "Le planning à préparer est invalide."
                         );
-
                     }
 
-                    const resultat =
-                        await window.generationExamens.enregistrerCalendrier(
-                            planningAffectationCourant
-                        );
+                    const anneeUniversitaire =
+                        planningAffectationCourant.anneeUniversitaire;
 
-                    console.log(
-                        "✓ Résultat de l'enregistrement :",
-                        resultat
-                    );
+                    const niveauCode =
+                        planningAffectationCourant.niveauCode;
+
+                    const semestre =
+                        document.getElementById(
+                            "semestreCalendrierAdmin"
+                        )?.value;
+
+                    const regime =
+                        document.getElementById(
+                            "regimeCalendrierAdmin"
+                        )?.value;
+
+                    const sessionCode =
+                        planningAffectationCourant.sessionCode;
 
                     if (
-                        resultat &&
-                        resultat.id
+                        !anneeUniversitaire ||
+                        !niveauCode ||
+                        !semestre ||
+                        !regime ||
+                        !sessionCode
                     ) {
+                        throw new Error(
+                            "Impossible d'identifier précisément le calendrier à préparer."
+                        );
+                    }
 
-                        console.log(
-                            "✓ Calendrier enregistré dans Firestore :",
-                            resultat.id
+                    const idPreparation = [
+                        anneeUniversitaire,
+                        niveauCode,
+                        semestre,
+                        regime,
+                        sessionCode
+                    ].join("_").replace(/[\/\\.#$[\]]/g, "-");
+
+                    const referencePreparation = doc(
+                        db,
+                        "preparationsAffectations",
+                        idPreparation
+                    );
+
+                    const copiePlanning =
+                        JSON.parse(
+                            JSON.stringify(
+                                planningAffectationCourant
+                            )
                         );
 
-                    }
+                    await setDoc(
+                        referencePreparation,
+                        {
+                            anneeUniversitaire:
+                                anneeUniversitaire,
+                            niveauCode:
+                                niveauCode,
+                            semestre:
+                                semestre,
+                            regime:
+                                regime,
+                            sessionCode:
+                                sessionCode,
+                            planning:
+                                copiePlanning,
+                            statut:
+                                "preparation",
+                            modifieLe:
+                                serverTimestamp()
+                        },
+                        { merge: true }
+                    );
+
+                    console.log(
+                        "✓ Préparation enregistrée séparément :",
+                        idPreparation
+                    );
 
                     if (statut) {
-
                         statut.textContent =
-                            "✅ Affectations enregistrées avec succès dans Firestore.";
-
+                            "✅ Préparation enregistrée. Le calendrier publié n'a pas été modifié.";
                     }
 
-                } catch (erreur) {
 
                     console.error(
                         "❌ Erreur lors de l'enregistrement des affectations :",
