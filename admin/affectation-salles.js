@@ -1963,14 +1963,12 @@ document.addEventListener(
                 "tableauAffectationSalles"
             );
 
-        if (!boutonGenerer) {
-
-            console.warn(
-                "⚠️ Bouton  introuvable."
-            );
-
-            return;
-        }
+      if (!boutonGenerer) {
+    console.warn(
+        "⚠️ Bouton btnGenererAffectations introuvable."
+    );
+    return;
+}
 
         boutonGenerer.addEventListener(
             "click",
