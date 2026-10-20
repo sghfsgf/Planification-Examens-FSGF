@@ -1948,10 +1948,10 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        const boutonGenerer =
-            document.getElementById(
-                ""
-            );
+       const boutonGenerer =
+    document.getElementById(
+        "btnGenererAffectations"
+    );
 
         const statut =
             document.getElementById(
