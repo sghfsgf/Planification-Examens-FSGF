@@ -1137,20 +1137,13 @@ if (adresse === "A1") {
     continue;
 }
 
-// Ignorer les cellules absentes hors du corps du calendrier
 if (!feuille[adresse]) {
-    if (
-        ligne < nombreLignesEntete ||
-        colonne < 2
-    ) {
-        continue;
-    }
+    continue;
+}
 
-    // Créer uniquement les cellules vides du corps du calendrier
-    feuille[adresse] = {
-        t: "s",
-        v: ""
-    };
+// Préserver le style spécifique du titre en A1
+if (adresse === "A1") {
+    continue;
 }
 
                     
