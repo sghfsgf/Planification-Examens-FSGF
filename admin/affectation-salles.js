@@ -3025,7 +3025,7 @@ document.addEventListener(
                             "✅ Préparation enregistrée. Le calendrier publié n'a pas été modifié.";
                     }
 
-
+} catch (erreur) {
                     console.error(
                         "❌ Erreur lors de l'enregistrement des affectations :",
                         erreur
