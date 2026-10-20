@@ -1935,8 +1935,7 @@ return {
 window.affecterLocauxFixes =
     affecterLocauxFixes;
 
-window.affecterLocauxFixes =
-    affecterLocauxFixes;
+
 
 // =================================================
 // INTERFACE ADMIN — GÉNÉRER LES AFFECTATIONS
