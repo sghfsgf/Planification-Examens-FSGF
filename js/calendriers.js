@@ -1085,134 +1085,137 @@ feuille.A1 = {
 }
 
 
-            // -------------------------------------------------
-            // Style des cellules pour reproduire l'impression
-            // -------------------------------------------------
+           
+                // -------------------------------------------------
+                // Style des cellules pour reproduire l'impression
+                // -------------------------------------------------
 
-            if (feuille["!ref"]) {
+                if (feuille["!ref"]) {
 
-                const plage =
-                    XLSX.utils.decode_range(
-                        feuille["!ref"]
-                    );
+                    const plage =
+                        XLSX.utils.decode_range(
+                            feuille["!ref"]
+                        );
 
-              // Nombre de lignes avant et dans l'en-tête du tableau Excel
-              const nombreLignesEntete =
-    3 + (
-        tableauExcel.tHead
-            ? tableauExcel.tHead.rows.length
-            : 0
-    );
-                // Matières présentes dans le calendrier
-                const matieresCalendrier =
-                    new Set(
-                        Array.from(
-                            tableauExcel.querySelectorAll(
-                                ".cellule-examen"
-                            )
-                        ).map(function (cellule) {
-                            return cellule.textContent.trim();
-                        })
-                    );
+                    // Nombre de lignes avant et dans l'en-tête du tableau Excel
+                    const nombreLignesEntete =
+                        3 + (
+                            tableauExcel.tHead
+                                ? tableauExcel.tHead.rows.length
+                                : 0
+                        );
 
-                for (
-                    let ligne = plage.s.r;
-                    ligne <= plage.e.r;
-                    ligne++
-                ) {
+                    // Matières présentes dans le calendrier
+                    const matieresCalendrier =
+                        new Set(
+                            Array.from(
+                                tableauExcel.querySelectorAll(
+                                    ".cellule-examen"
+                                )
+                            ).map(function (cellule) {
+                                return cellule.textContent.trim();
+                            })
+                        );
 
                     for (
-                        let colonne = plage.s.c;
-                        colonne <= plage.e.c;
-                        colonne++
+                        let ligne = plage.s.r;
+                        ligne <= plage.e.r;
+                        ligne++
                     ) {
 
-                        const adresse =
-                            XLSX.utils.encode_cell({
-                                r: ligne,
-                                c: colonne
-                            });
-                         if (!feuille[adresse]) {
-                       continue;
-                       }
+                        for (
+                            let colonne = plage.s.c;
+                            colonne <= plage.e.c;
+                            colonne++
+                        ) {
 
-// Préserver le style spécifique du titre en A1
-if (adresse === "A1") {
-    continue;
-                      
-}
+                            const adresse =
+                                XLSX.utils.encode_cell({
+                                    r: ligne,
+                                    c: colonne
+                                });
 
-                    
-                 }
-                        const valeurCellule =
-                            feuille[adresse].v != null
-                                ? String(
-                                    feuille[adresse].v
-                                ).trim()
-                                : "";
-
-                        const estEntete =
-                            ligne < nombreLignesEntete;
-
-                        const estFiliere =
-                            colonne === 0 &&
-                            ligne >= nombreLignesEntete;
-
-                        const estAmphi =
-                            colonne === 1 &&
-                            ligne >= nombreLignesEntete;
-
-                        const estMatiere =
-                            valeurCellule !== "" &&
-                            matieresCalendrier.has(
-                                valeurCellule
-                            );
-
-                        // Taille de police selon le type de cellule
-                        let taillePolice = 11;
-
-                        if (estEntete || estFiliere) {
-                            taillePolice = 7;
-                        } else if (estAmphi) {
-                            taillePolice = 9;
-                        }
-
-                        feuille[adresse].s = {
-
-                            font: {
-                                name: "Arial",
-                                sz: taillePolice,
-                                bold:
-                                    estEntete ||
-                                    estFiliere ||
-                                    estAmphi
-                            },
-
-                            alignment: {
-                                horizontal: "center",
-                                vertical: "center",
-                                wrapText: true
-                            },
-
-                            border: {
-                                top: {
-                                    style: "thin",
-                                    color: { rgb: "000000" }
-                                },
-                                bottom: {
-                                    style: "thin",
-                                    color: { rgb: "000000" }
-                                },
-                                left: {
-                                    style: "thin",
-                                    color: { rgb: "000000" }
-                                },
-                                right: {
-                                    style: "thin",
-                                    color: { rgb: "000000" }
-                                }
+                            // Préserver le style spécifique du titre en A1
+                            if (adresse === "A1") {
+                                continue;
                             }
-                        };
+
+                            if (!feuille[adresse]) {
+                                continue;
+                            }
+
+                            const valeurCellule =
+                                feuille[adresse].v != null
+                                    ? String(
+                                        feuille[adresse].v
+                                    ).trim()
+                                    : "";
+
+                            const estEntete =
+                                ligne < nombreLignesEntete;
+
+                            const estFiliere =
+                                colonne === 0 &&
+                                ligne >= nombreLignesEntete;
+
+                            const estAmphi =
+                                colonne === 1 &&
+                                ligne >= nombreLignesEntete;
+
+                            const estMatiere =
+                                valeurCellule !== "" &&
+                                matieresCalendrier.has(
+                                    valeurCellule
+                                );
+
+                            // Taille de police selon le type de cellule
+                            let taillePolice = 11;
+
+                            if (estEntete || estFiliere) {
+                                taillePolice = 7;
+                            } else if (estAmphi) {
+                                taillePolice = 9;
+                            }
+
+                            feuille[adresse].s = {
+
+                                font: {
+                                    name: "Arial",
+                                    sz: taillePolice,
+                                    bold:
+                                        estEntete ||
+                                        estFiliere ||
+                                        estAmphi
+                                },
+
+                                alignment: {
+                                    horizontal: "center",
+                                    vertical: "center",
+                                    wrapText: true
+                                },
+
+                                border: {
+                                    top: {
+                                        style: "thin",
+                                        color: { rgb: "000000" }
+                                    },
+                                    bottom: {
+                                        style: "thin",
+                                        color: { rgb: "000000" }
+                                    },
+                                    left: {
+                                        style: "thin",
+                                        color: { rgb: "000000" }
+                                    },
+                                    right: {
+                                        style: "thin",
+                                        color: { rgb: "000000" }
+                                    }
+                                }
+                            };
+                        }
+                    }
+                }
 
                         // Fond des en-têtes et des deux premières colonnes
                         if (
