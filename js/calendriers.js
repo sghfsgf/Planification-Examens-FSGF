@@ -1132,18 +1132,14 @@ feuille.A1 = {
                                 r: ligne,
                                 c: colonne
                             });
-                        // Préserver le style spécifique du titre en A1
-if (adresse === "A1") {
-    continue;
-}
-
-if (!feuille[adresse]) {
-    continue;
-}
+                         if (!feuille[adresse]) {
+                       continue;
+                       }
 
 // Préserver le style spécifique du titre en A1
 if (adresse === "A1") {
     continue;
+                      
 }
 
                     
