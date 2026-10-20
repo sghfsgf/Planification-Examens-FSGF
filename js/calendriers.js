@@ -1140,9 +1140,17 @@ feuille.A1 = {
                                 continue;
                             }
 
-                            if (!feuille[adresse]) {
-                                continue;
-                            }
+                         // Ignorer les cellules absentes hors du corps du calendrier
+if (!feuille[adresse]) {
+    if (
+        ligne < nombreLignesEntete ||
+        colonne < 2
+    ) {
+        continue;
+    }
+
+    continue;
+}
 
                             const valeurCellule =
                                 feuille[adresse].v != null
