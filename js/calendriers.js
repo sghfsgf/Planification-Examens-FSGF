@@ -99,10 +99,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const selectSession =
         document.getElementById("selectSession");
 
-    // Sauvegarde du niveau de base (évite l'accumulation du titre)
-    const niveauBase = niveauCalendrier
-        ? niveauCalendrier.textContent.trim()
-        : "";
+    // =================================================
+    // Récupère le code niveau pur (L1, L2, L3, MP, MR)
+    // même si le titre a déjà été enrichi avec session/année
+    // =================================================
+    function getNiveauCode() {
+        if (!niveauCalendrier) return "";
+        // On prend uniquement la partie avant le premier " — "
+        return niveauCalendrier.textContent
+            .trim()
+            .split("—")[0]
+            .trim();
+    }
 
     // =================================================
     // CONSTRUIRE LE CALENDRIER
@@ -143,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // -------------------------------------------------
         // Récupération des paramètres sélectionnés
         // -------------------------------------------------
-        const niveau = niveauBase;
+        const niveau = getNiveauCode();   // L1, L2, L3, MP, MR...
         const semestre =
             selectSemestre
                 ? selectSemestre.value
