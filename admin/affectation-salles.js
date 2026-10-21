@@ -1528,7 +1528,9 @@ if (btnGenererAffectations) {
                         erreurs: erreurs
                     }
                 );
+console.table(erreurs);
 
+               
             } catch (erreur) {
 
                 console.error(
