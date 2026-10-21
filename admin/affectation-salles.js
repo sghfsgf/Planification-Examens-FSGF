@@ -5,7 +5,7 @@
 import { app } from "../firebase-config.js";
 
 import {
-    getFirestore,
+   getFirestore,
     getDocs,
     collection,
     doc,
