@@ -1158,58 +1158,65 @@ function rechercherMeilleureCombinaisonLocaux(
     // 1. Chercher d'abord un seul local >= 66 %
     // -------------------------------------------------
 
+    
+    // -------------------------------------------------
+    // 1. Chercher d'abord un seul local
+    // -------------------------------------------------
+
     const locauxUniques =
         locauxDisponibles
             .filter(
                 function (salle) {
-
-                    const capacite =
-                        Number(salle.capacite);
-
                     return (
-                        capacite >= effectif &&
-                        effectif / capacite >= 0.66
+                        Number(salle.capacite) >= effectif
                     );
-
                 }
             )
             .sort(
                 function (a, b) {
+                    const tauxA =
+                        effectif / Number(a.capacite);
 
-                    return (
-                        Number(a.capacite) -
-                        Number(b.capacite)
-                    );
+                    const tauxB =
+                        effectif / Number(b.capacite);
 
+                    // Priorité 1 : occupation >= 83 %
+                    const prioriteA = tauxA >= 0.83 ? 0 :
+                        tauxA >= 0.66 ? 1 : 2;
+
+                    const prioriteB = tauxB >= 0.83 ? 0 :
+                        tauxB >= 0.66 ? 1 : 2;
+
+                    if (prioriteA !== prioriteB) {
+                        return prioriteA - prioriteB;
+                    }
+
+                    // À priorité égale, capacité la plus petite
+                    return Number(a.capacite) -
+                        Number(b.capacite);
                 }
             );
 
-    if (
-        locauxUniques.length > 0
-    ) {
+    if (locauxUniques.length > 0) {
+        const local = locauxUniques[0];
 
-        const local =
-            locauxUniques[0];
+        const tauxOccupation =
+            effectif / Number(local.capacite);
 
         return {
             succes: true,
-
-            locaux: [
-                local.code
-            ],
-
-            capaciteTotale:
-                Number(local.capacite),
-
-            tauxOccupation:
-                effectif /
-                Number(local.capacite),
-
+            locaux: [local.code],
+            capaciteTotale: Number(local.capacite),
+            tauxOccupation: tauxOccupation,
             message:
-                "Un seul local suffit."
+                tauxOccupation >= 0.83
+                    ? "Un seul local suffit : priorité 83 %."
+                    : tauxOccupation >= 0.66
+                        ? "Un seul local suffit : priorité 66 %."
+                        : "Un seul local suffit : dernier recours sous 66 %."
         };
-
     }
+
 
     // -------------------------------------------------
     // 2. Rechercher plusieurs locaux
@@ -1273,33 +1280,9 @@ function rechercherMeilleureCombinaisonLocaux(
     0
 );
 
-// -------------------------------------------------
-// Supprimer les combinaisons constituées
-// d'un seul local qui ne respecte pas 66 %
-// -------------------------------------------------
 
-const combinaisonsValides =
-    combinaisons.filter(
-        function (combinaison) {
-
-            if (
-                combinaison.locaux.length === 1
-            ) {
-
-                return (
-                    effectif /
-                    combinaison.capaciteTotale >=
-                    0.66
-                );
-
-            }
-
-            return true;
-
-        }
-    );
    if (
-    combinaisonsValides.length === 0
+    combinaisons.length === 0
 ) {
 
         return {
