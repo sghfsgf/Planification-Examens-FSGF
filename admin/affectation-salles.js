@@ -1326,3 +1326,227 @@ const combinaisonsValides =
 }
  window.rechercherMeilleureCombinaisonLocaux =
     rechercherMeilleureCombinaisonLocaux;
+
+
+/* =================================================
+   GÉNÉRER LES AFFECTATIONS DE TOUS LES CALENDRIERS
+   ================================================= */
+
+const btnGenererAffectations =
+    document.getElementById("btnGenererAffectations");
+
+if (btnGenererAffectations) {
+
+    btnGenererAffectations.addEventListener(
+        "click",
+        async function () {
+
+            const statut =
+                document.getElementById(
+                    "statutAffectationSalles"
+                );
+
+            const resume =
+                document.getElementById(
+                    "resumeAffectationSalles"
+                );
+
+            btnGenererAffectations.disabled = true;
+
+            if (statut) {
+                statut.textContent =
+                    "Chargement des calendriers enregistrés...";
+            }
+
+            try {
+
+                // 1. Charger les données nécessaires
+                const donnees =
+                    await window.generationExamens.obtenirDonnees();
+
+                const sallesAmphis =
+                    donnees.sallesAmphis || [];
+
+                const effectifs =
+                    donnees.effectifs || [];
+
+                if (
+                    sallesAmphis.length === 0 ||
+                    effectifs.length === 0
+                ) {
+                    throw new Error(
+                        "Les salles/amphis ou les effectifs sont absents."
+                    );
+                }
+
+                // 2. Lire tous les calendriers Firestore
+                const snapshot =
+                    await getDocs(
+                        collection(db, "calendriers")
+                    );
+
+                if (snapshot.empty) {
+                    throw new Error(
+                        "Aucun calendrier enregistré dans Firestore."
+                    );
+                }
+
+                let calendriersTraites = 0;
+                let calendriersEnregistres = 0;
+                let calendriersEnErreur = 0;
+
+                const erreurs = [];
+
+                // 3. Traiter chaque calendrier enregistré
+                for (const documentCalendrier of snapshot.docs) {
+
+                    const donneesCalendrier =
+                        documentCalendrier.data();
+
+                    const planning =
+                        donneesCalendrier.planning;
+
+                    if (
+                        !planning ||
+                        !Array.isArray(planning.filieres)
+                    ) {
+                        calendriersEnErreur++;
+
+                        erreurs.push(
+                            documentCalendrier.id +
+                            " : structure du planning invalide."
+                        );
+
+                        continue;
+                    }
+
+                    calendriersTraites++;
+
+                    const resultat =
+                        window.affecterLocauxFixes(
+                            planning,
+                            sallesAmphis,
+                            effectifs
+                        );
+
+                    // Ne pas enregistrer un calendrier partiellement affecté
+                    if (
+                        !resultat ||
+                        !resultat.succes
+                    ) {
+                        calendriersEnErreur++;
+
+                        erreurs.push(
+                            documentCalendrier.id +
+                            " : " +
+                            (
+                                resultat?.message ||
+                                "Échec de l'affectation."
+                            )
+                        );
+
+                        continue;
+                    }
+
+                    // 4. Reporter les locaux dans les filières
+                    const filieresMisesAJour =
+                        planning.filieres.map(
+                            function (filiere) {
+
+                                const affectation =
+                                    resultat.affectations.find(
+                                        function (ligne) {
+                                            return (
+                                                ligne.filiereCode ===
+                                                filiere.filiereCode
+                                            );
+                                        }
+                                    );
+
+                                if (!affectation) {
+                                    throw new Error(
+                                        "Affectation manquante pour " +
+                                        filiere.filiereCode
+                                    );
+                                }
+
+                                return {
+                                    ...filiere,
+                                    amphis: affectation.locaux
+                                };
+                            }
+                        );
+
+                    const planningMisAJour = {
+                        ...planning,
+                        filieres: filieresMisesAJour
+                    };
+
+                    // 5. Enregistrer uniquement le planning modifié
+                    await updateDoc(
+                        doc(
+                            db,
+                            "calendriers",
+                            documentCalendrier.id
+                        ),
+                        {
+                            planning: planningMisAJour
+                        }
+                    );
+
+                    calendriersEnregistres++;
+                }
+
+                // 6. Afficher le bilan
+                const bilan =
+                    "Calendriers lus : " +
+                    snapshot.size +
+                    " | Traités : " +
+                    calendriersTraites +
+                    " | Enregistrés : " +
+                    calendriersEnregistres +
+                    " | En erreur : " +
+                    calendriersEnErreur;
+
+                if (statut) {
+                    statut.textContent = bilan;
+                }
+
+                if (resume) {
+                    resume.textContent =
+                        erreurs.length > 0
+                            ? bilan + "\n" + erreurs.join("\n")
+                            : bilan;
+                }
+
+                console.log(
+                    "Bilan des affectations :",
+                    {
+                        total: snapshot.size,
+                        traites: calendriersTraites,
+                        enregistres: calendriersEnregistres,
+                        erreurs: erreurs
+                    }
+                );
+
+            } catch (erreur) {
+
+                console.error(
+                    "Erreur lors de la génération des affectations :",
+                    erreur
+                );
+
+                if (statut) {
+                    statut.textContent =
+                        "Échec : " + erreur.message;
+                }
+
+            } finally {
+
+                btnGenererAffectations.disabled = false;
+
+            }
+        }
+    );
+}
+
