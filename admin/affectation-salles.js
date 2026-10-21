@@ -1282,6 +1282,9 @@ function rechercherMeilleureCombinaisonLocaux(
 
     const meilleure = combinaisons[0];
 
+    const tauxOccupation =
+        effectif / meilleure.capaciteTotale;
+
     return {
         succes: true,
 
@@ -1292,12 +1295,18 @@ function rechercherMeilleureCombinaisonLocaux(
             meilleure.capaciteTotale,
 
         tauxOccupation:
-            effectif /
-            meilleure.capaciteTotale,
+            tauxOccupation,
 
         message:
-            "Plusieurs locaux sont nécessaires."
+            meilleure.locaux.length === 1
+                ? tauxOccupation >= 0.83
+                    ? "Un seul local suffit : priorité 83 %."
+                    : tauxOccupation >= 0.66
+                        ? "Un seul local suffit : priorité 66 %."
+                        : "Un seul local suffit : dernier recours sous 66 %."
+                : "Plusieurs locaux sont nécessaires."
     };
+
 
 }
  window.rechercherMeilleureCombinaisonLocaux =
