@@ -861,6 +861,7 @@ window.localCompatibleAvecConflits =
 // AFFECTER UN LOCAL FIXE À CHAQUE FILIÈRE
 // =================================================
 
+
 function affecterLocauxFixes(
     planning,
     sallesAmphis,
@@ -871,9 +872,9 @@ function affecterLocauxFixes(
 
     if (
         !planning ||
-        !planning.filieres ||
-        !sallesAmphis ||
-        !effectifs
+        !Array.isArray(planning.filieres) ||
+        !Array.isArray(sallesAmphis) ||
+        !Array.isArray(effectifs)
     ) {
 
         return {
@@ -917,19 +918,17 @@ function affecterLocauxFixes(
 
             if (!ligneEffectif) {
 
-                resultats.push(
-                    {
-                        filiereCode:
-                            filiere.filiereCode,
+                resultats.push({
+                    filiereCode:
+                        filiere.filiereCode,
 
-                        succes: false,
+                    succes: false,
 
-                        locaux: [],
+                    locaux: [],
 
-                        message:
-                            "Effectif introuvable."
-                    }
-                );
+                    message:
+                        "Effectif introuvable."
+                });
 
                 return;
 
@@ -940,6 +939,28 @@ function affecterLocauxFixes(
                     ligneEffectif.effectif
                 );
 
+            if (
+                !Number.isFinite(effectif) ||
+                effectif <= 0
+            ) {
+
+                resultats.push({
+                    filiereCode:
+                        filiere.filiereCode,
+
+                    effectif: effectif,
+
+                    succes: false,
+
+                    locaux: [],
+
+                    message:
+                        "Effectif invalide."
+                });
+
+                return;
+
+            }
 
             // -------------------------------------------------
             // Rechercher les locaux possibles
@@ -955,6 +976,7 @@ function affecterLocauxFixes(
 
                             return (
                                 salle.disponible === "Oui" &&
+                                Number.isFinite(capacite) &&
                                 capacite > 0 &&
                                 capacite >= effectif
                             );
@@ -977,31 +999,30 @@ function affecterLocauxFixes(
                         function (a, b) {
 
                             const tauxA =
-                                effectif / Number(a.capacite);
+                                effectif /
+                                Number(a.capacite);
 
                             const tauxB =
-                                effectif / Number(b.capacite);
-                    const prioriteA =
-    tauxA >= 0.83 ? 0 :
-    tauxA >= 0.66 ? 1 : 2;
+                                effectif /
+                                Number(b.capacite);
 
-const prioriteB =
-    tauxB >= 0.83 ? 0 :
-    tauxB >= 0.66 ? 1 : 2;
+                            const prioriteA =
+                                tauxA >= 0.83 ? 0 :
+                                tauxA >= 0.66 ? 1 : 2;
 
-if (prioriteA !== prioriteB) {
-    return prioriteA - prioriteB;
-}
+                            const prioriteB =
+                                tauxB >= 0.83 ? 0 :
+                                tauxB >= 0.66 ? 1 : 2;
 
-return (
-    Number(a.capacite) -
-    Number(b.capacite)
-);
+                            if (
+                                prioriteA !== prioriteB
+                            ) {
 
-return Number(a.capacite) - Number(b.capacite);
+                                return (
+                                    prioriteA -
+                                    prioriteB
+                                );
 
-                            if (prioriteA !== prioriteB) {
-                                return prioriteA - prioriteB;
                             }
 
                             return (
@@ -1016,22 +1037,19 @@ return Number(a.capacite) - Number(b.capacite);
                 locauxPossibles.length === 0
             ) {
 
-                resultats.push(
-                    {
-                        filiereCode:
-                            filiere.filiereCode,
+                resultats.push({
+                    filiereCode:
+                        filiere.filiereCode,
 
-                        effectif:
-                            effectif,
+                    effectif: effectif,
 
-                        succes: false,
+                    succes: false,
 
-                        locaux: [],
+                    locaux: [],
 
-                        message:
-                            "Affectation impossible."
-                    }
-                );
+                    message:
+                        "Affectation impossible."
+                });
 
                 return;
 
@@ -1040,31 +1058,28 @@ return Number(a.capacite) - Number(b.capacite);
             const local =
                 locauxPossibles[0];
 
-            resultats.push(
-                {
-                    filiereCode:
-                        filiere.filiereCode,
+            resultats.push({
+                filiereCode:
+                    filiere.filiereCode,
 
-                    effectif:
-                        effectif,
+                effectif: effectif,
 
-                    succes: true,
+                succes: true,
 
-                    locaux: [
-                        local.code
-                    ],
+                locaux: [
+                    local.code
+                ],
 
-                    capaciteTotale:
-                        Number(local.capacite),
+                capaciteTotale:
+                    Number(local.capacite),
 
-                    tauxOccupation:
-                        effectif /
-                        Number(local.capacite),
+                tauxOccupation:
+                    effectif /
+                    Number(local.capacite),
 
-                    message:
-                        "Local fixe affecté."
-                }
-            );
+                message:
+                    "Local fixe affecté."
+            });
 
         }
     );
