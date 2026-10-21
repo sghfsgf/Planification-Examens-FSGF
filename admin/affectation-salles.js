@@ -1333,6 +1333,124 @@ const combinaisonsValides =
  window.rechercherMeilleureCombinaisonLocaux =
     rechercherMeilleureCombinaisonLocaux;
 
+ // =================================================
+ // COMPTER LES MATIÈRES PROGRAMMÉES D'UNE FILIÈRE
+ // =================================================
+
+function compterMatieresProgrammeesParFiliere(filiere) {
+    const matieres = new Set();
+
+    (filiere.cellules || []).forEach(function (cellule) {
+        if (
+            cellule &&
+            cellule.estOccupee &&
+            cellule.matiereLibelle
+        ) {
+            matieres.add(
+                String(cellule.matiereLibelle).trim()
+            );
+        }
+    });
+
+    return matieres.size;
+}
+
+
+// =================================================
+// CONSTRUIRE LE VECTEUR DE PRIORITÉ D'UN NIVEAU
+// =================================================
+
+function construireVecteurPrioriteNiveau(planning) {
+    if (!planning || !Array.isArray(planning.filieres)) {
+        return [];
+    }
+
+    return planning.filieres
+        .map(function (filiere) {
+            return compterMatieresProgrammeesParFiliere(filiere);
+        })
+        .sort(function (a, b) {
+            return b - a;
+        });
+}
+
+
+// =================================================
+// CLASSER LES CALENDRIERS AVANT LES AFFECTATIONS
+// =================================================
+
+function classerCalendriersPourAffectation(documents) {
+    return documents
+        .map(function (documentCalendrier) {
+            const donnees = documentCalendrier.data();
+            const planning = donnees.planning;
+
+            const cleGroupe = [
+                donnees.anneeUniversitaire || "",
+                donnees.regimeCode || "",
+                donnees.sessionCode || "",
+                donnees.semestreCode || ""
+            ].join("|");
+
+            return {
+                document: documentCalendrier,
+                cleGroupe: cleGroupe,
+                niveauCode:
+                    (planning && planning.niveauCode) ||
+                    donnees.niveauCode ||
+                    "",
+                vecteur: construireVecteurPrioriteNiveau(planning),
+                planningValide:
+                    !!planning &&
+                    Array.isArray(planning.filieres)
+            };
+        })
+        .sort(function (a, b) {
+            // Priorité 1 : traiter chaque groupe séparément
+            const comparaisonGroupe =
+                a.cleGroupe.localeCompare(b.cleGroupe);
+
+            if (comparaisonGroupe !== 0) {
+                return comparaisonGroupe;
+            }
+
+            // Priorité 2 : plannings valides avant les invalides
+            if (a.planningValide !== b.planningValide) {
+                return a.planningValide ? -1 : 1;
+            }
+
+            // Priorité 3 : comparer les vecteurs décroissants
+            const longueur =
+                Math.min(a.vecteur.length, b.vecteur.length);
+
+            for (let i = 0; i < longueur; i++) {
+                if (a.vecteur[i] !== b.vecteur[i]) {
+                    return b.vecteur[i] - a.vecteur[i];
+                }
+            }
+
+            if (a.vecteur.length !== b.vecteur.length) {
+                return b.vecteur.length - a.vecteur.length;
+            }
+
+            // Départager les égalités de manière déterministe
+            const comparaisonNiveau =
+                a.niveauCode.localeCompare(b.niveauCode);
+
+            if (comparaisonNiveau !== 0) {
+                return comparaisonNiveau;
+            }
+
+            return a.document.id.localeCompare(b.document.id);
+        })
+        .map(function (element) {
+            return element.document;
+        });
+}
+
+window.classerCalendriersPourAffectation =
+    classerCalendriersPourAffectation;
+
 
 /* =================================================
    GÉNÉRER LES AFFECTATIONS DE TOUS LES CALENDRIERS
@@ -1403,8 +1521,11 @@ if (btnGenererAffectations) {
 
                 const erreurs = [];
 
-                // 3. Traiter chaque calendrier enregistré
-                for (const documentCalendrier of snapshot.docs) {
+                // 3. Classer puis traiter chaque calendrier enregistré
+const calendriersTries =
+    classerCalendriersPourAffectation(snapshot.docs);
+
+for (const documentCalendrier of calendriersTries) {
 
                     const donneesCalendrier =
                         documentCalendrier.data();
