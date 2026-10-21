@@ -7,9 +7,10 @@ import { app } from "../firebase-config.js";
 import {
     getFirestore,
     getDocs,
-    collection
+    collection,
+    doc,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
 
 // =================================================
 // FIRESTORE
