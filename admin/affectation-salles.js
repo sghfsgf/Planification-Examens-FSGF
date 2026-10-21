@@ -1304,37 +1304,46 @@ function rechercherMeilleureCombinaisonLocaux(
     // 3. Choisir la meilleure combinaison
     // -------------------------------------------------
 
-    combinaisonsValides.sort(
+    combinaisons.sort(
         function (a, b) {
 
+            const tauxA =
+                effectif / a.capaciteTotale;
+
+            const tauxB =
+                effectif / b.capaciteTotale;
+
             // Priorité 1 :
-            // moins de locaux
+            // occupation >= 83 %, puis >= 66 %,
+            // puis moins de 66 % en dernier recours
 
-            if (
-                a.locaux.length !==
-                b.locaux.length
-            ) {
+            const prioriteA =
+                tauxA >= 0.83 ? 0 :
+                tauxA >= 0.66 ? 1 : 2;
 
-                return (
-                    a.locaux.length -
-                    b.locaux.length
-                );
+            const prioriteB =
+                tauxB >= 0.83 ? 0 :
+                tauxB >= 0.66 ? 1 : 2;
 
+            if (prioriteA !== prioriteB) {
+                return prioriteA - prioriteB;
             }
 
             // Priorité 2 :
+            // moins de locaux ouverts
+
+            if (a.locaux.length !== b.locaux.length) {
+                return a.locaux.length - b.locaux.length;
+            }
+
+            // Priorité 3 :
             // capacité totale la plus proche
 
-            return (
-                a.capaciteTotale -
-                b.capaciteTotale
-            );
-
+            return a.capaciteTotale - b.capaciteTotale;
         }
     );
 
-    const meilleure =
-    combinaisonsValides[0];
+    const meilleure = combinaisons[0];
 
     return {
         succes: true,
