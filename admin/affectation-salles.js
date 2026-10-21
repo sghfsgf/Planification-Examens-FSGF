@@ -940,6 +940,7 @@ function affecterLocauxFixes(
                     ligneEffectif.effectif
                 );
 
+
             // -------------------------------------------------
             // Rechercher les locaux possibles
             // -------------------------------------------------
@@ -950,23 +951,12 @@ function affecterLocauxFixes(
                         function (salle) {
 
                             const capacite =
-                                Number(
-                                    salle.capacite
-                                );
-
-                            const tauxOccupation =
-                                effectif /
-                                capacite;
+                                Number(salle.capacite);
 
                             return (
-                                salle.disponible ===
-                                    "Oui" &&
-
-                                capacite >=
-                                    effectif &&
-
-                                tauxOccupation >=
-                                   0.83
+                                salle.disponible === "Oui" &&
+                                capacite > 0 &&
+                                capacite >= effectif
                             );
 
                         }
@@ -985,6 +975,22 @@ function affecterLocauxFixes(
                     )
                     .sort(
                         function (a, b) {
+
+                            const tauxA =
+                                effectif / Number(a.capacite);
+
+                            const tauxB =
+                                effectif / Number(b.capacite);
+
+                            const prioriteA =
+                                tauxA >= 0.83 ? 0 : 1;
+
+                            const prioriteB =
+                                tauxB >= 0.83 ? 0 : 1;
+
+                            if (prioriteA !== prioriteB) {
+                                return prioriteA - prioriteB;
+                            }
 
                             return (
                                 Number(a.capacite) -
