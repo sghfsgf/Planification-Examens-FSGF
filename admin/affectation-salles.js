@@ -899,8 +899,22 @@ function affecterLocauxFixes(
     // Parcourir les filières
     // -------------------------------------------------
 
-    planning.filieres.forEach(
-        function (filiere) {
+    // -------------------------------------------------
+// Trier les filières par nombre de matières programmées
+// -------------------------------------------------
+
+const filieresTriees =
+    planning.filieres
+        .slice()
+        .sort(function (a, b) {
+            return (
+                compterMatieresProgrammeesParFiliere(b) -
+                compterMatieresProgrammeesParFiliere(a)
+            );
+        });
+
+filieresTriees.forEach(
+    function (filiere) {
 
             const ligneEffectif =
                 effectifs.find(
