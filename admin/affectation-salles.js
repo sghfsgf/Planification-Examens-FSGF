@@ -965,7 +965,7 @@ function affecterLocauxFixes(
                                     effectif &&
 
                                 tauxOccupation >=
-                                    0.66
+                                   0.83
                             );
 
                         }
