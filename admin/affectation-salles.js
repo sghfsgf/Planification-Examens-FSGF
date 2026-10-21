@@ -1430,23 +1430,52 @@ if (btnGenererAffectations) {
                         );
 
                     // Ne pas enregistrer un calendrier partiellement affecté
-                    if (
-                        !resultat ||
-                        !resultat.succes
-                    ) {
-                        calendriersEnErreur++;
+                   
+if (
+    !resultat ||
+    !resultat.succes
+) {
+    calendriersEnErreur++;
 
-                        erreurs.push(
-                            documentCalendrier.id +
-                            " : " +
-                            (
-                                resultat?.message ||
-                                "Échec de l'affectation."
-                            )
-                        );
+    console.group(
+        "Échec du calendrier : " +
+        documentCalendrier.id
+    );
 
-                        continue;
-                    }
+    console.log(
+        "Message général :",
+        resultat?.message
+    );
+
+    console.table(
+        (resultat?.affectations || [])
+            .filter(function (affectation) {
+                return !affectation.succes;
+            })
+            .map(function (affectation) {
+                return {
+                    filiereCode: affectation.filiereCode,
+                    effectif: affectation.effectif,
+                    message: affectation.message,
+                    locaux: affectation.locaux
+                };
+            })
+    );
+
+    console.groupEnd();
+
+    erreurs.push(
+        documentCalendrier.id +
+        " : " +
+        (
+            resultat?.message ||
+            "Échec de l'affectation."
+        )
+    );
+
+    continue;
+}
+
 
                     // 4. Reporter les locaux dans les filières
                     const filieresMisesAJour =
