@@ -976,101 +976,18 @@ filieresTriees.forEach(
 
             }
 
+             // -------------------------------------------------
+            // Rechercher la meilleure combinaison de locaux
             // -------------------------------------------------
-            // Rechercher les locaux possibles
-            // -------------------------------------------------
 
-            const locauxPossibles =
-                sallesAmphis
-                    .filter(
-                        function (salle) {
-
-                            const capacite =
-                                Number(salle.capacite);
-
-                            return (
-                                salle.disponible === "Oui" &&
-                                Number.isFinite(capacite) &&
-                                capacite > 0 &&
-                                capacite >= effectif
-                            );
-
-                        }
-                    )
-                    .filter(
-                        function (salle) {
-
-                            return localCompatibleAvecConflits(
-                                filiere.filiereCode,
-                                salle.code,
-                                carteConflits,
-                                resultats
-                            );
-
-                        }
-                    )
-                    .sort(
-                        function (a, b) {
-
-                            const tauxA =
-                                effectif /
-                                Number(a.capacite);
-
-                            const tauxB =
-                                effectif /
-                                Number(b.capacite);
-
-                            const prioriteA =
-                                tauxA >= 0.83 ? 0 :
-                                tauxA >= 0.66 ? 1 : 2;
-
-                            const prioriteB =
-                                tauxB >= 0.83 ? 0 :
-                                tauxB >= 0.66 ? 1 : 2;
-
-                            if (
-                                prioriteA !== prioriteB
-                            ) {
-
-                                return (
-                                    prioriteA -
-                                    prioriteB
-                                );
-
-                            }
-
-                            return (
-                                Number(a.capacite) -
-                                Number(b.capacite)
-                            );
-
-                        }
-                    );
-
-            if (
-                locauxPossibles.length === 0
-            ) {
-
-                resultats.push({
-                    filiereCode:
-                        filiere.filiereCode,
-
-                    effectif: effectif,
-
-                    succes: false,
-
-                    locaux: [],
-
-                    message:
-                        "Affectation impossible."
-                });
-
-                return;
-
-            }
-
-            const local =
-                locauxPossibles[0];
+            const affectation =
+                rechercherMeilleureCombinaisonLocaux(
+                    filiere.filiereCode,
+                    effectif,
+                    sallesAmphis,
+                    carteConflits,
+                    resultats
+                );
 
             resultats.push({
                 filiereCode:
@@ -1078,23 +995,21 @@ filieresTriees.forEach(
 
                 effectif: effectif,
 
-                succes: true,
+                succes:
+                    affectation.succes,
 
-                locaux: [
-                    local.code
-                ],
+                locaux:
+                    affectation.locaux,
 
                 capaciteTotale:
-                    Number(local.capacite),
+                    affectation.capaciteTotale,
 
                 tauxOccupation:
-                    effectif /
-                    Number(local.capacite),
+                    affectation.tauxOccupation,
 
                 message:
-                    "Local fixe affecté."
+                    affectation.message
             });
-
         }
     );
 
