@@ -981,8 +981,7 @@ function affecterLocauxFixes(
 
                             const tauxB =
                                 effectif / Number(b.capacite);
-
-                            const prioriteA =
+                    const prioriteA =
     tauxA >= 0.83 ? 0 :
     tauxA >= 0.66 ? 1 : 2;
 
@@ -993,6 +992,11 @@ const prioriteB =
 if (prioriteA !== prioriteB) {
     return prioriteA - prioriteB;
 }
+
+return (
+    Number(a.capacite) -
+    Number(b.capacite)
+);
 
 return Number(a.capacite) - Number(b.capacite);
 
