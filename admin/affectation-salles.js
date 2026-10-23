@@ -1688,3 +1688,214 @@ console.table(erreurs);
 }
 
 
+
+/* =================================================
+   AFFICHAGE DES AFFECTATIONS DÉJÀ ENREGISTRÉES
+   Lecture seule : aucune écriture dans Firestore
+   ================================================= */
+
+async function afficherAffectationsEnregistrees() {
+
+    const conteneur =
+        document.getElementById("tableauAffectationSalles");
+
+    const statut =
+        document.getElementById("statutAffectationSalles");
+
+    const resume =
+        document.getElementById("resumeAffectationSalles");
+
+    if (!conteneur) {
+        console.warn(
+            "Conteneur tableauAffectationSalles introuvable."
+        );
+        return;
+    }
+
+    try {
+
+        const snapshot = await getDocs(
+            collection(db, "calendriers")
+        );
+
+        const lignes = [];
+
+        snapshot.forEach(function (documentCalendrier) {
+
+            const donnees = documentCalendrier.data();
+            const planning = donnees.planning;
+
+            if (
+                !planning ||
+                !Array.isArray(planning.filieres)
+            ) {
+                return;
+            }
+
+            planning.filieres.forEach(function (filiere) {
+
+                const locaux = Array.isArray(filiere.amphis)
+                    ? filiere.amphis
+                    : [];
+
+                if (locaux.length === 0) {
+                    return;
+                }
+
+                lignes.push({
+                    annee:
+                        donnees.anneeUniversitaire ||
+                        planning.anneeUniversitaire ||
+                        "",
+                    niveau:
+                        planning.niveauCode || "",
+                    session:
+                        planning.sessionCode || "",
+                    filiere:
+                        filiere.filiereCode || "",
+                    locaux:
+                        locaux.join(" || "),
+                    calendrier:
+                        documentCalendrier.id
+                });
+
+            });
+
+        });
+
+        lignes.sort(function (a, b) {
+            return (
+                a.annee.localeCompare(b.annee) ||
+                a.niveau.localeCompare(b.niveau) ||
+                a.session.localeCompare(b.session) ||
+                a.filiere.localeCompare(b.filiere)
+            );
+        });
+
+        conteneur.replaceChildren();
+
+        if (lignes.length === 0) {
+
+            if (statut) {
+                statut.textContent =
+                    "Aucune affectation enregistrée trouvée.";
+            }
+
+            if (resume) {
+                resume.textContent =
+                    "Aucun calendrier contenant des locaux affectés n'a été trouvé.";
+            }
+
+            return;
+        }
+
+        const tableau = document.createElement("table");
+        tableau.className = "tableau-calendrier";
+
+        const thead = document.createElement("thead");
+        const trEntete = document.createElement("tr");
+
+        [
+            "Année universitaire",
+            "Niveau",
+            "Session",
+            "Filière",
+            "Salles / Amphis",
+            "Identifiant du calendrier"
+        ].forEach(function (titre) {
+
+            const th = document.createElement("th");
+            th.textContent = titre;
+            trEntete.appendChild(th);
+
+        });
+
+        thead.appendChild(trEntete);
+        tableau.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        lignes.forEach(function (ligne) {
+
+            const tr = document.createElement("tr");
+
+            [
+                ligne.annee,
+                ligne.niveau,
+                ligne.session,
+                ligne.filiere,
+                ligne.locaux,
+                ligne.calendrier
+            ].forEach(function (valeur) {
+
+                const td = document.createElement("td");
+                td.textContent = valeur;
+                tr.appendChild(td);
+
+            });
+
+            tbody.appendChild(tr);
+
+        });
+
+        tableau.appendChild(tbody);
+        conteneur.appendChild(tableau);
+
+        if (statut) {
+            statut.textContent =
+                lignes.length +
+                " affectations affichées depuis les calendriers enregistrés.";
+        }
+
+        if (resume) {
+            resume.textContent =
+                snapshot.size +
+                " calendriers consultés en lecture seule.";
+        }
+
+        console.log(
+            "Affectations enregistrées affichées :",
+            lignes.length
+        );
+
+    } catch (erreur) {
+
+        console.error(
+            "Erreur de lecture des affectations enregistrées :",
+            erreur
+        );
+
+        if (statut) {
+            statut.textContent =
+                "Erreur de lecture : " + erreur.message;
+        }
+
+    }
+}
+
+// Actualiser l'affichage lorsque la section devient active.
+const sectionAffectation =
+    document.getElementById("affectation-salles-amphis");
+
+if (sectionAffectation) {
+
+    const observateurAffectation =
+        new MutationObserver(function () {
+
+            if (
+                sectionAffectation.classList.contains("active")
+            ) {
+                afficherAffectationsEnregistrees();
+            }
+
+        });
+
+    observateurAffectation.observe(
+        sectionAffectation,
+        {
+            attributes: true,
+            attributeFilter: ["class"]
+        }
+    );
+
+}
