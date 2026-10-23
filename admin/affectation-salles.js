@@ -1899,3 +1899,373 @@ if (sectionAffectation) {
     );
 
 }
+
+/* =====================================================
+   CONTRÔLER LES AFFECTATIONS EXISTANTES
+   Lecture seule : aucune écriture dans Firestore
+   ===================================================== */
+
+(function installerControleAffectations() {
+
+    const bouton = document.getElementById(
+        "btnControlerAffectations"
+    );
+
+    if (!bouton || bouton.dataset.controleInstalle === "oui") {
+        return;
+    }
+
+    bouton.dataset.controleInstalle = "oui";
+
+    bouton.addEventListener("click", async function () {
+
+        const statut = document.getElementById(
+            "statutAffectationSalles"
+        );
+
+        const resume = document.getElementById(
+            "resumeAffectationSalles"
+        );
+
+        bouton.disabled = true;
+
+        if (statut) {
+            statut.textContent =
+                "Contrôle des affectations en cours...";
+        }
+
+        const anomalies = [];
+        let nbCalendriers = 0;
+        let nbFilieres = 0;
+        let nbLocauxVerifies = 0;
+
+        function ajouterAnomalie(
+            calendrierId,
+            filiereCode,
+            probleme
+        ) {
+            anomalies.push({
+                calendrier: calendrierId,
+                filiere: filiereCode || "Non déterminée",
+                probleme: probleme
+            });
+        }
+
+        function obtenirCodesLocaux(amphis) {
+
+            if (!Array.isArray(amphis)) {
+                return [];
+            }
+
+            return amphis.map(function (local) {
+
+                if (typeof local === "string") {
+                    return local.trim();
+                }
+
+                if (local && typeof local === "object") {
+                    return String(
+                        local.code || local.localCode || ""
+                    ).trim();
+                }
+
+                return "";
+
+            }).filter(Boolean);
+        }
+
+        try {
+
+            const donnees =
+                window.generationExamens.obtenirDonnees();
+
+            const salles = donnees.sallesAmphis || [];
+            const effectifs = donnees.effectifs || [];
+
+            const resultat = await getDocs(
+                collection(db, "calendriers")
+            );
+
+            resultat.forEach(function (documentCalendrier) {
+
+                const calendrierId = documentCalendrier.id;
+                const document = documentCalendrier.data();
+                const planning = document.planning;
+
+                if (
+                    !planning ||
+                    !Array.isArray(planning.filieres)
+                ) {
+                    return;
+                }
+
+                nbCalendriers++;
+
+                const filieres = planning.filieres;
+
+                // Vérifier chaque affectation enregistrée.
+                filieres.forEach(function (filiere) {
+
+                    nbFilieres++;
+
+                    const filiereCode = filiere.filiereCode;
+                    const codesLocaux =
+                        obtenirCodesLocaux(filiere.amphis);
+
+                    if (codesLocaux.length === 0) {
+
+                        ajouterAnomalie(
+                            calendrierId,
+                            filiereCode,
+                            "Aucun local affecté."
+                        );
+
+                        return;
+                    }
+
+                    const locauxTrouves = [];
+
+                    codesLocaux.forEach(function (codeLocal) {
+
+                        const local = salles.find(
+                            function (salle) {
+                                return salle.code === codeLocal;
+                            }
+                        );
+
+                        if (!local) {
+
+                            ajouterAnomalie(
+                                calendrierId,
+                                filiereCode,
+                                "Local inconnu : " + codeLocal
+                            );
+
+                            return;
+                        }
+
+                        if (local.disponible !== "Oui") {
+
+                            ajouterAnomalie(
+                                calendrierId,
+                                filiereCode,
+                                "Local indisponible : " + codeLocal
+                            );
+
+                            return;
+                        }
+
+                        nbLocauxVerifies++;
+                        locauxTrouves.push(local);
+
+                    });
+
+                    // Rechercher l'effectif correspondant.
+                    const annee =
+                        document.anneeUniversitaire ||
+                        planning.anneeUniversitaire ||
+                        calendrierId.match(/\d{4}-\d{4}/)?.[0];
+
+                    let lignesEffectif = effectifs.filter(
+                        function (ligne) {
+
+                            return (
+                                ligne.niveauCode === planning.niveauCode &&
+                                ligne.filiereCode === filiereCode &&
+                                (!annee ||
+                                    ligne.anneeUniversitaire === annee)
+                            );
+
+                        }
+                    );
+
+                    // Si l'année n'est pas disponible dans le document,
+                    // accepter uniquement une correspondance non ambiguë.
+                    if (
+                        lignesEffectif.length === 0 &&
+                        !annee
+                    ) {
+                        lignesEffectif = effectifs.filter(
+                            function (ligne) {
+                                return (
+                                    ligne.niveauCode === planning.niveauCode &&
+                                    ligne.filiereCode === filiereCode
+                                );
+                            }
+                        );
+                    }
+
+                    if (lignesEffectif.length !== 1) {
+
+                        ajouterAnomalie(
+                            calendrierId,
+                            filiereCode,
+                            lignesEffectif.length === 0
+                                ? "Effectif introuvable."
+                                : "Effectif ambigu : plusieurs lignes correspondent."
+                        );
+
+                        return;
+                    }
+
+                    const effectif =
+                        Number(lignesEffectif[0].effectif);
+
+                    const capaciteTotale = locauxTrouves.reduce(
+                        function (total, local) {
+                            return total + Number(local.capacite || 0);
+                        },
+                        0
+                    );
+
+                    if (!Number.isFinite(effectif) || effectif < 0) {
+
+                        ajouterAnomalie(
+                            calendrierId,
+                            filiereCode,
+                            "Effectif invalide."
+                        );
+
+                        return;
+                    }
+
+                    if (capaciteTotale < effectif) {
+
+                        ajouterAnomalie(
+                            calendrierId,
+                            filiereCode,
+                            "Capacité insuffisante : " +
+                            capaciteTotale + " places pour " +
+                            effectif + " étudiants."
+                        );
+                    }
+
+                });
+
+                // Contrôler les conflits entre filières
+                // à la même date et au même créneau.
+                try {
+
+                    const conflits =
+                        window.construireConflitsFilieres(planning);
+
+                    conflits.forEach(function (conflit) {
+
+                        const filiereA = filieres.find(
+                            function (f) {
+                                return f.filiereCode === conflit.filiereA;
+                            }
+                        );
+
+                        const filiereB = filieres.find(
+                            function (f) {
+                                return f.filiereCode === conflit.filiereB;
+                            }
+                        );
+
+                        if (!filiereA || !filiereB) {
+                            return;
+                        }
+
+                        const locauxA =
+                            obtenirCodesLocaux(filiereA.amphis);
+
+                        const locauxB =
+                            obtenirCodesLocaux(filiereB.amphis);
+
+                        const locauxPartages = locauxA.filter(
+                            function (code) {
+                                return locauxB.includes(code);
+                            }
+                        );
+
+                        locauxPartages.forEach(function (codeLocal) {
+
+                            ajouterAnomalie(
+                                calendrierId,
+                                conflit.filiereA + " / " +
+                                    conflit.filiereB,
+                                "Conflit : le local " + codeLocal +
+                                " est attribué aux deux filières " +
+                                "pour des examens simultanés."
+                            );
+
+                        });
+
+                    });
+
+                } catch (erreurConflits) {
+
+                    ajouterAnomalie(
+                        calendrierId,
+                        "Contrôle des conflits",
+                        "Impossible de vérifier les conflits : " +
+                        erreurConflits.message
+                    );
+
+                }
+
+            });
+
+            console.table(anomalies);
+
+            if (statut) {
+
+                if (nbCalendriers === 0) {
+
+                    statut.textContent =
+                        "Aucun calendrier exploitable trouvé.";
+
+                } else if (anomalies.length === 0) {
+
+                    statut.textContent =
+                        "Contrôle terminé : aucune anomalie détectée.";
+
+                } else {
+
+                    statut.textContent =
+                        "Contrôle terminé : " +
+                        anomalies.length +
+                        " anomalie(s) détectée(s). Consultez le résumé.";
+
+                }
+
+            }
+
+            if (resume) {
+
+                resume.textContent =
+                    "Calendriers contrôlés : " + nbCalendriers +
+                    " | Filières examinées : " + nbFilieres +
+                    " | Locaux vérifiés : " + nbLocauxVerifies +
+                    " | Anomalies : " + anomalies.length;
+
+                if (anomalies.length > 0) {
+
+                    resume.textContent += " | Détails disponibles dans la console F12.";
+
+                }
+
+            }
+
+        } catch (erreur) {
+
+            console.error(
+                "Erreur pendant le contrôle des affectations :",
+                erreur
+            );
+
+            if (statut) {
+                statut.textContent =
+                    "Échec du contrôle : " + erreur.message;
+            }
+
+        } finally {
+
+            bouton.disabled = false;
+
+        }
+
+    });
+
+})();
