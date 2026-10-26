@@ -591,10 +591,26 @@ window.preparerAffectationsFilieres =
     preparerAffectationsFilieres;
 
   // Contrôle des conflits entre calendriers sélectionnés.
-           function memeCreneau(celluleA, celluleB) {
-                 if (!celluleA.date || !celluleB.date) {
-               return false;
-                          }
+  
+function memeCreneau(celluleA, celluleB) {
+    if (!celluleA?.date || !celluleB?.date) {
+        return false;
+    }
+
+    const ordreA = celluleA.creneauOrdre;
+    const ordreB = celluleB.creneauOrdre;
+
+    // Un créneau absent ou vide ne constitue pas un créneau valide.
+    if (
+        ordreA === null ||
+        ordreA === undefined ||
+        ordreA === "" ||
+        ordreB === null ||
+        ordreB === undefined ||
+        ordreB === ""
+    ) {
+        return false;
+    }
 
     const dateA = celluleA.date;
     const dateB = celluleB.date;
@@ -610,12 +626,12 @@ window.preparerAffectationsFilieres =
 
     return (
         memeDate &&
-        Number.isFinite(Number(celluleA.creneauOrdre)) &&
-        Number.isFinite(Number(celluleB.creneauOrdre)) &&
-        Number(celluleA.creneauOrdre) ===
-            Number(celluleB.creneauOrdre)
+        Number.isFinite(Number(ordreA)) &&
+        Number.isFinite(Number(ordreB)) &&
+        Number(ordreA) === Number(ordreB)
     );
 }
+
 
 // =================================================
 // CONSTRUIRE LA MATRICE DES CONFLITS ENTRE FILIÈRES
