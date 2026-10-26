@@ -2128,15 +2128,31 @@ if (
                 }
 
                 // Contrôle des conflits entre calendriers sélectionnés.
-                function memeCreneau(celluleA, celluleB) {
-                    return Boolean(
-                        celluleA.date &&
-                        celluleB.date &&
-                        celluleA.date.seconds === celluleB.date.seconds &&
-                        Number(celluleA.creneauOrdre) ===
-                            Number(celluleB.creneauOrdre)
-                    );
-                }
+           function memeCreneau(celluleA, celluleB) {
+                 if (!celluleA.date || !celluleB.date) {
+               return false;
+                          }
+
+    const dateA = celluleA.date;
+    const dateB = celluleB.date;
+
+    const memeDate =
+        typeof dateA.isEqual === "function"
+            ? dateA.isEqual(dateB)
+            : (
+                dateA.seconds === dateB.seconds &&
+                (dateA.nanoseconds || 0) ===
+                    (dateB.nanoseconds || 0)
+            );
+
+    return (
+        memeDate &&
+        Number.isFinite(Number(celluleA.creneauOrdre)) &&
+        Number.isFinite(Number(celluleB.creneauOrdre)) &&
+        Number(celluleA.creneauOrdre) ===
+            Number(celluleB.creneauOrdre)
+    );
+}
 
                 for (
                     let i = 0;
