@@ -1828,9 +1828,13 @@ for (const documentCalendrier of calendriersTries) {
                     const donneesCalendrier =
                         documentCalendrier.data();
 
-                    const planning =
-                        donneesCalendrier.planning;
-
+                    const planning =  donneesCalendrier.planning;
+                   console.log(
+                     "Diagnostic cellules du calendrier :",
+                      documentCalendrier.id,
+                      planning.filieres?.[0]?.cellules?.[0]
+                        );
+                    
                     if (
                         !planning ||
                         !Array.isArray(planning.filieres)
