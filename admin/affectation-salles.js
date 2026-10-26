@@ -2796,3 +2796,44 @@ window.diagnostiquerTousLesCalendriers = async function () {
         console.error("Erreur du diagnostic :", erreur);
     }
 };
+
+
+window.diagnostiquerDatesAffectations = async function () {
+    try {
+        const snapshot = await getDocs(
+            collection(db, "calendriers")
+        );
+
+        for (const documentCalendrier of snapshot.docs) {
+            const donnees = documentCalendrier.data();
+            const planning = donnees.planning;
+
+            if (!planning || !Array.isArray(planning.filieres)) {
+                continue;
+            }
+
+            const cellule = planning.filieres
+                .flatMap(filiere => filiere.cellules || [])
+                .find(cellule => cellule.estOccupee);
+
+            if (cellule) {
+                console.log(
+                    "Diagnostic date/créneau :",
+                    documentCalendrier.id,
+                    {
+                        date: cellule.date,
+                        typeDate: typeof cellule.date,
+                        creneauOrdre: cellule.creneauOrdre,
+                        estOccupee: cellule.estOccupee
+                    }
+                );
+
+                return;
+            }
+        }
+
+        console.warn("Aucune cellule occupée trouvée.");
+    } catch (erreur) {
+        console.error("Erreur du diagnostic :", erreur);
+    }
+};
