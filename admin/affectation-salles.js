@@ -2033,15 +2033,15 @@ if (
                             capaciteTotale += Number(salle.capacite);
                         }
 
-                        const annee =
-                            donneesSource.anneeUniversitaire || annee;
+                        const anneeCalendrier =
+                        donneesSource.anneeUniversitaire || annee;
 
                         const lignesEffectif = effectifs.filter(
                             function (ligne) {
                                 return (
                                     ligne.niveauCode === planning.niveauCode &&
                                     ligne.filiereCode === codeFiliere &&
-                                    ligne.anneeUniversitaire === annee
+                                    ligne.anneeUniversitaire === anneeCalendrier
                                 );
                             }
                         );
@@ -2050,7 +2050,7 @@ if (
                             anomaliesGlobales.push(
                                 element.id + " / " + codeFiliere +
                                 " : effectif absent ou ambigu pour l'année " +
-                                annee + "."
+                               anneeCalendrier + "."
                             );
                             continue;
                         }
