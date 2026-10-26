@@ -1807,11 +1807,14 @@ if (btnGenererAffectations) {
                     );
                 }
 
-                let calendriersTraites = 0;
-                let calendriersEnregistres = 0;
-                let calendriersEnErreur = 0;
+               let calendriersTraites = 0;
+               let calendriersEnregistres = 0;
+               let calendriersEnErreur = 0;
 
                 const erreurs = [];
+
+// Préparer les résultats sans modifier Firestore
+const calendriersAEnregistrer = [];
 
                 // 5. Classer les calendriers sélectionnés
                 const calendriersTries =
@@ -1932,19 +1935,11 @@ if (
                         filieres: filieresMisesAJour
                     };
 
-                    // 5. Enregistrer uniquement le planning modifié
-                    await updateDoc(
-                        doc(
-                            db,
-                            "calendriers",
-                            documentCalendrier.id
-                        ),
-                        {
-                            planning: planningMisAJour
-                        }
-                    );
-
-                    calendriersEnregistres++;
+                   // Préparer l'enregistrement sans modifier Firestore
+                     calendriersAEnregistrer.push({
+                     id: documentCalendrier.id,
+                     planning: planningMisAJour
+                   });
                 }
 
                 // 6. Afficher le bilan
