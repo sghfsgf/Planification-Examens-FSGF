@@ -602,14 +602,12 @@ function construireConflitsFilieres(planning) {
     // Vérifier les données
     // -------------------------------------------------
 
-    if (
-        !planning ||
-        !planning.filieres
-    ) {
-
-        return conflits;
-
-    }
+   if (
+    !planning ||
+    !Array.isArray(planning.filieres)
+          ) {
+    return conflits;
+            }
 
     // -------------------------------------------------
     // Parcourir toutes les paires de filières
@@ -673,24 +671,9 @@ function construireConflitsFilieres(planning) {
                     b++
                 ) {
 
-                    if (
-    examensA[a].date &&
-    examensB[b].date &&
-
-    examensA[a].date.seconds ===
-        examensB[b].date.seconds &&
-
-    Number(
-        examensA[a].creneauOrdre
-    ) ===
-    Number(
-        examensB[b].creneauOrdre
-    )
-) {
-                        conflitTrouve = true;
-
-                        break;
-
+                   if (memeCreneau(examensA[a], examensB[b])) {
+                       conflitTrouve = true;
+                   break;
                     }
 
                 }
