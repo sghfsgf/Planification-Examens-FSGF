@@ -1479,48 +1479,57 @@ window.classerCalendriersPourAffectation =
         select.appendChild(option);
     }
 
-    function actualiserSessions() {
+   
+async function actualiserSessions() {
 
-        const annee = selectAnnee.value;
-        const semestre = selectSemestre.value;
-        const regime = selectRegime.value;
+    const annee = selectAnnee.value;
+    const semestre = selectSemestre.value;
+    const regime = selectRegime.value;
 
-        selectSession.replaceChildren();
+    selectSession.replaceChildren();
 
-        ajouterOption(
-            selectSession,
-            "",
-            "Choisir une session"
-        );
+    ajouterOption(
+        selectSession,
+        "",
+        "Choisir une session"
+    );
 
-        if (!annee || !semestre || !regime) {
-            selectSession.disabled = true;
-            selectSession.options[0].textContent =
-                "Choisir d'abord l'année, le semestre et le régime";
-            return;
+    if (!annee || !semestre || !regime) {
+        selectSession.disabled = true;
+        selectSession.options[0].textContent =
+            "Choisir d'abord l'année, le semestre et le régime";
+        return;
+    }
+
+    try {
+        // Attendre que les données de génération soient disponibles.
+        const chargement =
+            await window.generationExamens.chargerDonnees();
+
+        if (!chargement) {
+            throw new Error(
+                "Impossible de charger les données de génération."
+            );
         }
+
+        const donnees = window.generationExamens.obtenirDonnees();
+
+        const sessionsDisponibles =
+            donnees.sessions.filter(function (session) {
+                return (
+                    valeurTexte(session.semestreCode) === semestre &&
+                    valeurTexte(session.regimeCode) === regime
+                );
+            });
 
         const sessions = new Map();
 
-        calendriersFiltresDisponibles.forEach(function (calendrier) {
+        sessionsDisponibles.forEach(function (session) {
+            const code = valeurTexte(session.sessionCode);
+            const libelle = valeurTexte(session.sessionLibelle);
 
-            if (
-                valeurTexte(calendrier.anneeUniversitaire) !== annee ||
-                valeurTexte(calendrier.semestreCode) !== semestre ||
-                valeurTexte(calendrier.regimeCode) !== regime
-            ) {
-                return;
-            }
-
-            const code = valeurTexte(calendrier.sessionCode);
-
-            if (!code) return;
-
-            const libelle =
-                valeurTexte(calendrier.sessionLibelle) || code;
-
-            if (!sessions.has(code)) {
-                sessions.set(code, libelle);
+            if (code && !sessions.has(code)) {
+                sessions.set(code, libelle || code);
             }
         });
 
@@ -1529,11 +1538,7 @@ window.classerCalendriersPourAffectation =
                 return a[0].localeCompare(b[0]);
             })
             .forEach(function ([code, libelle]) {
-                ajouterOption(
-                    selectSession,
-                    code,
-                    libelle
-                );
+                ajouterOption(selectSession, code, libelle);
             });
 
         selectSession.disabled = sessions.size === 0;
@@ -1542,7 +1547,24 @@ window.classerCalendriersPourAffectation =
             selectSession.options[0].textContent =
                 "Aucune session disponible pour cette sélection";
         }
+
+    } catch (erreur) {
+        console.error(
+            "❌ Impossible de charger les sessions :",
+            erreur
+        );
+
+        selectSession.replaceChildren();
+
+        ajouterOption(
+            selectSession,
+            "",
+            "Erreur de chargement des sessions"
+        );
+
+        selectSession.disabled = true;
     }
+}
 
     async function chargerFiltres() {
 
