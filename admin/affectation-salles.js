@@ -2400,7 +2400,33 @@ window.diagnostiquerFiltresAffectation = async function () {
     }
 
     try {
-        const snapshot = await getDocs(collection(db, "calendriers"));
+       const snapshot = await getDocs(collection(db, "calendriers"));
+
+console.log(
+    "Tous les calendriers S2 / MX / 2025-2026 :"
+);
+
+console.table(
+    snapshot.docs
+        .map(function (d) {
+            const c = d.data();
+
+            return {
+                id: d.id,
+                annee: c.anneeUniversitaire,
+                semestre: c.semestreCode,
+                regime: c.regimeCode,
+                session: c.sessionCode
+            };
+        })
+        .filter(function (c) {
+            return (
+                c.annee === "2025-2026" &&
+                c.semestre === "S2" &&
+                c.regime === "MX"
+            );
+        })
+);
 
         const resultats = snapshot.docs
             .filter(function (d) {
