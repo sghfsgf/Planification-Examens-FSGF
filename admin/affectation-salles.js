@@ -2468,3 +2468,30 @@ console.table(
         console.error("Erreur du diagnostic en lecture seule :", erreur);
     }
 };
+
+
+window.diagnostiquerTousLesCalendriers = async function () {
+    try {
+        const snapshot = await getDocs(collection(db, "calendriers"));
+
+        const resultats = snapshot.docs.map(function (d) {
+            const c = d.data();
+
+            return {
+                id: d.id,
+                annee: c.anneeUniversitaire,
+                semestre: c.semestreCode,
+                regime: c.regimeCode,
+                session: c.sessionCode,
+                nombreFilieres: Array.isArray(c.planning?.filieres)
+                    ? c.planning.filieres.length
+                    : 0
+            };
+        });
+
+        console.table(resultats);
+        console.log("Nombre total de calendriers :", resultats.length);
+    } catch (erreur) {
+        console.error("Erreur du diagnostic :", erreur);
+    }
+};
