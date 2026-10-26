@@ -1709,7 +1709,36 @@ if (btnGenererAffectations) {
                     );
                 }
 
-                // 2. Lire tous les calendriers Firestore
+
+                // 2. Lire les filtres sélectionnés
+                const annee =
+                    document.getElementById(
+                        "anneeAffectationSalles"
+                    )?.value;
+
+                const semestre =
+                    document.getElementById(
+                        "semestreAffectationSalles"
+                    )?.value;
+
+                const regime =
+                    document.getElementById(
+                        "regimeAffectationSalles"
+                    )?.value;
+
+                const session =
+                    document.getElementById(
+                        "sessionAffectationSalles"
+                    )?.value;
+
+                if (!annee || !semestre || !regime || !session) {
+                    throw new Error(
+                        "Veuillez sélectionner l'année, le semestre, " +
+                        "le régime et la session avant de générer les affectations."
+                    );
+                }
+
+                // 3. Lire les calendriers Firestore
                 const snapshot =
                     await getDocs(
                         collection(db, "calendriers")
@@ -1721,15 +1750,50 @@ if (btnGenererAffectations) {
                     );
                 }
 
+                // 4. Filtrer les calendriers sélectionnés
+                const calendriersSelectionnes =
+                    snapshot.docs.filter(
+                        function (documentCalendrier) {
+
+                            const calendrier =
+                                documentCalendrier.data();
+
+                            return (
+                                String(
+                                    calendrier.anneeUniversitaire ?? ""
+                                ).trim() === annee &&
+                                String(
+                                    calendrier.semestreCode ?? ""
+                                ).trim() === semestre &&
+                                String(
+                                    calendrier.regimeCode ?? ""
+                                ).trim() === regime &&
+                                String(
+                                    calendrier.sessionCode ?? ""
+                                ).trim() === session
+                            );
+                        }
+                    );
+
+                if (calendriersSelectionnes.length === 0) {
+                    throw new Error(
+                        "Aucun calendrier trouvé pour la sélection : " +
+                        annee + " / " + semestre + " / " +
+                        regime + " / " + session + "."
+                    );
+                }
+
                 let calendriersTraites = 0;
                 let calendriersEnregistres = 0;
                 let calendriersEnErreur = 0;
 
                 const erreurs = [];
 
-                // 3. Classer puis traiter chaque calendrier enregistré
-const calendriersTries =
-    classerCalendriersPourAffectation(snapshot.docs);
+                // 5. Classer les calendriers sélectionnés
+                const calendriersTries =
+                    classerCalendriersPourAffectation(
+                        calendriersSelectionnes
+                    );
 
 for (const documentCalendrier of calendriersTries) {
 
