@@ -2373,3 +2373,72 @@ console.table(erreurs);
     });
 
 })();
+
+
+/* =================================================
+   DIAGNOSTIC EN LECTURE SEULE DES FILTRES
+   Ne modifie aucun calendrier dans Firestore.
+================================================= */
+
+window.diagnostiquerFiltresAffectation = async function () {
+
+    const annee =
+        document.getElementById("anneeAffectationSalles")?.value;
+
+    const semestre =
+        document.getElementById("semestreAffectationSalles")?.value;
+
+    const regime =
+        document.getElementById("regimeAffectationSalles")?.value;
+
+    const session =
+        document.getElementById("sessionAffectationSalles")?.value;
+
+    if (!annee || !semestre || !regime || !session) {
+        console.warn("Sélection incomplète : choisissez les quatre filtres.");
+        return;
+    }
+
+    try {
+        const snapshot = await getDocs(collection(db, "calendriers"));
+
+        const resultats = snapshot.docs
+            .filter(function (d) {
+                const c = d.data();
+
+                return (
+                    String(c.anneeUniversitaire ?? "").trim() === annee &&
+                    String(c.semestreCode ?? "").trim() === semestre &&
+                    String(c.regimeCode ?? "").trim() === regime &&
+                    String(c.sessionCode ?? "").trim() === session
+                );
+            })
+            .map(function (d) {
+                const c = d.data();
+
+                return {
+                    id: d.id,
+                    anneeUniversitaire: c.anneeUniversitaire,
+                    semestreCode: c.semestreCode,
+                    regimeCode: c.regimeCode,
+                    sessionCode: c.sessionCode,
+                    nombreFilieres: Array.isArray(c.planning?.filieres)
+                        ? c.planning.filieres.length
+                        : "Planning absent ou invalide"
+                };
+            });
+
+        console.log("Filtres sélectionnés :", {
+            annee,
+            semestre,
+            regime,
+            session
+        });
+
+        console.log("Nombre de calendriers correspondants :", resultats.length);
+        console.table(resultats);
+
+    } catch (erreur) {
+        console.error("Erreur du diagnostic en lecture seule :", erreur);
+    }
+};
