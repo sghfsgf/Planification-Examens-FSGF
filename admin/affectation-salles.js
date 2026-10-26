@@ -1775,6 +1775,30 @@ if (btnGenererAffectations) {
                         }
                     );
 
+               console.log(
+    "=== DIAGNOSTIC DES CALENDRIERS FILTRÉS ===",
+    {
+        annee: annee,
+        semestre: semestre,
+        regime: regime,
+        session: session,
+        nombreTrouve: calendriersSelectionnes.length,
+        calendriers: calendriersSelectionnes.map(
+            function (d) {
+                const c = d.data();
+
+                return {
+                    id: d.id,
+                    anneeUniversitaire: c.anneeUniversitaire,
+                    semestreCode: c.semestreCode,
+                    regimeCode: c.regimeCode,
+                    sessionCode: c.sessionCode
+                };
+            }
+        )
+    }
+);
+
                 if (calendriersSelectionnes.length === 0) {
                     throw new Error(
                         "Aucun calendrier trouvé pour la sélection : " +
