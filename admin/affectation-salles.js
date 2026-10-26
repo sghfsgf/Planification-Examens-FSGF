@@ -2213,20 +2213,35 @@ if (
                     return;
                 }
 
+               
                 // Aucune anomalie : enregistrer les plannings préparés.
                 if (statut) {
                     statut.textContent =
                         "Contrôles réussis. Enregistrement en cours...";
                 }
 
-                for (const element of calendriersAEnregistrer) {
-                    await updateDoc(
-                        doc(db, "calendriers", element.id),
-                        { planning: element.planning }
-                    );
+                if (calendriersAEnregistrer.length > 0) {
+                    const batch = writeBatch(db);
 
-                    calendriersEnregistres++;
+                    for (const element of calendriersAEnregistrer) {
+                        batch.update(
+                            doc(db, "calendriers", element.id),
+                            { planning: element.planning }
+                        );
+                    }
+
+                    await batch.commit();
+
+                    calendriersEnregistres =
+                        calendriersAEnregistrer.length;
+
+                    console.log(
+                        "Enregistrement groupé réussi :",
+                        calendriersEnregistres,
+                        "calendrier(s)."
+                    );
                 }
+
 
 
                 // 6. Afficher le bilan
