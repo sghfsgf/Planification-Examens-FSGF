@@ -2652,19 +2652,25 @@ console.table(erreurs);
 
             }
 
-        } catch (erreur) {
+       } catch (erreur) {
 
-            console.error(
-                "Erreur pendant le contrôle des affectations :",
-                erreur
-            );
+    console.error(
+        "Erreur lors de la génération des affectations :",
+        erreur
+    );
 
-            if (statut) {
-                statut.textContent =
-                    "Échec du contrôle : " + erreur.message;
-            }
+    if (statut) {
+        statut.textContent =
+            "Échec : " + erreur.message;
+    }
 
-        } finally {
+    if (resume) {
+        resume.textContent =
+            "Échec de l'opération : " + erreur.message +
+            "\nAucun succès d'enregistrement ne doit être annoncé.";
+    }
+
+} finally {
 
             bouton.disabled = false;
 
