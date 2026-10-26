@@ -712,6 +712,65 @@
                 de chaque salle ou amphithéâtre reste une contrainte
                 absolue.
             </p>
+<!-- =================================================
+     FILTRES DE L'AFFECTATION DES SALLES / AMPHIS
+================================================== -->
+
+<div class="filtres-affectation-salles">
+
+    <h4>📅 Sélection des calendriers à traiter</h4>
+
+    <div class="champ-filtre">
+        <label for="anneeAffectationSalles">
+            Année universitaire :
+        </label>
+
+        <select id="anneeAffectationSalles">
+            <option value="">Chargement des années...</option>
+        </select>
+    </div>
+
+    <div class="champ-filtre">
+        <label for="semestreAffectationSalles">
+            Semestre :
+        </label>
+
+        <select id="semestreAffectationSalles">
+            <option value="">Choisir un semestre</option>
+            <option value="S1">Semestre 1 (S1)</option>
+            <option value="S2">Semestre 2 (S2)</option>
+        </select>
+    </div>
+
+    <div class="champ-filtre">
+        <label for="regimeAffectationSalles">
+            Régime :
+        </label>
+
+        <select id="regimeAffectationSalles">
+            <option value="">Choisir un régime</option>
+            <option value="CC">Contrôle continu (CC)</option>
+            <option value="MX">Mixte (MX)</option>
+        </select>
+    </div>
+
+    <div class="champ-filtre">
+        <label for="sessionAffectationSalles">
+            Session :
+        </label>
+
+        <select id="sessionAffectationSalles" disabled>
+            <option value="">Choisir d'abord le semestre et le régime</option>
+        </select>
+    </div>
+
+    <p>
+        ℹ️ La génération et le contrôle porteront sur tous les niveaux
+        disponibles (L1, L2, L3, MP et MR) correspondant à cette sélection.
+    </p>
+
+</div>
+   
 
             <div id="resumeAffectationSalles">
 
