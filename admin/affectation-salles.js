@@ -901,8 +901,8 @@ function affecterLocauxFixes(
 console.log("Diagnostic recherche locaux :", {
     filiere: filiere.filiereCode,
     effectif: donnee.effectif,
-    conflits: carteConflits.get(filiere.filiereCode),
-    affectationsCourantes: Array.from(
+     conflits: carteConflits,
+     affectationsCourantes: Array.from(
         affectationsCourantes.values()
     ).filter(function (a) {
         return a.succes;
