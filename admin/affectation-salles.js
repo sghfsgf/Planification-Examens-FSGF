@@ -618,52 +618,6 @@ function rechercherMeilleureCombinaisonLocaux(
 window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
 
-/* TEST TEMPORAIRE — aucune écriture Firestore */
-{
-    const sallesTest = [
-        { code: "A", capacite: 180, disponible: "Oui" },
-        { code: "B", capacite: 70, disponible: "Oui" },
-        { code: "C", capacite: 70, disponible: "Oui" },
-        { code: "D", capacite: "abc", disponible: "Oui" },
-        { code: "E", capacite: 0, disponible: "Oui" },
-        { code: "F", capacite: -10, disponible: "Oui" }
-    ];
-
-    const filiereTest = {
-        filiereCode: "TEST",
-        cellules: []
-    };
-
-    const resultatTest = rechercherMeilleureCombinaisonLocaux(
-        filiereTest,
-        120,
-        sallesTest,
-        {},
-        [],
-        []
-    );
-
-    console.log("TEST PRIORITÉ — résultat :", resultatTest);
-
-    console.assert(
-        resultatTest.succes === true,
-        "ÉCHEC : une solution devait être trouvée."
-    );
-
-    console.assert(
-        resultatTest.locaux.length === 2 &&
-        resultatTest.locaux.includes("B") &&
-        resultatTest.locaux.includes("C"),
-        "ÉCHEC : la combinaison B + C devait être préférée."
-    );
-
-    console.assert(
-        Math.abs(resultatTest.tauxOccupation - 120 / 140) < 0.000001,
-        "ÉCHEC : le taux d'occupation attendu est incorrect."
-    );
-}
-
-
 // =================================================
 // AFFECTER LES LOCAUX FIXES (avec affectations précédentes)
 // =================================================
