@@ -898,7 +898,20 @@ function affecterLocauxFixes(
             ),
             affectationsPrecedentes
         );
+console.log("Diagnostic recherche locaux :", {
+    filiere: filiere.filiereCode,
+    effectif: donnee.effectif,
+    conflits: carteConflits.get(filiere.filiereCode),
+    affectationsCourantes: Array.from(
+        affectationsCourantes.values()
+    ).filter(function (a) {
+        return a.succes;
+    }),
+    affectationsPrecedentes: affectationsPrecedentes,
+    resultatRecherche: resultatRecherche
+});
 
+        
         const combinaisons = Array.isArray(resultatRecherche.combinaisons)
             ? resultatRecherche.combinaisons
             : (
