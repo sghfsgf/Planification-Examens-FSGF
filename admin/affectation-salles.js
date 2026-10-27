@@ -246,8 +246,15 @@ function construireConflitsFilieres(planning) {
     for (let i = 0; i < planning.filieres.length; i++) {
         const filiereA = planning.filieres[i];
 
-        for (let j = i + 1; j < planning.filieres.length; j++) {
-            const filiereB = planning.filieres[j];
+for (let j = i + 1; j < planning.filieres.length; j++) {
+    const filiereB = planning.filieres[j];
+
+    // Même niveau : pas de conflit selon la règle métier.
+    if (
+        filiereA.niveauCode === filiereB.niveauCode
+    ) {
+        continue;
+    }
 
             const examensA = (filiereA.cellules || []).filter(function (c) {
                 return c.estOccupee;
