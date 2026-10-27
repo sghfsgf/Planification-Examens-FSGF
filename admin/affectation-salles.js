@@ -378,17 +378,17 @@ function localCompatibleAvecAffectationsPrecedentes(
 for (const cellA of examensCourants) {
     for (const cellB of examensPrec) {
 
-        console.log("Diagnostic comparaison inter-calendriers :", {
-            codeLocal,
-            calendrierPrecedent: prec.calendrierId,
-            typeDateCourante: cellA.date?.constructor?.name,
-            typeDatePrecedente: cellB.date?.constructor?.name,
-            dateCourante: cellA.date,
-            datePrecedente: cellB.date,
-            ordreCourant: cellA.creneauOrdre,
-            ordrePrecedent: cellB.creneauOrdre,
-            memeCreneau: memeCreneau(cellA, cellB)
-        });
+        
+console.log("Diagnostic comparaison inter-calendriers :", {
+    codeLocal,
+    calendrierPrecedent: prec.calendrierId,
+    dateCourante: cellA.date?.toDate?.()?.toISOString(),
+    datePrecedente: cellB.date?.toDate?.()?.toISOString(),
+    ordreCourant: cellA.creneauOrdre,
+    ordrePrecedent: cellB.creneauOrdre,
+    memeCreneau: memeCreneau(cellA, cellB)
+});
+
 
         if (memeCreneau(cellA, cellB)) {
             return false; // conflit temporel réel
