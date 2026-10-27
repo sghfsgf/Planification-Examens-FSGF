@@ -708,14 +708,13 @@ window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLoca
 // AFFECTER LES LOCAUX FIXES (avec affectations précédentes)
 // =================================================
 
+
 function affecterLocauxFixes(
     planning,
     sallesAmphis,
     effectifs,
     affectationsPrecedentes = []
 ) {
-    const resultats = [];
-
     if (
         !planning ||
         !Array.isArray(planning.filieres) ||
@@ -732,64 +731,176 @@ function affecterLocauxFixes(
     const conflits = construireConflitsFilieres(planning);
     const carteConflits = construireCarteConflits(conflits);
 
-    // Trier les filières par nombre de matières programmées (décroissant)
     const filieresTriees = planning.filieres
         .slice()
         .sort(function (a, b) {
-            return compterMatieresProgrammeesParFiliere(b) -
-                   compterMatieresProgrammeesParFiliere(a);
+            return (
+                compterMatieresProgrammeesParFiliere(b) -
+                compterMatieresProgrammeesParFiliere(a)
+            );
         });
 
-    filieresTriees.forEach(function (filiere) {
-        const ligneEffectif = effectifs.find(function (ligne) {
+    const resultats = [];
+    const affectationsParFiliere = new Map();
+
+    const donneesFilieres = filieresTriees.map(function (filiere) {
+        const lignes = effectifs.filter(function (ligne) {
             return (
                 ligne.niveauCode === planning.niveauCode &&
                 ligne.filiereCode === filiere.filiereCode
             );
         });
 
-        if (!ligneEffectif) {
-            resultats.push({
-                filiereCode: filiere.filiereCode,
-                succes: false,
-                locaux: [],
-                message: "Effectif introuvable."
-            });
-            return;
+        if (lignes.length !== 1) {
+            return {
+                filiere: filiere,
+                valide: false,
+                effectif: null,
+                message: lignes.length === 0
+                    ? "Effectif introuvable."
+                    : "Plusieurs lignes d'effectif correspondent à cette filière."
+            };
         }
 
-        const effectif = Number(ligneEffectif.effectif);
+        const effectif = Number(lignes[0].effectif);
 
         if (!Number.isFinite(effectif) || effectif <= 0) {
-            resultats.push({
-                filiereCode: filiere.filiereCode,
+            return {
+                filiere: filiere,
+                valide: false,
                 effectif: effectif,
-                succes: false,
-                locaux: [],
                 message: "Effectif invalide."
-            });
-            return;
+            };
         }
 
-        const affectation = rechercherMeilleureCombinaisonLocaux(
+        return {
+            filiere: filiere,
+            valide: true,
+            effectif: effectif,
+            message: ""
+        };
+    });
+
+    let noeudsExplores = 0;
+    const LIMITE_RECHERCHE = 10000;
+
+    function rechercher(index) {
+        if (index >= donneesFilieres.length) {
+            return true;
+        }
+
+        if (++noeudsExplores > LIMITE_RECHERCHE) {
+            return false;
+        }
+
+        const donnee = donneesFilieres[index];
+        const filiere = donnee.filiere;
+
+        if (!donnee.valide) {
+            affectationsParFiliere.set(filiere.filiereCode, {
+                filiereCode: filiere.filiereCode,
+                effectif: donnee.effectif,
+                succes: false,
+                locaux: [],
+                message: donnee.message
+            });
+
+            const suitePossible = rechercher(index + 1);
+
+            if (suitePossible) {
+                return true;
+            }
+
+            affectationsParFiliere.delete(filiere.filiereCode);
+            return false;
+        }
+
+        const resultatRecherche = rechercherMeilleureCombinaisonLocaux(
             filiere,
-            effectif,
+            donnee.effectif,
             sallesAmphis,
             carteConflits,
-            resultats,               // affectations déjà faites dans ce calendrier
-            affectationsPrecedentes  // affectations des calendriers précédents
+            Array.from(affectationsParFiliere.values()).filter(
+                function (a) {
+                    return a.succes;
+                }
+            ),
+            affectationsPrecedentes
         );
 
-        resultats.push({
+        const combinaisons = Array.isArray(resultatRecherche.combinaisons)
+            ? resultatRecherche.combinaisons
+            : (
+                resultatRecherche.succes
+                    ? [{
+                        locaux: resultatRecherche.locaux,
+                        capaciteTotale: resultatRecherche.capaciteTotale,
+                        tauxOccupation: resultatRecherche.tauxOccupation,
+                        message: resultatRecherche.message
+                    }]
+                    : []
+            );
+
+        for (const combinaison of combinaisons) {
+            affectationsParFiliere.set(filiere.filiereCode, {
+                filiereCode: filiere.filiereCode,
+                effectif: donnee.effectif,
+                succes: true,
+                locaux: combinaison.locaux,
+                capaciteTotale: combinaison.capaciteTotale,
+                tauxOccupation: combinaison.tauxOccupation,
+                message: combinaison.message
+            });
+
+            if (rechercher(index + 1)) {
+                return true;
+            }
+
+            affectationsParFiliere.delete(filiere.filiereCode);
+
+            if (noeudsExplores > LIMITE_RECHERCHE) {
+                break;
+            }
+        }
+
+        affectationsParFiliere.set(filiere.filiereCode, {
             filiereCode: filiere.filiereCode,
-            effectif: effectif,
-            succes: affectation.succes,
-            locaux: affectation.locaux,
-            capaciteTotale: affectation.capaciteTotale,
-            tauxOccupation: affectation.tauxOccupation,
-            message: affectation.message
+            effectif: donnee.effectif,
+            succes: false,
+            locaux: [],
+            message: noeudsExplores > LIMITE_RECHERCHE
+                ? "Limite de recherche atteinte."
+                : (
+                    resultatRecherche.message ||
+                    "Aucune combinaison compatible trouvée."
+                )
         });
-    });
+
+        const suitePossible = rechercher(index + 1);
+
+        if (suitePossible) {
+            return true;
+        }
+
+        affectationsParFiliere.delete(filiere.filiereCode);
+        return false;
+    }
+
+    rechercher(0);
+
+    for (const donnee of donneesFilieres) {
+        const resultat = affectationsParFiliere.get(
+            donnee.filiere.filiereCode
+        );
+
+        resultats.push(resultat || {
+            filiereCode: donnee.filiere.filiereCode,
+            effectif: donnee.effectif,
+            succes: false,
+            locaux: [],
+            message: "Affectation non résolue."
+        });
+    }
 
     const impossible = resultats.some(function (r) {
         return !r.succes;
@@ -799,10 +910,11 @@ function affecterLocauxFixes(
         succes: !impossible,
         affectations: resultats,
         message: impossible
-            ? "Une ou plusieurs filières sont impossibles à affecter."
+            ? "Une ou plusieurs filières restent impossibles à affecter."
             : "Toutes les filières sont affectées."
     };
 }
+
 
 window.affecterLocauxFixes = affecterLocauxFixes;
 
