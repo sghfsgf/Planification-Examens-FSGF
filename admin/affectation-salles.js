@@ -379,15 +379,23 @@ for (const cellA of examensCourants) {
     for (const cellB of examensPrec) {
 
         
-console.log("Diagnostic comparaison inter-calendriers :", {
-    codeLocal,
-    calendrierPrecedent: prec.calendrierId,
-    dateCourante: cellA.date?.toDate?.()?.toISOString(),
-    datePrecedente: cellB.date?.toDate?.()?.toISOString(),
-    ordreCourant: cellA.creneauOrdre,
-    ordrePrecedent: cellB.creneauOrdre,
-    memeCreneau: memeCreneau(cellA, cellB)
-});
+const conflit = memeCreneau(cellA, cellB);
+
+if (conflit || (
+    cellA.date?.toDate?.()?.toISOString() ===
+        cellB.date?.toDate?.()?.toISOString() &&
+    Number(cellA.creneauOrdre) === Number(cellB.creneauOrdre)
+)) {
+    console.log("Créneau identique détecté :", {
+        codeLocal,
+        calendrierPrecedent: prec.calendrierId,
+        dateCourante: cellA.date?.toDate?.()?.toISOString(),
+        datePrecedente: cellB.date?.toDate?.()?.toISOString(),
+        ordreCourant: cellA.creneauOrdre,
+        ordrePrecedent: cellB.creneauOrdre,
+        memeCreneau: conflit
+    });
+}
 
 
         if (memeCreneau(cellA, cellB)) {
