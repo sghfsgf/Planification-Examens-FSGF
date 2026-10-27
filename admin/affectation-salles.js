@@ -1657,6 +1657,7 @@ for (const documentCalendrier of calendriersTries) {
         let nbCalendriers = 0;
         let nbFilieres = 0;
         let nbLocauxVerifies = 0;
+        const calendriersAComparer = [];
 
         function ajouterAnomalie(calendrierId, filiereCode, probleme) {
             anomalies.push({
@@ -1691,8 +1692,14 @@ for (const documentCalendrier of calendriersTries) {
 
                 if (!planning || !Array.isArray(planning.filieres)) return;
 
-                nbCalendriers++;
-                const filieres = planning.filieres;
+              nbCalendriers++;
+const filieres = planning.filieres;
+
+calendriersAComparer.push({
+    calendrierId: calendrierId,
+    planning: planning,
+    filieres: filieres
+});
 
                 filieres.forEach(function (filiere) {
                     nbFilieres++;
@@ -1817,6 +1824,132 @@ for (const documentCalendrier of calendriersTries) {
                 }
             });
 
+             
+            // Contrôle des conflits entre calendriers différents.
+            function memeCreneauControle(celluleA, celluleB) {
+                if (
+                    !celluleA ||
+                    !celluleB ||
+                    !celluleA.date ||
+                    !celluleB.date ||
+                    celluleA.creneauOrdre == null ||
+                    celluleB.creneauOrdre == null
+                ) {
+                    return false;
+                }
+
+                const dateA = celluleA.date;
+                const dateB = celluleB.date;
+
+                let memeDate = false;
+
+                if (typeof dateA.isEqual === "function") {
+                    memeDate = dateA.isEqual(dateB);
+                } else if (
+                    typeof dateA.seconds === "number" &&
+                    typeof dateB.seconds === "number"
+                ) {
+                    memeDate =
+                        dateA.seconds === dateB.seconds &&
+                        (dateA.nanoseconds || 0) ===
+                            (dateB.nanoseconds || 0);
+                }
+
+                return (
+                    memeDate &&
+                    Number(celluleA.creneauOrdre) ===
+                        Number(celluleB.creneauOrdre)
+                );
+            }
+
+            for (
+                let i = 0;
+                i < calendriersAComparer.length;
+                i++
+            ) {
+                const calendrierA = calendriersAComparer[i];
+
+                for (
+                    let j = i + 1;
+                    j < calendriersAComparer.length;
+                    j++
+                ) {
+                    const calendrierB = calendriersAComparer[j];
+
+                    // Comparer uniquement deux documents distincts.
+                    if (
+                        calendrierA.calendrierId ===
+                        calendrierB.calendrierId
+                    ) {
+                        continue;
+                    }
+
+                    calendrierA.filieres.forEach(function (filiereA) {
+                        const locauxA = obtenirCodesLocaux(
+                            filiereA.amphis
+                        );
+
+                        if (locauxA.length === 0) return;
+
+                        const cellulesA = Array.isArray(filiereA.cellules)
+                            ? filiereA.cellules.filter(function (cellule) {
+                                return cellule.estOccupee === true;
+                            })
+                            : [];
+
+                        calendrierB.filieres.forEach(function (filiereB) {
+                            const locauxB = obtenirCodesLocaux(
+                                filiereB.amphis
+                            );
+
+                            const locauxPartages = locauxA.filter(
+                                function (code) {
+                                    return locauxB.includes(code);
+                                }
+                            );
+
+                            if (locauxPartages.length === 0) return;
+
+                            const cellulesB = Array.isArray(filiereB.cellules)
+                                ? filiereB.cellules.filter(function (cellule) {
+                                    return cellule.estOccupee === true;
+                                })
+                                : [];
+
+                            cellulesA.forEach(function (celluleA) {
+                                cellulesB.forEach(function (celluleB) {
+                                    if (
+                                        !memeCreneauControle(
+                                            celluleA,
+                                            celluleB
+                                        )
+                                    ) {
+                                        return;
+                                    }
+
+                                    locauxPartages.forEach(
+                                        function (codeLocal) {
+                                            ajouterAnomalie(
+                                                calendrierA.calendrierId +
+                                                    " / " +
+                                                    calendrierB.calendrierId,
+                                                filiereA.filiereCode +
+                                                    " / " +
+                                                    filiereB.filiereCode,
+                                                "Conflit inter-calendriers : le local " +
+                                                    codeLocal +
+                                                    " est attribué aux deux filières à la même date et au même créneau."
+                                            );
+                                        }
+                                    );
+                                });
+                            });
+                        });
+                    });
+                }
+            }
+
+            
             console.table(anomalies);
 
             if (statut) {
