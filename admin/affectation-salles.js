@@ -1698,14 +1698,47 @@ for (const documentCalendrier of calendriersTries) {
             const salles = donnees.sallesAmphis || [];
             const effectifs = donnees.effectifs || [];
 
-            const resultat = await getDocs(collection(db, "calendriers"));
+           
+const resultat = await getDocs(collection(db, "calendriers"));
 
-            resultat.forEach(function (documentCalendrier) {
-                const calendrierId = documentCalendrier.id;
-                const document = documentCalendrier.data();
-                const planning = document.planning;
+const calendriersSelectionnes = resultat.docs.filter(
+    function (documentCalendrier) {
+        const calendrier = documentCalendrier.data();
 
-                if (!planning || !Array.isArray(planning.filieres)) return;
+        return (
+            String(calendrier.anneeUniversitaire ?? "").trim() === annee &&
+            String(calendrier.semestreCode ?? "").trim() === semestre &&
+            String(calendrier.regimeCode ?? "").trim() === regime &&
+            String(calendrier.sessionCode ?? "").trim() === session
+        );
+    }
+);
+
+console.log("Calendriers sélectionnés pour le contrôle :", {
+    annee,
+    semestre,
+    regime,
+    session,
+    nombre: calendriersSelectionnes.length,
+    ids: calendriersSelectionnes.map(function (d) {
+        return d.id;
+    })
+});
+
+if (calendriersSelectionnes.length === 0) {
+    throw new Error(
+        "Aucun calendrier trouvé pour les filtres sélectionnés : " +
+        annee + " / " + semestre + " / " + regime + " / " + session
+    );
+}
+
+calendriersSelectionnes.forEach(function (documentCalendrier) {
+    const calendrierId = documentCalendrier.id;
+    const document = documentCalendrier.data();
+    const planning = document.planning;
+
+    if (!planning || !Array.isArray(planning.filieres)) return;
+
 
               nbCalendriers++;
 const filieres = planning.filieres;
