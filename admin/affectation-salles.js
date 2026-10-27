@@ -577,17 +577,18 @@ function rechercherMeilleureCombinaisonLocaux(
 ) {
     const filiereCode = filiere.filiereCode;
 
-    // Locaux de base disponibles + compatibles (intra + inter)
+    // 1. Conserver uniquement les locaux disponibles et compatibles.
     const locauxDisponibles = sallesAmphis.filter(function (salle) {
-    const capacite = Number(salle.capacite);
+        const capacite = Number(salle.capacite);
 
-    if (
-        salle.disponible !== "Oui" ||
-        !Number.isFinite(capacite) ||
-        capacite <= 0
-    ) {
-        return false;
-    }
+        if (
+            salle.disponible !== "Oui" ||
+            !Number.isFinite(capacite) ||
+            capacite <= 0
+        ) {
+            return false;
+        }
+
         if (!localCompatibleAvecConflits(
             filiereCode,
             salle.code,
@@ -608,18 +609,18 @@ function rechercherMeilleureCombinaisonLocaux(
         return true;
     });
 
-       // -------------------------------------------------
-    // 1. Rechercher toutes les combinaisons compatibles
-    // -------------------------------------------------
+    // 2. Rechercher toutes les combinaisons compatibles suffisantes.
     const combinaisons = [];
 
     function rechercherCombinaisons(debut, combinaison, capaciteTotale) {
         if (capaciteTotale >= effectif) {
             const locaux = combinaison.slice();
+            const tauxOccupation = effectif / capaciteTotale;
 
             combinaisons.push({
                 locaux: locaux,
-                capaciteTotale: capaciteTotale
+                capaciteTotale: capaciteTotale,
+                tauxOccupation: tauxOccupation
             });
 
             return;
@@ -643,52 +644,50 @@ function rechercherMeilleureCombinaisonLocaux(
 
     rechercherCombinaisons(0, [], 0);
 
+    // Aucune combinaison compatible ne permet d'accueillir l'effectif.
     if (combinaisons.length === 0) {
         return {
             succes: false,
             locaux: [],
             capaciteTotale: 0,
             tauxOccupation: 0,
-            message: "Aucune combinaison de locaux ne permet d'accueillir l'effectif (contraintes intra + inter-calendriers)."
+            combinaisons: [],
+            message:
+                "Aucune combinaison de locaux ne permet d'accueillir l'effectif (contraintes intra + inter-calendriers)."
         };
     }
 
-    // -------------------------------------------------
-    // 2. Classer toutes les combinaisons par priorité
-    // -------------------------------------------------
+    // 3. Classer les combinaisons selon les priorités définies.
     combinaisons.sort(function (a, b) {
-        const tauxA = effectif / a.capaciteTotale;
-        const tauxB = effectif / b.capaciteTotale;
+        const prioriteA =
+            a.tauxOccupation >= 0.83 ? 0 :
+            a.tauxOccupation >= 0.66 ? 1 : 2;
 
-        const prioriteA = tauxA >= 0.83 ? 0 : tauxA >= 0.66 ? 1 : 2;
-        const prioriteB = tauxB >= 0.83 ? 0 : tauxB >= 0.66 ? 1 : 2;
+        const prioriteB =
+            b.tauxOccupation >= 0.83 ? 0 :
+            b.tauxOccupation >= 0.66 ? 1 : 2;
 
-        // Priorité à la meilleure catégorie d'occupation
+        // Priorité 1 : catégorie du taux d'occupation.
         if (prioriteA !== prioriteB) {
             return prioriteA - prioriteB;
         }
 
-        // À catégorie égale, préférer le moins de locaux
+        // Priorité 2 : utiliser le moins de locaux possible.
         if (a.locaux.length !== b.locaux.length) {
             return a.locaux.length - b.locaux.length;
         }
 
-        // À nombre de locaux égal, préférer la capacité totale minimale
+        // Priorité 3 : capacité totale minimale.
         return a.capaciteTotale - b.capaciteTotale;
     });
 
-    // -------------------------------------------------
-    // 3. Retenir la meilleure combinaison
-    // -------------------------------------------------
+    // 4. Préparer la meilleure combinaison pour rester compatible
+    // avec les appels qui utilisent encore les propriétés classiques.
     const meilleure = combinaisons[0];
-    const tauxOccupation = effectif / meilleure.capaciteTotale;
+    const tauxOccupation = meilleure.tauxOccupation;
 
-    return {
-        succes: true,
-        locaux: meilleure.locaux,
-        capaciteTotale: meilleure.capaciteTotale,
-        tauxOccupation: tauxOccupation,
-        message: tauxOccupation >= 0.83
+    const message =
+        tauxOccupation >= 0.83
             ? (meilleure.locaux.length === 1
                 ? "Un seul local suffit : priorité 83 %."
                 : "Plusieurs locaux : priorité 83 %.")
@@ -696,11 +695,22 @@ function rechercherMeilleureCombinaisonLocaux(
                 ? (meilleure.locaux.length === 1
                     ? "Un seul local suffit : priorité 66 %."
                     : "Plusieurs locaux : priorité 66 %.")
-                                : (meilleure.locaux.length === 1
+                : (meilleure.locaux.length === 1
                     ? "Un seul local suffit : dernier recours sous 66 %."
-                    : "Plusieurs locaux : dernier recours sous 66 %.")
+                    : "Plusieurs locaux : dernier recours sous 66 %.");
+
+    return {
+        succes: true,
+        locaux: meilleure.locaux,
+        capaciteTotale: meilleure.capaciteTotale,
+        tauxOccupation: tauxOccupation,
+        message: message,
+
+        // Nouvelle propriété utilisée par la recherche avec retour arrière.
+        combinaisons: combinaisons
     };
 }
+
 window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
 
