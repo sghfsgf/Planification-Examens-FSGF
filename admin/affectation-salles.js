@@ -374,13 +374,28 @@ function localCompatibleAvecAffectationsPrecedentes(
             return c.estOccupee;
         });
 
-        for (const cellA of examensCourants) {
-            for (const cellB of examensPrec) {
-                if (memeCreneau(cellA, cellB)) {
-                    return false; // conflit temporel réel
-                }
-            }
+       
+for (const cellA of examensCourants) {
+    for (const cellB of examensPrec) {
+
+        console.log("Diagnostic comparaison inter-calendriers :", {
+            codeLocal,
+            calendrierPrecedent: prec.calendrierId,
+            typeDateCourante: cellA.date?.constructor?.name,
+            typeDatePrecedente: cellB.date?.constructor?.name,
+            dateCourante: cellA.date,
+            datePrecedente: cellB.date,
+            ordreCourant: cellA.creneauOrdre,
+            ordrePrecedent: cellB.creneauOrdre,
+            memeCreneau: memeCreneau(cellA, cellB)
+        });
+
+        if (memeCreneau(cellA, cellB)) {
+            return false; // conflit temporel réel
         }
+    }
+}
+
     }
 
     return true;
@@ -717,7 +732,6 @@ window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLoca
 // =================================================
 // AFFECTER LES LOCAUX FIXES (avec affectations précédentes)
 // =================================================
-
 
 
 function affecterLocauxFixes(
@@ -1221,7 +1235,7 @@ if (btnGenererAffectations) {
             // Accumuler les affectations réussies des calendriers précédents
             const affectationsPrecedentesGlobales = [];
 
-   
+               
 for (const documentCalendrier of calendriersTries) {
     const donneesCalendrier = documentCalendrier.data();
     const planning = donneesCalendrier.planning;
