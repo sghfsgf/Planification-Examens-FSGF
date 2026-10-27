@@ -610,9 +610,10 @@ function rechercherMeilleureCombinaisonLocaux(
                 ? (meilleure.locaux.length === 1
                     ? "Un seul local suffit : priorité 66 %."
                     : "Plusieurs locaux : priorité 66 %.")
-                : (meilleure.locaux.length === 1
+                                : (meilleure.locaux.length === 1
                     ? "Un seul local suffit : dernier recours sous 66 %."
-                    : "Plusieurs locaux : dernier recours sous 66 %.");
+                    : "Plusieurs locaux : dernier recours sous 66 %.")
+    };
 }
 window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
