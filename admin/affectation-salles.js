@@ -1610,24 +1610,27 @@ for (const documentCalendrier of calendriersTries) {
                 return { anomalie: m };
             }));
 
-            if (anomaliesGlobales.length > 0) {
-                const message =
-                    "Enregistrement annulé : " +
-                    anomaliesGlobales.length +
-                    " anomalie(s) détectée(s).";
+if (anomaliesGlobales.length > 0) {
+    const message =
+        "Anomalies détectées : " +
+        anomaliesGlobales.length +
+        ". Enregistrement des affectations calculées.";
 
-                if (statut) statut.textContent = message;
-                if (resume) {
-                    resume.textContent = message + "\n" + anomaliesGlobales.join("\n");
-                }
-                console.error(message, anomaliesGlobales);
-                return;
-            }
+    if (statut) statut.textContent = message;
 
-            // Aucune anomalie → enregistrement
-            if (statut) {
-                statut.textContent = "Contrôles réussis. Enregistrement en cours...";
-            }
+    if (resume) {
+        resume.textContent =
+            message + "\n" + anomaliesGlobales.join("\n");
+    }
+
+    console.warn(message, anomaliesGlobales);
+} else {
+    if (statut) {
+        statut.textContent =
+            "Contrôles réussis. Enregistrement en cours...";
+    }
+}
+
 
             if (calendriersAEnregistrer.length > 0) {
                 const batch = writeBatch(db);
@@ -1657,12 +1660,34 @@ for (const documentCalendrier of calendriersTries) {
     " | En erreur : " + calendriersEnErreur;
 
             
-            if (statut) statut.textContent = bilan;
-            if (resume) {
-                resume.textContent = erreurs.length > 0
-                    ? bilan + "\n" + erreurs.join("\n")
-                    : bilan;
-            }
+            
+if (statut) {
+    statut.textContent =
+        bilan +
+        " | Anomalies détectées : " +
+        anomaliesGlobales.length;
+}
+
+if (resume) {
+    const lignesResume = [bilan];
+
+    if (erreurs.length > 0) {
+        lignesResume.push(
+            "Erreurs d'affectation :",
+            ...erreurs
+        );
+    }
+
+    if (anomaliesGlobales.length > 0) {
+        lignesResume.push(
+            "Anomalies détectées :",
+            ...anomaliesGlobales
+        );
+    }
+
+    resume.textContent = lignesResume.join("\n");
+}
+
 
             console.log("Bilan des affectations :", {
                 total: calendriersSelectionnes.length,
