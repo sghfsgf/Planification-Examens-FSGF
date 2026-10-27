@@ -235,6 +235,7 @@ function memeCreneau(celluleA, celluleB) {
 // CONSTRUIRE LA MATRICE DES CONFLITS ENTRE FILIÈRES (intra-calendrier)
 // =================================================
 
+
 function construireConflitsFilieres(planning) {
     const conflits = [];
 
@@ -251,32 +252,47 @@ function construireConflitsFilieres(planning) {
             const examensA = (filiereA.cellules || []).filter(function (c) {
                 return c.estOccupee;
             });
+
             const examensB = (filiereB.cellules || []).filter(function (c) {
                 return c.estOccupee;
             });
 
-            let conflitTrouve = false;
-
-            for (let a = 0; a < examensA.length && !conflitTrouve; a++) {
+            // Rechercher tous les créneaux communs aux deux filières.
+            for (let a = 0; a < examensA.length; a++) {
                 for (let b = 0; b < examensB.length; b++) {
-                    if (memeCreneau(examensA[a], examensB[b])) {
-                        conflitTrouve = true;
-                        break;
+                    const celluleA = examensA[a];
+                    const celluleB = examensB[b];
+
+                    if (memeCreneau(celluleA, celluleB)) {
+                        // Éviter de déclarer deux fois le même conflit.
+                        const dejaDeclare = conflits.some(function (conflit) {
+                            return (
+                                conflit.filiereA === filiereA.filiereCode &&
+                                conflit.filiereB === filiereB.filiereCode &&
+                                memeCreneau(
+                                    { date: conflit.date, creneauOrdre: conflit.creneauOrdre },
+                                    celluleA
+                                )
+                            );
+                        });
+
+                        if (!dejaDeclare) {
+                            conflits.push({
+                                filiereA: filiereA.filiereCode,
+                                filiereB: filiereB.filiereCode,
+                                date: celluleA.date,
+                                creneauOrdre: celluleA.creneauOrdre
+                            });
+                        }
                     }
                 }
-            }
-
-            if (conflitTrouve) {
-                conflits.push({
-                    filiereA: filiereA.filiereCode,
-                    filiereB: filiereB.filiereCode
-                });
             }
         }
     }
 
     return conflits;
 }
+
 
 window.construireConflitsFilieres = construireConflitsFilieres;
 
