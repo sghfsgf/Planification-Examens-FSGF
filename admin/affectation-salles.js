@@ -1598,12 +1598,14 @@ for (const documentCalendrier of calendriersTries) {
                 );
             }
 
-            const bilan =
-                "Calendriers lus : " + snapshot.size +
-                " | Traités : " + calendriersTraites +
-                " | Enregistrés : " + calendriersEnregistres +
-                " | En erreur : " + calendriersEnErreur;
+             const bilan =
+    "Calendriers correspondant aux filtres : " +
+    calendriersSelectionnes.length +
+    " | Traités : " + calendriersTraites +
+    " | Enregistrés : " + calendriersEnregistres +
+    " | En erreur : " + calendriersEnErreur;
 
+            
             if (statut) statut.textContent = bilan;
             if (resume) {
                 resume.textContent = erreurs.length > 0
@@ -1612,7 +1614,9 @@ for (const documentCalendrier of calendriersTries) {
             }
 
             console.log("Bilan des affectations :", {
-                total: snapshot.size,
+                total: calendriersSelectionnes.length,
+               totalFirestore: snapshot.size,
+
                 traites: calendriersTraites,
                 enregistres: calendriersEnregistres,
                 erreurs: erreurs
