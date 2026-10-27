@@ -1650,7 +1650,18 @@ for (const documentCalendrier of calendriersTries) {
     bouton.addEventListener("click", async function () {
         const statut = document.getElementById("statutAffectationSalles");
         const resume = document.getElementById("resumeAffectationSalles");
+        const annee = document.getElementById("anneeAffectationSalles")?.value;
+        const semestre = document.getElementById("semestreAffectationSalles")?.value;
+        const regime = document.getElementById("regimeAffectationSalles")?.value;
+        const session = document.getElementById("sessionAffectationSalles")?.value;
 
+   if (!annee || !semestre || !regime || !session) {
+    if (statut) {
+        statut.textContent =
+            "Veuillez sélectionner l'année, le semestre, le régime et la session.";
+    }
+    return;
+}
         bouton.disabled = true;
 
         if (statut) {
