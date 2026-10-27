@@ -1046,102 +1046,154 @@ if (btnGenererAffectations) {
             // Accumuler les affectations réussies des calendriers précédents
             const affectationsPrecedentesGlobales = [];
 
-            for (const documentCalendrier of calendriersTries) {
-                const donneesCalendrier = documentCalendrier.data();
-                const planning = donneesCalendrier.planning;
+   
+for (const documentCalendrier of calendriersTries) {
+    const donneesCalendrier = documentCalendrier.data();
+    const planning = donneesCalendrier.planning;
 
-                console.log(
-                    "Diagnostic cellules du calendrier :",
-                    documentCalendrier.id,
-                    planning?.filieres?.[0]?.cellules?.[0]
-                );
+    console.log(
+        "Diagnostic cellules du calendrier :",
+        documentCalendrier.id,
+        planning?.filieres?.[0]?.cellules?.[0]
+    );
 
-                if (!planning || !Array.isArray(planning.filieres)) {
-                    calendriersEnErreur++;
-                    erreurs.push(documentCalendrier.id + " : structure du planning invalide.");
-                    continue;
-                }
+    if (!planning || !Array.isArray(planning.filieres)) {
+        calendriersEnErreur++;
+        erreurs.push(
+            documentCalendrier.id +
+            " : structure du planning invalide."
+        );
+        continue;
+    }
 
-                calendriersTraites++;
+    calendriersTraites++;
 
-                // Appel avec les affectations déjà préparées des calendriers précédents
-                const resultat = window.affecterLocauxFixes(
-                    planning,
-                    sallesAmphis,
-                    effectifs,
-                    affectationsPrecedentesGlobales
-                );
+    // Appel avec les affectations déjà préparées des calendriers précédents
+    const resultat = window.affecterLocauxFixes(
+        planning,
+        sallesAmphis,
+        effectifs,
+        affectationsPrecedentesGlobales
+    );
 
-                if (!resultat || !resultat.succes) {
-                    calendriersEnErreur++;
+    if (!resultat || !Array.isArray(resultat.affectations)) {
+        calendriersEnErreur++;
 
-                    console.group("Échec du calendrier : " + documentCalendrier.id);
-                    console.log("Message général :", resultat?.message);
-                    console.table(
-                        (resultat?.affectations || [])
-                            .filter(function (a) { return !a.succes; })
-                            .map(function (a) {
-                                return {
-                                    filiereCode: a.filiereCode,
-                                    effectif: a.effectif,
-                                    message: a.message,
-                                    locaux: a.locaux
-                                };
-                            })
-                    );
-                    console.groupEnd();
+        erreurs.push(
+            documentCalendrier.id +
+            " : résultat d'affectation invalide."
+        );
+        continue;
+    }
 
-                    erreurs.push(
-                        documentCalendrier.id + " : " +
-                        (resultat?.message || "Échec de l'affectation.")
-                    );
-                    continue;
-                }
+    console.group("Diagnostic affectations : " + documentCalendrier.id);
+    console.log("Message général :", resultat.message);
+    console.table(
+        resultat.affectations.map(function (a) {
+            return {
+                filiereCode: a.filiereCode,
+                succes: a.succes,
+                effectif: a.effectif,
+                message: a.message,
+                locaux: a.locaux
+            };
+        })
+    );
+    console.groupEnd();
 
-                // Reporter les locaux dans les filières
-                const filieresMisesAJour = planning.filieres.map(function (filiere) {
-                    const affectation = resultat.affectations.find(function (ligne) {
-                        return ligne.filiereCode === filiere.filiereCode;
-                    });
+    const affectationsParFiliere = new Map(
+        resultat.affectations.map(function (affectation) {
+            return [affectation.filiereCode, affectation];
+        })
+    );
 
-                    if (!affectation) {
-                        throw new Error("Affectation manquante pour " + filiere.filiereCode);
-                    }
+    let erreursCalendrier = 0;
 
-                    return {
-                        ...filiere,
-                        amphis: affectation.locaux
-                    };
-                });
+    // Reporter les locaux dans les filières sans perdre
+    // les affectations réussies lorsqu'une autre échoue.
+    const filieresMisesAJour = planning.filieres.map(function (filiere) {
+        const affectation = affectationsParFiliere.get(
+            filiere.filiereCode
+        );
 
-                const planningMisAJour = {
-                    ...planning,
-                    filieres: filieresMisesAJour
-                };
+        if (
+            !affectation ||
+            !affectation.succes ||
+            !Array.isArray(affectation.locaux) ||
+            affectation.locaux.length === 0
+        ) {
+            erreursCalendrier++;
 
-                calendriersAEnregistrer.push({
-                    id: documentCalendrier.id,
-                    planning: planningMisAJour
-                });
+            erreurs.push(
+                documentCalendrier.id +
+                " — filière " + filiere.filiereCode +
+                " : affectation impossible ou manquante."
+            );
 
-                // Ajouter ces affectations pour les calendriers suivants
-                for (const aff of resultat.affectations) {
-                    if (!aff.succes) continue;
+            return {
+                ...filiere,
+                amphis: []
+            };
+        }
 
-                    const filiereComplete = planningMisAJour.filieres.find(function (f) {
-                        return f.filiereCode === aff.filiereCode;
-                    });
+        return {
+            ...filiere,
+            amphis: affectation.locaux
+        };
+    });
 
-                    if (filiereComplete) {
-                        affectationsPrecedentesGlobales.push({
-                            calendrierId: documentCalendrier.id,
-                            planning: planningMisAJour,
-                            filiere: filiereComplete,
-                            locaux: aff.locaux
-                        });
-                    }
-                }
+    if (erreursCalendrier > 0) {
+        calendriersEnErreur++;
+
+        console.warn(
+            "Calendrier partiellement affecté :",
+            documentCalendrier.id,
+            erreursCalendrier,
+            "filière(s) en échec."
+        );
+    } else {
+        calendriersEnregistres++;
+    }
+
+    const planningMisAJour = {
+        ...planning,
+        filieres: filieresMisesAJour
+    };
+
+    // Conserver le résultat pour la validation globale.
+    // Cela ne signifie pas qu'il sera automatiquement enregistré.
+    calendriersAEnregistrer.push({
+        id: documentCalendrier.id,
+        planning: planningMisAJour
+    });
+
+    // Ajouter uniquement les affectations réussies
+    // pour les contrôles des calendriers suivants.
+    for (const aff of resultat.affectations) {
+        if (
+            !aff.succes ||
+            !Array.isArray(aff.locaux) ||
+            aff.locaux.length === 0
+        ) {
+            continue;
+        }
+
+        const filiereComplete = filieresMisesAJour.find(
+            function (f) {
+                return f.filiereCode === aff.filiereCode;
             }
+        );
+
+        if (filiereComplete) {
+            affectationsPrecedentesGlobales.push({
+                calendrierId: documentCalendrier.id,
+                planning: planningMisAJour,
+                filiere: filiereComplete,
+                locaux: aff.locaux
+            });
+        }
+    }
+}
 
             // =================================================
             // VALIDATION GLOBALE (sécurité supplémentaire)
