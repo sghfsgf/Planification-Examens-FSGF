@@ -517,63 +517,35 @@ function rechercherMeilleureCombinaisonLocaux(
         return true;
     });
 
-    // -------------------------------------------------
-    // 1. Chercher un seul local (priorité occupation)
-    // -------------------------------------------------
-    const locauxUniques = locauxDisponibles
-        .filter(function (salle) {
-            return Number(salle.capacite) >= effectif;
-        })
-        .sort(function (a, b) {
-            const tauxA = effectif / Number(a.capacite);
-            const tauxB = effectif / Number(b.capacite);
-
-            const prioriteA = tauxA >= 0.83 ? 0 : tauxA >= 0.66 ? 1 : 2;
-            const prioriteB = tauxB >= 0.83 ? 0 : tauxB >= 0.66 ? 1 : 2;
-
-            if (prioriteA !== prioriteB) return prioriteA - prioriteB;
-            return Number(a.capacite) - Number(b.capacite);
-        });
-
-    if (locauxUniques.length > 0) {
-        const meilleur = locauxUniques[0];
-        const taux = effectif / Number(meilleur.capacite);
-
-        return {
-            succes: true,
-            locaux: [meilleur.code],
-            capaciteTotale: Number(meilleur.capacite),
-            tauxOccupation: taux,
-            message: taux >= 0.83
-                ? "Un seul local suffit : priorité 83 %."
-                : taux >= 0.66
-                    ? "Un seul local suffit : priorité 66 %."
-                    : "Un seul local suffit : dernier recours sous 66 %."
-        };
-    }
-
-    // -------------------------------------------------
-    // 2. Recherche de combinaisons (multi-locaux)
+       // -------------------------------------------------
+    // 1. Rechercher toutes les combinaisons compatibles
     // -------------------------------------------------
     const combinaisons = [];
 
     function rechercherCombinaisons(debut, combinaison, capaciteTotale) {
         if (capaciteTotale >= effectif) {
+            const locaux = combinaison.slice();
+
             combinaisons.push({
-                locaux: combinaison.slice(),
+                locaux: locaux,
                 capaciteTotale: capaciteTotale
             });
+
             return;
         }
 
         for (let i = debut; i < locauxDisponibles.length; i++) {
             const salle = locauxDisponibles[i];
+            const capacite = Number(salle.capacite);
+
             combinaison.push(salle.code);
+
             rechercherCombinaisons(
                 i + 1,
                 combinaison,
-                capaciteTotale + Number(salle.capacite)
+                capaciteTotale + capacite
             );
+
             combinaison.pop();
         }
     }
@@ -590,7 +562,9 @@ function rechercherMeilleureCombinaisonLocaux(
         };
     }
 
-    // Meilleure combinaison
+    // -------------------------------------------------
+    // 2. Classer toutes les combinaisons par priorité
+    // -------------------------------------------------
     combinaisons.sort(function (a, b) {
         const tauxA = effectif / a.capaciteTotale;
         const tauxB = effectif / b.capaciteTotale;
@@ -598,11 +572,23 @@ function rechercherMeilleureCombinaisonLocaux(
         const prioriteA = tauxA >= 0.83 ? 0 : tauxA >= 0.66 ? 1 : 2;
         const prioriteB = tauxB >= 0.83 ? 0 : tauxB >= 0.66 ? 1 : 2;
 
-        if (prioriteA !== prioriteB) return prioriteA - prioriteB;
-        if (a.locaux.length !== b.locaux.length) return a.locaux.length - b.locaux.length;
+        // Priorité à la meilleure catégorie d'occupation
+        if (prioriteA !== prioriteB) {
+            return prioriteA - prioriteB;
+        }
+
+        // À catégorie égale, préférer le moins de locaux
+        if (a.locaux.length !== b.locaux.length) {
+            return a.locaux.length - b.locaux.length;
+        }
+
+        // À nombre de locaux égal, préférer la capacité totale minimale
         return a.capaciteTotale - b.capaciteTotale;
     });
 
+    // -------------------------------------------------
+    // 3. Retenir la meilleure combinaison
+    // -------------------------------------------------
     const meilleure = combinaisons[0];
     const tauxOccupation = effectif / meilleure.capaciteTotale;
 
@@ -611,16 +597,18 @@ function rechercherMeilleureCombinaisonLocaux(
         locaux: meilleure.locaux,
         capaciteTotale: meilleure.capaciteTotale,
         tauxOccupation: tauxOccupation,
-        message: meilleure.locaux.length === 1
-            ? (tauxOccupation >= 0.83
+        message: tauxOccupation >= 0.83
+            ? (meilleure.locaux.length === 1
                 ? "Un seul local suffit : priorité 83 %."
-                : tauxOccupation >= 0.66
+                : "Plusieurs locaux : priorité 83 %.")
+            : tauxOccupation >= 0.66
+                ? (meilleure.locaux.length === 1
                     ? "Un seul local suffit : priorité 66 %."
-                    : "Un seul local suffit : dernier recours sous 66 %.")
-            : "Plusieurs locaux sont nécessaires."
-    };
+                    : "Plusieurs locaux : priorité 66 %.")
+                : (meilleure.locaux.length === 1
+                    ? "Un seul local suffit : dernier recours sous 66 %."
+                    : "Plusieurs locaux : dernier recours sous 66 %.");
 }
-
 window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
 // =================================================
