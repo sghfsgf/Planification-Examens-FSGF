@@ -293,6 +293,74 @@ function construireConflitsFilieres(planning) {
     return conflits;
 }
 
+function afficherConflitsFilieres(conflits) {
+    const message = document.getElementById(
+        "messageConflitsFilieres"
+    );
+    const tableau = document.getElementById(
+        "tableConflitsFilieres"
+    );
+    const corps = document.getElementById(
+        "corpsTableConflitsFilieres"
+    );
+
+    if (!message || !tableau || !corps) {
+        console.warn(
+            "Le tableau des conflits est introuvable dans le HTML."
+        );
+        return;
+    }
+
+    corps.replaceChildren();
+
+    if (!conflits || conflits.length === 0) {
+        tableau.hidden = true;
+        message.textContent = "Aucun conflit détecté.";
+        return;
+    }
+
+    conflits.forEach(function (conflit) {
+        const ligne = document.createElement("tr");
+
+        let dateTexte = "Date inconnue";
+        const date = conflit.date;
+
+        if (date) {
+            let dateObjet = null;
+
+            if (typeof date.toDate === "function") {
+                dateObjet = date.toDate();
+            } else if (date instanceof Date) {
+                dateObjet = date;
+            } else if (typeof date.seconds === "number") {
+                dateObjet = new Date(date.seconds * 1000);
+            }
+
+            if (dateObjet && !isNaN(dateObjet.getTime())) {
+                dateTexte = dateObjet.toLocaleDateString("fr-FR");
+            }
+        }
+
+        [
+            conflit.filiereA,
+            conflit.filiereB,
+            dateTexte,
+            "Créneau " + conflit.creneauOrdre
+        ].forEach(function (valeur) {
+            const cellule = document.createElement("td");
+            cellule.textContent = String(valeur ?? "");
+            ligne.appendChild(cellule);
+        });
+
+        corps.appendChild(ligne);
+    });
+
+    message.textContent =
+        conflits.length + " conflit(s) détecté(s).";
+
+    tableau.hidden = false;
+}
+
 
 window.construireConflitsFilieres = construireConflitsFilieres;
 
@@ -1264,6 +1332,7 @@ if (btnGenererAffectations) {
             let calendriersEnregistres = 0;
             let calendriersEnErreur = 0;
             const erreurs = [];
+            const conflitsDetectes = [];
             const calendriersAEnregistrer = [];
 
             // Classement
@@ -1291,6 +1360,15 @@ for (const documentCalendrier of calendriersTries) {
         );
         continue;
     }
+
+    const conflitsPlanning =
+    construireConflitsFilieres(planning);
+
+conflitsPlanning.forEach(function (conflit) {
+    conflitsDetectes.push(conflit);
+});
+
+afficherConflitsFilieres(conflitsDetectes);
 
     calendriersTraites++;
 
