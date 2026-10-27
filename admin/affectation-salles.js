@@ -2014,7 +2014,7 @@ calendriersAComparer.push({
 
             if (resume) {
                 resume.textContent =
-                    "Calendriers contrôlés : " + nbCalendriers +
+                    "Calendriers correspondant aux filtres : " + nbCalendriers +
                     " | Filières examinées : " + nbFilieres +
                     " | Locaux vérifiés : " + nbLocauxVerifies +
                     " | Anomalies : " + anomalies.length;
