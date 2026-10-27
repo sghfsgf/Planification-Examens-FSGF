@@ -719,6 +719,7 @@ window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLoca
 // =================================================
 
 
+
 function affecterLocauxFixes(
     planning,
     sallesAmphis,
@@ -729,7 +730,8 @@ function affecterLocauxFixes(
         !planning ||
         !Array.isArray(planning.filieres) ||
         !Array.isArray(sallesAmphis) ||
-        !Array.isArray(effectifs)
+        !Array.isArray(effectifs) ||
+        !Array.isArray(affectationsPrecedentes)
     ) {
         return {
             succes: false,
@@ -749,9 +751,6 @@ function affecterLocauxFixes(
                 compterMatieresProgrammeesParFiliere(a)
             );
         });
-
-    const resultats = [];
-    const affectationsParFiliere = new Map();
 
     const donneesFilieres = filieresTriees.map(function (filiere) {
         const lignes = effectifs.filter(function (ligne) {
@@ -791,48 +790,88 @@ function affecterLocauxFixes(
         };
     });
 
-    let noeudsExplores = 0;
     const LIMITE_RECHERCHE = 10000;
+    let noeudsExplores = 0;
+    let limiteAtteinte = false;
 
-    function rechercher(index) {
-        if (index >= donneesFilieres.length) {
-            return true;
+    let meilleureSolution = new Map();
+    let meilleurNombreAffecte = -1;
+
+    function copierSolution(solution) {
+        return new Map(
+            Array.from(solution.entries()).map(function (entree) {
+                return [
+                    entree[0],
+                    Object.assign({}, entree[1], {
+                        locaux: entree[1].locaux.slice()
+                    })
+                ];
+            })
+        );
+    }
+
+    function enregistrerMeilleureSolution(solution) {
+        const nombreAffecte = Array.from(solution.values()).filter(
+            function (affectation) {
+                return affectation.succes;
+            }
+        ).length;
+
+        if (nombreAffecte > meilleurNombreAffecte) {
+            meilleurNombreAffecte = nombreAffecte;
+            meilleureSolution = copierSolution(solution);
+        }
+    }
+
+    function rechercher(index, affectationsCourantes) {
+        if (noeudsExplores >= LIMITE_RECHERCHE) {
+            limiteAtteinte = true;
+            enregistrerMeilleureSolution(affectationsCourantes);
+            return;
         }
 
-        if (++noeudsExplores > LIMITE_RECHERCHE) {
-            return false;
+        noeudsExplores++;
+
+        enregistrerMeilleureSolution(affectationsCourantes);
+
+        // Toutes les filières ont été examinées.
+        if (index >= donneesFilieres.length) {
+            return;
+        }
+
+        // Une solution complète ne peut pas être améliorée.
+        if (meilleurNombreAffecte === donneesFilieres.length) {
+            return;
         }
 
         const donnee = donneesFilieres[index];
         const filiere = donnee.filiere;
+        const code = filiere.filiereCode;
 
         if (!donnee.valide) {
-            affectationsParFiliere.set(filiere.filiereCode, {
-                filiereCode: filiere.filiereCode,
+            const branche = new Map(affectationsCourantes);
+
+            branche.set(code, {
+                filiereCode: code,
                 effectif: donnee.effectif,
                 succes: false,
                 locaux: [],
                 message: donnee.message
             });
 
-            const suitePossible = rechercher(index + 1);
-
-            if (suitePossible) {
-                return true;
-            }
-
-            affectationsParFiliere.delete(filiere.filiereCode);
-            return false;
+            rechercher(index + 1, branche);
+            return;
         }
 
+        // Recalculer les possibilités selon les affectations de cette branche.
         const resultatRecherche = rechercherMeilleureCombinaisonLocaux(
             filiere,
             donnee.effectif,
             sallesAmphis,
             carteConflits,
-            Array.from(affectationsParFiliere.values()).filter(
-                function (a) {
-                    return a.succes;
+            Array.from(affectationsCourantes.values()).filter(
+                function (affectation) {
+                    return affectation.succes;
                 }
             ),
             affectationsPrecedentes
@@ -851,79 +890,93 @@ function affecterLocauxFixes(
                     : []
             );
 
+        // Essayer chaque combinaison dans l'ordre de priorité.
         for (const combinaison of combinaisons) {
-            affectationsParFiliere.set(filiere.filiereCode, {
-                filiereCode: filiere.filiereCode,
-                effectif: donnee.effectif,
-                succes: true,
-                locaux: combinaison.locaux,
-                capaciteTotale: combinaison.capaciteTotale,
-                tauxOccupation: combinaison.tauxOccupation,
-                message: combinaison.message
-            });
-
-            if (rechercher(index + 1)) {
-                return true;
-            }
-
-            affectationsParFiliere.delete(filiere.filiereCode);
-
-            if (noeudsExplores > LIMITE_RECHERCHE) {
+            if (limiteAtteinte) {
                 break;
             }
-        }
 
-        affectationsParFiliere.set(filiere.filiereCode, {
-            filiereCode: filiere.filiereCode,
-            effectif: donnee.effectif,
-            succes: false,
-            locaux: [],
-            message: noeudsExplores > LIMITE_RECHERCHE
-                ? "Limite de recherche atteinte."
-                : (
+            const branche = new Map(affectationsCourantes);
+
+            branche.set(code, {
+                filiereCode: code,
+                effectif: donnee.effectif,
+                succes: true,
+                locaux: combinaison.locaux.slice(),
+                capaciteTotale: combinaison.capaciteTotale,
+                tauxOccupation: combinaison.tauxOccupation,
+                message: combinaison.message ||
                     resultatRecherche.message ||
-                    "Aucune combinaison compatible trouvée."
-                )
-        });
+                    "Combinaison compatible trouvée."
+            });
 
-        const suitePossible = rechercher(index + 1);
+            rechercher(index + 1, branche);
 
-        if (suitePossible) {
-            return true;
+            if (meilleurNombreAffecte === donneesFilieres.length) {
+                return;
+            }
         }
 
-        affectationsParFiliere.delete(filiere.filiereCode);
-        return false;
+        // Explorer aussi le cas où cette filière reste non affectée.
+        // Cela permet de rechercher une meilleure solution partielle.
+        if (!limiteAtteinte) {
+            const branche = new Map(affectationsCourantes);
+
+            branche.set(code, {
+                filiereCode: code,
+                effectif: donnee.effectif,
+                succes: false,
+                locaux: [],
+                message: resultatRecherche.message ||
+                    "Aucune combinaison compatible trouvée."
+            });
+
+            rechercher(index + 1, branche);
+        }
     }
 
-    rechercher(0);
+    rechercher(0, new Map());
 
-    for (const donnee of donneesFilieres) {
-        const resultat = affectationsParFiliere.get(
-            donnee.filiere.filiereCode
-        );
+    const resultats = donneesFilieres.map(function (donnee) {
+        const code = donnee.filiere.filiereCode;
+        const resultat = meilleureSolution.get(code);
 
-        resultats.push(resultat || {
-            filiereCode: donnee.filiere.filiereCode,
+        if (resultat) {
+            return resultat;
+        }
+
+        return {
+            filiereCode: code,
             effectif: donnee.effectif,
             succes: false,
             locaux: [],
-            message: "Affectation non résolue."
-        });
-    }
-
-    const impossible = resultats.some(function (r) {
-        return !r.succes;
+            message: limiteAtteinte
+                ? "Affectation non résolue : limite de recherche atteinte."
+                : donnee.message || "Affectation non résolue."
+        };
     });
 
+    const nombreAffecte = resultats.filter(function (resultat) {
+        return resultat.succes;
+    }).length;
+
+    const toutesAffectees = nombreAffecte === donneesFilieres.length;
+
     return {
-        succes: !impossible,
+        succes: toutesAffectees,
         affectations: resultats,
-        message: impossible
-            ? "Une ou plusieurs filières restent impossibles à affecter."
-            : "Toutes les filières sont affectées."
+        message: toutesAffectees
+            ? "Toutes les filières sont affectées."
+            : limiteAtteinte
+                ? "Meilleure solution trouvée, mais limite de recherche atteinte : résultat à vérifier."
+                : "Solution partielle : " + nombreAffecte + " filière(s) affectée(s) sur " +
+                    donneesFilieres.length + ".",
+        rechercheLimitee: limiteAtteinte,
+        nombreAffecte: nombreAffecte,
+        nombreFilieres: donneesFilieres.length
     };
 }
+
 
 
 window.affecterLocauxFixes = affecterLocauxFixes;
