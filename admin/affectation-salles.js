@@ -425,35 +425,106 @@ function construireVecteurPrioriteNiveau(planning) {
 // =================================================
 
 function classerCalendriersPourAffectation(documents) {
-    return documents
-        .map(function (documentCalendrier) {
-            const donnees = documentCalendrier.data();
-            const planning = donnees.planning;
+    const elements = documents.map(function (documentCalendrier) {
+        const donnees = documentCalendrier.data();
+        const planning = donnees.planning;
 
-            const cleGroupe = [
-                donnees.anneeUniversitaire || "",
-                donnees.regimeCode || "",
-                donnees.sessionCode || "",
-                donnees.semestreCode || ""
-            ].join("|");
+        const cleGroupe = [
+            donnees.anneeUniversitaire || "",
+            donnees.regimeCode || "",
+            donnees.sessionCode || "",
+            donnees.semestreCode || ""
+        ].join("|");
 
-            return {
-                document: documentCalendrier,
-                cleGroupe: cleGroupe,
-                niveauCode: (planning && planning.niveauCode) || donnees.niveauCode || "",
-                vecteur: construireVecteurPrioriteNiveau(planning),
-                planningValide: !!planning && Array.isArray(planning.filieres)
-            };
-        })
-        .sort(function (a, b) {
-            const comparaisonGroupe = a.cleGroupe.localeCompare(b.cleGroupe);
-            if (comparaisonGroupe !== 0) return comparaisonGroupe;
+        return {
+            document: documentCalendrier,
+            cleGroupe: cleGroupe,
+            niveauCode:
+                (planning && planning.niveauCode) ||
+                donnees.niveauCode ||
+                "",
+            vecteur: construireVecteurPrioriteNiveau(planning),
+            planningValide:
+                !!planning && Array.isArray(planning.filieres)
+        };
+    });
 
+    // Regrouper les calendriers par groupe et par niveau.
+    const groupesNiveaux = new Map();
+
+    elements.forEach(function (element) {
+        const cleNiveau =
+            element.cleGroupe + "|" + element.niveauCode;
+
+        if (!groupesNiveaux.has(cleNiveau)) {
+            groupesNiveaux.set(cleNiveau, {
+                cleGroupe: element.cleGroupe,
+                niveauCode: element.niveauCode,
+                elements: [],
+                vecteur: []
+            });
+        }
+
+        groupesNiveaux.get(cleNiveau).elements.push(element);
+    });
+
+    // Construire le vecteur de priorité global de chaque niveau.
+    groupesNiveaux.forEach(function (groupe) {
+        groupe.vecteur = groupe.elements
+            .filter(function (element) {
+                return element.planningValide;
+            })
+            .flatMap(function (element) {
+                return element.vecteur;
+            })
+            .sort(function (a, b) {
+                return b - a;
+            });
+    });
+
+    const niveauxTries = Array.from(groupesNiveaux.values());
+
+    niveauxTries.sort(function (a, b) {
+        const comparaisonGroupe =
+            a.cleGroupe.localeCompare(b.cleGroupe);
+
+        if (comparaisonGroupe !== 0) {
+            return comparaisonGroupe;
+        }
+
+        const longueur = Math.min(
+            a.vecteur.length,
+            b.vecteur.length
+        );
+
+        for (let i = 0; i < longueur; i++) {
+            if (a.vecteur[i] !== b.vecteur[i]) {
+                return b.vecteur[i] - a.vecteur[i];
+            }
+        }
+
+        if (a.vecteur.length !== b.vecteur.length) {
+            return b.vecteur.length - a.vecteur.length;
+        }
+
+        return a.niveauCode.localeCompare(b.niveauCode);
+    });
+
+    // Dans chaque niveau, traiter d'abord les calendriers
+    // dont le vecteur de priorité est le plus élevé.
+    const resultats = [];
+
+    niveauxTries.forEach(function (groupe) {
+        groupe.elements.sort(function (a, b) {
             if (a.planningValide !== b.planningValide) {
                 return a.planningValide ? -1 : 1;
             }
 
-            const longueur = Math.min(a.vecteur.length, b.vecteur.length);
+            const longueur = Math.min(
+                a.vecteur.length,
+                b.vecteur.length
+            );
+
             for (let i = 0; i < longueur; i++) {
                 if (a.vecteur[i] !== b.vecteur[i]) {
                     return b.vecteur[i] - a.vecteur[i];
@@ -464,14 +535,29 @@ function classerCalendriersPourAffectation(documents) {
                 return b.vecteur.length - a.vecteur.length;
             }
 
-            const comparaisonNiveau = a.niveauCode.localeCompare(b.niveauCode);
-            if (comparaisonNiveau !== 0) return comparaisonNiveau;
-
             return a.document.id.localeCompare(b.document.id);
-        })
-        .map(function (element) {
-            return element.document;
         });
+
+        groupe.elements.forEach(function (element) {
+            resultats.push(element.document);
+        });
+    });
+
+    console.log("Classement des calendriers par niveau :");
+
+    console.table(
+        niveauxTries.map(function (groupe, ordre) {
+            return {
+                ordre: ordre + 1,
+                groupe: groupe.cleGroupe,
+                niveau: groupe.niveauCode,
+                vecteurPriorite: groupe.vecteur.join(", "),
+                nombreCalendriers: groupe.elements.length
+            };
+        })
+    );
+
+    return resultats;
 }
 
 window.classerCalendriersPourAffectation = classerCalendriersPourAffectation;
