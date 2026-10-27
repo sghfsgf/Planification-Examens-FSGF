@@ -493,10 +493,15 @@ function rechercherMeilleureCombinaisonLocaux(
 
     // Locaux de base disponibles + compatibles (intra + inter)
     const locauxDisponibles = sallesAmphis.filter(function (salle) {
-        if (salle.disponible !== "Oui" || Number(salle.capacite) <= 0) {
-            return false;
-        }
+    const capacite = Number(salle.capacite);
 
+    if (
+        salle.disponible !== "Oui" ||
+        !Number.isFinite(capacite) ||
+        capacite <= 0
+    ) {
+        return false;
+    }
         if (!localCompatibleAvecConflits(
             filiereCode,
             salle.code,
