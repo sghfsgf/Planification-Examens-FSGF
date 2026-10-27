@@ -1403,6 +1403,22 @@ for (const documentCalendrier of calendriersTries) {
                 );
             }
 
+
+
+            console.log(
+    "Diagnostic avant validation globale :",
+    calendriersAEnregistrer.map(function (element) {
+        return {
+            calendrierId: element.id,
+            filieres: element.planning.filieres.map(function (filiere) {
+                return {
+                    filiereCode: filiere.filiereCode,
+                    amphis: filiere.amphis
+                };
+            })
+        };
+    })
+);
             const affectationsGlobales = [];
 
             for (const element of calendriersAEnregistrer) {
