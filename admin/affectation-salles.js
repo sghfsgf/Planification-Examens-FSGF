@@ -727,7 +727,12 @@ function rechercherMeilleureCombinaisonLocaux(
     const combinaisons = [];
 
     function rechercherCombinaisons(debut, combinaison, capaciteTotale) {
-        if (capaciteTotale >= effectif) {
+      const tauxOccupation = effectif / capaciteTotale;
+
+if (
+    capaciteTotale >= effectif &&
+    tauxOccupation >= 0.66
+) {
             const locaux = combinaison.slice();
             const tauxOccupation = effectif / capaciteTotale;
 
