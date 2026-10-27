@@ -726,40 +726,43 @@ function rechercherMeilleureCombinaisonLocaux(
     // 2. Rechercher toutes les combinaisons compatibles suffisantes.
     const combinaisons = [];
 
-    function rechercherCombinaisons(debut, combinaison, capaciteTotale) {
-      const tauxOccupation = effectif / capaciteTotale;
+ 
+function rechercherCombinaisons(debut, combinaison, capaciteTotale) {
+    const tauxOccupation = capaciteTotale > 0
+        ? effectif / capaciteTotale
+        : 0;
 
-if (
-    capaciteTotale >= effectif &&
-    tauxOccupation >= 0.66
-) {
-            const locaux = combinaison.slice();
-            const tauxOccupation = effectif / capaciteTotale;
+    if (
+        capaciteTotale >= effectif &&
+        tauxOccupation >= 0.66
+    ) {
+        const locaux = combinaison.slice();
 
-            combinaisons.push({
-                locaux: locaux,
-                capaciteTotale: capaciteTotale,
-                tauxOccupation: tauxOccupation
-            });
+        combinaisons.push({
+            locaux: locaux,
+            capaciteTotale: capaciteTotale,
+            tauxOccupation: tauxOccupation
+        });
 
-            return;
-        }
-
-        for (let i = debut; i < locauxDisponibles.length; i++) {
-            const salle = locauxDisponibles[i];
-            const capacite = Number(salle.capacite);
-
-            combinaison.push(salle.code);
-
-            rechercherCombinaisons(
-                i + 1,
-                combinaison,
-                capaciteTotale + capacite
-            );
-
-            combinaison.pop();
-        }
+        return;
     }
+
+    for (let i = debut; i < locauxDisponibles.length; i++) {
+        const salle = locauxDisponibles[i];
+        const capacite = Number(salle.capacite);
+
+        combinaison.push(salle.code);
+
+        rechercherCombinaisons(
+            i + 1,
+            combinaison,
+            capaciteTotale + capacite
+        );
+
+        combinaison.pop();
+    }
+}
+
 
     rechercherCombinaisons(0, [], 0);
 
