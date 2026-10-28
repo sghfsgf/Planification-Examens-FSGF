@@ -203,6 +203,68 @@ function initialiserFiltreRegimeRecap(
         regimes
     );
 }
+// =====================================================
+// ÉTAPE 5 — FILTRE SESSION
+// =====================================================
+
+const selectSessionRecap = document.getElementById("sessionRecap");
+
+function initialiserFiltreSessionRecap(
+    calendriers,
+    anneeSelectionnee,
+    semestreSelectionne,
+    regimeSelectionne
+) {
+    if (!selectSessionRecap) {
+        console.error("❌ Élément HTML #sessionRecap introuvable.");
+        return;
+    }
+
+    selectSessionRecap.innerHTML =
+        '<option value="">Choisir une session</option>';
+
+    selectSessionRecap.disabled = true;
+
+    if (
+        !anneeSelectionnee ||
+        !semestreSelectionne ||
+        !regimeSelectionne
+    ) {
+        return;
+    }
+
+    const sessions = [
+        ...new Set(
+            calendriers
+                .filter(
+                    calendrier =>
+                        calendrier.anneeUniversitaire === anneeSelectionnee &&
+                        calendrier.semestreCode === semestreSelectionne &&
+                        calendrier.regimeCode === regimeSelectionne
+                )
+                .map(calendrier => calendrier.sessionCode)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    sessions.forEach(session => {
+        const option = document.createElement("option");
+        option.value = session;
+        option.textContent = session;
+        selectSessionRecap.appendChild(option);
+    });
+
+    selectSessionRecap.disabled = sessions.length === 0;
+
+    console.log(
+        "✅ Sessions disponibles pour",
+        anneeSelectionnee,
+        semestreSelectionne,
+        regimeSelectionne,
+        ":",
+        sessions
+    );
+}
 
 // =====================================================
 // EXÉCUTION DU CHARGEMENT
@@ -223,6 +285,13 @@ chargerCalendriersRecap().then(calendriers => {
             selectAnneeRecap.value,
             selectSemestreRecap.value
         );
+
+        initialiserFiltreSessionRecap(
+            calendriers,
+            selectAnneeRecap.value,
+            selectSemestreRecap.value,
+            selectRegimeRecap.value
+        );
     });
 
     // Changement de semestre
@@ -232,6 +301,24 @@ chargerCalendriersRecap().then(calendriers => {
             selectAnneeRecap.value,
             selectSemestreRecap.value
         );
+
+        initialiserFiltreSessionRecap(
+            calendriers,
+            selectAnneeRecap.value,
+            selectSemestreRecap.value,
+            selectRegimeRecap.value
+        );
+    });
+
+    // Changement de régime
+    selectRegimeRecap.addEventListener("change", () => {
+        initialiserFiltreSessionRecap(
+            calendriers,
+            selectAnneeRecap.value,
+            selectSemestreRecap.value,
+            selectRegimeRecap.value
+        );
     });
 });
+
 
