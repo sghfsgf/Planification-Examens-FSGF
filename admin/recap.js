@@ -402,6 +402,48 @@ conteneur.innerHTML = `
 }
 
 
+function obtenirTableauRecapPourExport() {
+    const conteneur = document.getElementById("tableauRecapLocaux");
+    const tableau = conteneur?.querySelector("table");
+
+    if (!tableau || !tableau.querySelector("tbody tr")) {
+        alert("Aucun récapitulatif à exporter. Vérifiez les filtres sélectionnés.");
+        return null;
+    }
+
+    return tableau;
+}
+
+function exporterRecapExcel() {
+    const tableau = obtenirTableauRecapPourExport();
+    if (!tableau) return;
+
+    const classeur = XLSX.utils.table_to_book(tableau, {
+        sheet: "Récapitulatif"
+    });
+
+    const annee = selectAnneeRecap.value;
+    const semestre = selectSemestreRecap.value;
+    const regime = selectRegimeRecap.value;
+    const session = selectSessionRecap.value;
+
+    const nomFichier =
+        `Recap_Locaux_${annee}_${semestre}_${regime}_${session}.xlsx`;
+
+    XLSX.writeFile(classeur, nomFichier);
+}
+
+function imprimerRecap() {
+    const tableau = obtenirTableauRecapPourExport();
+    if (!tableau) return;
+
+    window.print();
+}
+
+function exporterRecapPDF() {
+    imprimerRecap();
+}
+
 // =====================================================
 // EXÉCUTION DU CHARGEMENT
 // =====================================================
@@ -470,4 +512,11 @@ chargerCalendriersRecap().then(calendriers => {
 });
 
 
+document.getElementById("btnExporterRecapExcel")
+    ?.addEventListener("click", exporterRecapExcel);
 
+document.getElementById("btnExporterRecapPDF")
+    ?.addEventListener("click", exporterRecapPDF);
+
+document.getElementById("btnImprimerRecap")
+    ?.addEventListener("click", imprimerRecap);
