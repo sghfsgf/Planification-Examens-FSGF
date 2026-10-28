@@ -25,13 +25,18 @@ async function chargerCalendriersRecap() {
 
         const resultat = await getDocs(calendriersRef);
 
-        const calendriers = resultat.docs.map(document => ({
-            id: document.id,
-            ...document.data()
-        }));
+     
+const calendriers = resultat.docs
+    .map(document => ({
+        id: document.id,
+        ...document.data()
+    }))
+    .filter(calendrier => calendrier.statut === "publie");
 
-        console.log("✅ Nombre de calendriers récupérés :", calendriers.length);
-
+       console.log(
+    "✅ Nombre de calendriers publiés récupérés :",
+    calendriers.length
+);
 console.table(
     calendriers.map(calendrier => ({
         id: calendrier.id,
