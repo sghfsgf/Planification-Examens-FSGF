@@ -266,6 +266,11 @@ function initialiserFiltreSessionRecap(
     );
 }
 
+function actualiserBoutonsRecap(actifs) {
+    document.getElementById("btnExporterRecapExcel").disabled = !actifs;
+    document.getElementById("btnExporterRecapPDF").disabled = !actifs;
+    document.getElementById("btnImprimerRecap").disabled = !actifs;
+}
 
 function afficherRecapitulatifLocaux(calendriers) {
     const conteneur = document.getElementById("tableauRecapLocaux");
@@ -280,11 +285,13 @@ function afficherRecapitulatifLocaux(calendriers) {
     const regime = selectRegimeRecap.value;
     const session = selectSessionRecap.value;
 
-    if (!annee || !semestre || !regime || !session) {
-        conteneur.innerHTML =
-            "<p>Veuillez sélectionner l'année, le semestre, le régime et la session.</p>";
-        return;
-    }
+  if (!annee || !semestre || !regime || !session) {
+    conteneur.innerHTML =
+        "<p>Veuillez sélectionner l'année, le semestre, le régime et la session.</p>";
+
+    actualiserBoutonsRecap(false);
+    return;
+}
 
     const calendriersFiltres = calendriers.filter(calendrier =>
         calendrier.anneeUniversitaire === annee &&
@@ -339,6 +346,8 @@ function afficherRecapitulatifLocaux(calendriers) {
 if (lignes.length === 0) {
     conteneur.innerHTML =
         "<p>Aucun examen occupé trouvé pour ces critères.</p>";
+
+    actualiserBoutonsRecap(false);
     return;
 }
 
@@ -398,6 +407,7 @@ conteneur.innerHTML = `
         </tbody>
     </table>
 `;
+     actualiserBoutonsRecap(true); 
 
 }
 
