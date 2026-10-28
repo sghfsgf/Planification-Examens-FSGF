@@ -32,15 +32,18 @@ async function chargerCalendriersRecap() {
 
         console.log("✅ Nombre de calendriers récupérés :", calendriers.length);
 
-        console.table(
-            calendriers.map(calendrier => ({
-                id: calendrier.id,
-                anneeUniversitaire: calendrier.anneeUniversitaire,
-                semestreCode: calendrier.semestreCode,
-                regimeCode: calendrier.regimeCode,
-                sessionCode: calendrier.sessionCode
-            }))
-        );
+console.table(
+    calendriers.map(calendrier => ({
+        id: calendrier.id,
+        anneeUniversitaire: calendrier.anneeUniversitaire ?? "(absente)",
+        semestreCode: calendrier.semestreCode ?? "(absent)",
+        regimeCode: calendrier.regimeCode ?? "(absent)",
+        sessionCode: calendrier.sessionCode ?? "(absente)",
+        nombreFilieres: calendrier.planning?.filieres?.length ?? 0,
+        statut: calendrier.statut ?? "(absent)"
+    }))
+);
+
 
         return calendriers;
 
