@@ -1461,6 +1461,43 @@
 
     }
 
+      
+    // =====================================================
+    // DIAGNOSTIC TEMPORAIRE DES CALENDRIERS
+    // =====================================================
+
+    try {
+        const resultatCalendriers = await getDocs(
+            collection(db, "calendriers")
+        );
+
+        console.log(
+            "Nombre de calendriers :",
+            resultatCalendriers.size
+        );
+
+        if (!resultatCalendriers.empty) {
+            const premierDocument = resultatCalendriers.docs[0];
+
+            console.log(
+                "ID du calendrier :",
+                premierDocument.id
+            );
+
+            console.log(
+                "Champs du calendrier :",
+                premierDocument.data()
+            );
+        }
+    } catch (erreur) {
+        console.error(
+            "Erreur de lecture des calendriers :",
+            erreur
+        );
+    }
+
+</script> 
+
 </script>
 
 
