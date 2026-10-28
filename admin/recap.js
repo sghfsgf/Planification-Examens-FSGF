@@ -99,11 +99,68 @@ function initialiserFiltreAnneeRecap(calendriers) {
 }
 
 // =====================================================
+// ÉTAPE 3 — FILTRE SEMESTRE
+// =====================================================
+
+const selectSemestreRecap = document.getElementById("semestreRecap");
+
+function initialiserFiltreSemestreRecap(calendriers, anneeSelectionnee) {
+    if (!selectSemestreRecap) {
+        console.error("❌ Élément HTML #semestreRecap introuvable.");
+        return;
+    }
+
+    selectSemestreRecap.innerHTML =
+        '<option value="">Choisir un semestre</option>';
+
+    selectSemestreRecap.disabled = true;
+
+    if (!anneeSelectionnee) {
+        return;
+    }
+
+    const semestres = [
+        ...new Set(
+            calendriers
+                .filter(
+                    calendrier =>
+                        calendrier.anneeUniversitaire === anneeSelectionnee
+                )
+                .map(calendrier => calendrier.semestreCode)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    semestres.forEach(semestre => {
+        const option = document.createElement("option");
+        option.value = semestre;
+        option.textContent = semestre;
+        selectSemestreRecap.appendChild(option);
+    });
+
+    selectSemestreRecap.disabled = semestres.length === 0;
+
+    console.log(
+        "✅ Semestres disponibles pour",
+        anneeSelectionnee,
+        ":",
+        semestres
+    );
+}
+
+// =====================================================
 // EXÉCUTION DU CHARGEMENT
 // =====================================================
 
 chargerCalendriersRecap().then(calendriers => {
     initialiserFiltreAnneeRecap(calendriers);
-});
 
+    // Réinitialiser le semestre lorsque l'année change
+    selectAnneeRecap.addEventListener("change", () => {
+        initialiserFiltreSemestreRecap(
+            calendriers,
+            selectAnneeRecap.value
+        );
+    });
+});
 
