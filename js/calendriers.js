@@ -2,8 +2,11 @@
 // CALENDRIERS.JS
 // Construction et affichage des calendriers
 // =====================================================
-import { getFirestore } from
-    "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+import {
+    getFirestore,
+    collection,
+    onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 import { app } from
     "../firebase-config.js";
 
@@ -98,6 +101,78 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("selectRegime");
     const selectSession =
         document.getElementById("selectSession");
+// =====================================================
+// RÉGIMES : SYNCHRONISATION AVEC FIRESTORE
+// =====================================================
+let regimesFirestoreCharges = false;
+let sessionsLocalesChargees = false;
+let sessionsFirestore = [];
+
+onSnapshot(
+    collection(db, "sessions"),
+
+    function (snapshot) {
+        sessionsFirestore = snapshot.docs.map(function (doc) {
+            return doc.data();
+        });
+
+        const regimeSelectionne = selectRegime.value;
+
+        const regimesDisponibles = [
+            ...new Set(
+                sessionsFirestore
+                    .map(function (session) {
+                        return session.regimeCode;
+                    })
+                    .filter(function (code) {
+                        return typeof code === "string" &&
+                               code.trim() !== "";
+                    })
+                    .map(function (code) {
+                        return code.trim();
+                    })
+            )
+        ].sort();
+
+        selectRegime.innerHTML = "";
+
+        regimesDisponibles.forEach(function (regimeCode) {
+            const option = document.createElement("option");
+            option.value = regimeCode;
+            option.textContent = regimeCode;
+            selectRegime.appendChild(option);
+        });
+
+        regimesFirestoreCharges = true;
+        selectRegime.disabled = regimesDisponibles.length === 0;
+
+        if (regimesDisponibles.includes(regimeSelectionne)) {
+            selectRegime.value = regimeSelectionne;
+        }
+
+        if (regimesDisponibles.length === 0) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Aucun régime disponible";
+            selectRegime.appendChild(option);
+        }
+
+        if (sessionsLocalesChargees) {
+            mettreAJourSessions();
+        }
+    },
+
+    function (erreur) {
+        console.error(
+            "Erreur de lecture des régimes Firestore :",
+            erreur
+        );
+        selectRegime.disabled = true;
+        selectRegime.innerHTML =
+            '<option value="">Erreur de chargement</option>';
+    }
+);
+    
 
     // =================================================
     // Récupère le code niveau pur (L1, L2, L3, MP, MR)
