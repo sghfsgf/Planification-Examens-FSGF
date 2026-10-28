@@ -1547,24 +1547,13 @@ document.addEventListener(
                     }
                 );
 
-            if (!cibleLibrePourToutes) {
+          
+                     if (!cibleLibrePourToutes) {
+                         alert(
+                           "Déplacement impossible : le créneau cible est déjà occupé dans une filière concernée."
+                           );
+                                   }
 
-                console.warn(
-                    "⚠️ Déplacement refusé : le créneau cible est occupé dans une filière concernée."
-                );
-
-                premiereCelluleSelectionnee.style.outline =
-                    "";
-
-                premiereCelluleSelectionnee =
-                    null;
-
-                alert(
-                    "Déplacement impossible : le créneau cible est déjà occupé dans une filière concernée."
-                );
-
-                return;
-            }
 
             // -------------------------------------------------
             // Déplacer la matière commune
