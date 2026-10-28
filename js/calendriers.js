@@ -786,9 +786,7 @@ onSnapshot(
         const regime =
             selectRegime.value;
 
-        const sessions =
-            donneesExamens.sessions || [];
-
+    const sessions = sessionsFirestore;
         // -------------------------------------------------
         // Sessions correspondant au semestre + régime
         // -------------------------------------------------
@@ -867,24 +865,22 @@ onSnapshot(
     // =====================================================
     // ATTENDRE LE CHARGEMENT DES DONNÉES
     // =====================================================
-    if (
-        typeof donneesChargees !== "undefined" &&
-        donneesChargees
-    ) {
-        donneesChargees.then(
-            function () {
-                console.log(
-                    "Calendriers : données reçues."
-                );
-                // Initialiser la liste des sessions
-                mettreAJourSessions();
-            }
-        );
-    } else {
-        console.warn(
-            "Calendriers : donneesChargees introuvable."
-        );
-    }
+   if (
+    typeof donneesChargees !== "undefined" &&
+    donneesChargees
+) {
+    donneesChargees.then(function () {
+        console.log("Calendriers : données reçues.");
+
+        sessionsLocalesChargees = true;
+
+        if (regimesFirestoreCharges) {
+            mettreAJourSessions();
+        }
+    });
+} else {
+    console.warn("Calendriers : donneesChargees introuvable.");
+}
 
     // =====================================================
     // EXPORT EXCEL DU CALENDRIER
