@@ -1340,3 +1340,172 @@ body {
         display: none !important;
     }
 }
+
+
+
+/* ==========================================
+   ERGONOMIE — RÉCAPITULATIF DES LOCAUX
+   ========================================== */
+
+:root {
+    --recap-bleu: #1f4e79;
+    --recap-bleu-fonce: #163b5c;
+    --recap-fond: #f1f5f9;
+    --recap-blanc: #ffffff;
+    --recap-bordure: #d7e1ec;
+    --recap-texte: #243447;
+}
+
+/* Fond de la zone récapitulatif */
+#sectionRecap,
+.section-recap {
+    background: var(--recap-fond);
+    padding: 24px;
+    border-radius: 14px;
+}
+
+/* Filtres : panneau blanc */
+.filtres-recap {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 18px;
+    padding: 22px;
+    margin: 18px 0 22px;
+    background: var(--recap-blanc);
+    border: 1px solid var(--recap-bordure);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(31, 78, 121, 0.07);
+}
+
+/* Libellés des filtres */
+.filtres-recap label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--recap-bleu-fonce);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Champs de sélection */
+.filtres-recap select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: var(--recap-texte);
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filtres-recap select:focus {
+    outline: none;
+    border-color: var(--recap-bleu);
+    box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.14);
+}
+
+/* Tableau : conteneur */
+#tableauRecapLocaux {
+    margin-top: 20px;
+    padding: 18px;
+    background: var(--recap-blanc);
+    border: 1px solid var(--recap-bordure);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(31, 78, 121, 0.06);
+}
+
+/* Actions : alignement des trois boutons */
+.actions-recap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin: 22px 0 10px;
+    padding: 18px;
+    background: var(--recap-blanc);
+    border: 1px solid var(--recap-bordure);
+    border-radius: 12px;
+}
+
+/* Style commun aux boutons */
+.actions-recap button {
+    min-width: 175px;
+    min-height: 44px;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 3px 7px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+}
+
+.actions-recap button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+    box-shadow: 0 5px 12px rgba(15, 23, 42, 0.16);
+}
+
+.actions-recap button:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 3px;
+}
+
+/* Couleur spécifique de chaque action */
+#btnExporterRecapExcel {
+    background: #16804a;
+}
+
+#btnExporterRecapPDF {
+    background: #c2413b;
+}
+
+#btnImprimerRecap {
+    background: var(--recap-bleu);
+}
+
+/* Boutons désactivés */
+.actions-recap button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Adaptation aux écrans moyens */
+@media (max-width: 1000px) {
+    .filtres-recap {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Adaptation aux petits écrans */
+@media (max-width: 600px) {
+    #sectionRecap,
+    .section-recap {
+        padding: 12px;
+    }
+
+    .filtres-recap {
+        grid-template-columns: 1fr;
+        padding: 15px;
+        gap: 14px;
+    }
+
+    .actions-recap {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+    }
+
+    .actions-recap button {
+        width: 100%;
+    }
+
+    #tableauRecapLocaux {
+        padding: 10px;
+    }
+}
