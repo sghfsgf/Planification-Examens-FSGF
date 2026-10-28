@@ -335,36 +335,75 @@ function afficherRecapitulatifLocaux(calendriers) {
             "'": "&#39;"
         })[caractere]);
 
-    if (lignes.length === 0) {
-        conteneur.innerHTML =
-            "<p>Aucun examen occupé trouvé pour ces critères.</p>";
-        return;
-    }
+   
+if (lignes.length === 0) {
+    conteneur.innerHTML =
+        "<p>Aucun examen occupé trouvé pour ces critères.</p>";
+    return;
+}
 
-    conteneur.innerHTML = `
-        <table>
-            <thead>
+const dates = [...new Set(lignes.map(ligne => ligne.date))];
+
+const creneaux = [...new Set(
+    lignes.map(ligne => `${ligne.debut}–${ligne.fin}`)
+)].sort((a, b) => a.localeCompare(b));
+
+const tableau = {};
+
+for (const creneau of creneaux) {
+    tableau[creneau] = {};
+
+    for (const date of dates) {
+        tableau[creneau][date] = [];
+    }
+}
+
+for (const ligne of lignes) {
+    const creneau = `${ligne.debut}–${ligne.fin}`;
+    const date = ligne.date;
+    const locaux = ligne.locaux
+        .split(", ")
+        .filter(local => local !== "");
+
+    tableau[creneau][date].push(...locaux);
+}
+
+const echapperHTML = valeur =>
+    String(valeur).replace(/[&<>"']/g, caractere => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[caractere]);
+
+conteneur.innerHTML = `
+    <table>
+        <thead>
+            <tr>
+                <th>Créneau</th>
+                ${dates.map(date =>
+                    `<th>${echapperHTML(date)}</th>`
+                ).join("")}
+            </tr>
+        </thead>
+        <tbody>
+            ${creneaux.map(creneau => `
                 <tr>
-                    <th>Date</th>
-                    <th>Créneau</th>
-                    <th>Filière</th>
-                    <th>Matière</th>
-                    <th>Locaux affectés</th>
+                    <td>${echapperHTML(creneau)}</td>
+                    ${dates.map(date => {
+                        const locaux = [
+                            ...new Set(tableau[creneau][date])
+                        ];
+
+                        return `<td>${echapperHTML(locaux.join(", "))}</td>`;
+                    }).join("")}
                 </tr>
-            </thead>
-            <tbody>
-                ${lignes.map(ligne => `
-                    <tr>
-                        <td>${echapperHTML(ligne.date)}</td>
-                        <td>${echapperHTML(ligne.debut)}–${echapperHTML(ligne.fin)}</td>
-                        <td>${echapperHTML(ligne.filiere)}</td>
-                        <td>${echapperHTML(ligne.matiere)}</td>
-                        <td>${echapperHTML(ligne.locaux || "Aucun local renseigné")}</td>
-                    </tr>
-                `).join("")}
-            </tbody>
-        </table>
-    `;
+            `).join("")}
+        </tbody>
+    </table>
+`;
+
 }
 
 
