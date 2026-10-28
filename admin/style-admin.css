@@ -1189,3 +1189,70 @@ body {
     line-height: 1.5;
 }
 
+
+
+
+/* ==================================================
+   RÉCAPITULATIF DES SALLES ET AMPHITHÉÂTRES
+   ================================================== */
+
+#tableauRecapLocaux {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 20px;
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+#tableauRecapLocaux table {
+    width: 100%;
+    min-width: 650px;
+    border-collapse: collapse;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+#tableauRecapLocaux th,
+#tableauRecapLocaux td {
+    border: 1px solid #cbd5e1;
+    padding: 12px 16px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#tableauRecapLocaux thead th {
+    background-color: #1f4e79;
+    color: #ffffff;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#tableauRecapLocaux tbody td:first-child {
+    background-color: #eaf0f6;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 130px;
+}
+
+#tableauRecapLocaux tbody tr:nth-child(even) td:not(:first-child) {
+    background-color: #f8fafc;
+}
+
+#tableauRecapLocaux tbody tr:hover td {
+    background-color: #e0f2fe;
+}
+
+#tableauRecapLocaux tbody td:not(:first-child) {
+    min-width: 120px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    #tableauRecapLocaux th,
+    #tableauRecapLocaux td {
+        padding: 9px 10px;
+        font-size: 13px;
+    }
+}
