@@ -1117,14 +1117,7 @@ boutonRegenerer.addEventListener(
                     "📘 Déplacement manuel d'une matière spécifique : contrôle global ignoré."
                 );
 
-            } {
-
-                console.warn(
-                    "⚠️ Planning non valide : enregistrement refusé."
-                );
-
-                return;
-            }
+            } 
 
             // -----------------------------------------
             // Enregistrement Firestore
