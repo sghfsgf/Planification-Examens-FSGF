@@ -1241,17 +1241,86 @@
                 Synthèse de la planification
                 générée.
             </p>
+          
+<div
+    id="zoneRecap"
+    class="zone-donnees"
+>
+    <!-- Filtres du récapitulatif -->
+    <div class="filtres-recap">
+
+        <div class="champ-recap">
+            <label for="anneeRecap">Année universitaire</label>
+            <select id="anneeRecap">
+                <option value="">Chargement...</option>
+            </select>
+        </div>
+
+        <div class="champ-recap">
+            <label for="semestreRecap">Semestre</label>
+            <select id="semestreRecap" disabled>
+                <option value="">Choisir une année</option>
+            </select>
+        </div>
+
+        <div class="champ-recap">
+            <label for="regimeRecap">Régime</label>
+            <select id="regimeRecap" disabled>
+                <option value="">Choisir un semestre</option>
+            </select>
+        </div>
+
+        <div class="champ-recap">
+            <label for="sessionRecap">Session</label>
+            <select id="sessionRecap" disabled>
+                <option value="">Choisir un régime</option>
+            </select>
+        </div>
+
+    </div>
+
+    <!-- Résultat du récapitulatif -->
+    <div
+        id="tableauRecapLocaux"
+        class="tableau-conteneur"
+    >
+        Sélectionnez les quatre filtres pour afficher
+        le récapitulatif des locaux.
+    </div>
+
+    <!-- Actions sur le tableau -->
+    <div class="actions-recap">
+
+        <button
+            type="button"
+            id="btnExporterRecapExcel"
+            disabled
+        >
+            📊 Exporter Excel
+        </button>
+
+        <button
+            type="button"
+            id="btnExporterRecapPDF"
+            disabled
+        >
+            📄 Exporter PDF
+        </button>
+
+        <button
+            type="button"
+            id="btnImprimerRecap"
+            disabled
+        >
+            🖨️ Imprimer
+        </button>
+
+    </div>
+
+</div>
 
 
-            <div
-                id="zoneRecap"
-                class="zone-donnees"
-            >
-
-                Le récapitulatif sera affiché ici.
-
-            </div>
-
+          
         </div>
 
     </section>
