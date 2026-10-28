@@ -266,14 +266,120 @@ function initialiserFiltreSessionRecap(
     );
 }
 
+
+function afficherRecapitulatifLocaux(calendriers) {
+    const conteneur = document.getElementById("tableauRecapLocaux");
+
+    if (!conteneur) {
+        console.error("❌ Élément tableauRecapLocaux introuvable.");
+        return;
+    }
+
+    const annee = selectAnneeRecap.value;
+    const semestre = selectSemestreRecap.value;
+    const regime = selectRegimeRecap.value;
+    const session = selectSessionRecap.value;
+
+    if (!annee || !semestre || !regime || !session) {
+        conteneur.innerHTML =
+            "<p>Veuillez sélectionner l'année, le semestre, le régime et la session.</p>";
+        return;
+    }
+
+    const calendriersFiltres = calendriers.filter(calendrier =>
+        calendrier.anneeUniversitaire === annee &&
+        calendrier.semestreCode === semestre &&
+        calendrier.regimeCode === regime &&
+        calendrier.sessionCode === session &&
+        calendrier.statut === "publie"
+    );
+
+    const lignes = [];
+
+    for (const calendrier of calendriersFiltres) {
+        const filieres = calendrier.planning?.filieres ?? [];
+
+        for (const filiere of filieres) {
+            const locaux = filiere.amphis ?? [];
+
+            for (const cellule of filiere.cellules ?? []) {
+                if (cellule.estOccupee !== true) {
+                    continue;
+                }
+
+                lignes.push({
+                    dateTri: cellule.date?.seconds ?? 0,
+                    date: cellule.dateAffichage ?? "",
+                    debut: cellule.heureDebutAffichage ?? "",
+                    fin: cellule.heureFinAffichage ?? "",
+                    filiere: cellule.filiereCode ?? filiere.filiereCode ?? "",
+                    matiere: cellule.matiereLibelle ?? "",
+                    locaux: locaux.join(", ")
+                });
+            }
+        }
+    }
+
+    lignes.sort((a, b) =>
+        a.dateTri - b.dateTri ||
+        a.debut.localeCompare(b.debut) ||
+        a.filiere.localeCompare(b.filiere)
+    );
+
+    const echapperHTML = valeur =>
+        String(valeur).replace(/[&<>"']/g, caractere => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[caractere]);
+
+    if (lignes.length === 0) {
+        conteneur.innerHTML =
+            "<p>Aucun examen occupé trouvé pour ces critères.</p>";
+        return;
+    }
+
+    conteneur.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Créneau</th>
+                    <th>Filière</th>
+                    <th>Matière</th>
+                    <th>Locaux affectés</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${lignes.map(ligne => `
+                    <tr>
+                        <td>${echapperHTML(ligne.date)}</td>
+                        <td>${echapperHTML(ligne.debut)}–${echapperHTML(ligne.fin)}</td>
+                        <td>${echapperHTML(ligne.filiere)}</td>
+                        <td>${echapperHTML(ligne.matiere)}</td>
+                        <td>${echapperHTML(ligne.locaux || "Aucun local renseigné")}</td>
+                    </tr>
+                `).join("")}
+            </tbody>
+        </table>
+    `;
+}
+
+
 // =====================================================
 // EXÉCUTION DU CHARGEMENT
 // =====================================================
 
+
 chargerCalendriersRecap().then(calendriers => {
     initialiserFiltreAnneeRecap(calendriers);
 
-    // Changement d'année
+    function actualiserRecapitulatif() {
+        afficherRecapitulatifLocaux(calendriers);
+    }
+
     selectAnneeRecap.addEventListener("change", () => {
         initialiserFiltreSemestreRecap(
             calendriers,
@@ -292,9 +398,10 @@ chargerCalendriersRecap().then(calendriers => {
             selectSemestreRecap.value,
             selectRegimeRecap.value
         );
+
+        actualiserRecapitulatif();
     });
 
-    // Changement de semestre
     selectSemestreRecap.addEventListener("change", () => {
         initialiserFiltreRegimeRecap(
             calendriers,
@@ -308,9 +415,10 @@ chargerCalendriersRecap().then(calendriers => {
             selectSemestreRecap.value,
             selectRegimeRecap.value
         );
+
+        actualiserRecapitulatif();
     });
 
-    // Changement de régime
     selectRegimeRecap.addEventListener("change", () => {
         initialiserFiltreSessionRecap(
             calendriers,
@@ -318,7 +426,14 @@ chargerCalendriersRecap().then(calendriers => {
             selectSemestreRecap.value,
             selectRegimeRecap.value
         );
+
+        actualiserRecapitulatif();
     });
+
+    selectSessionRecap.addEventListener("change", actualiserRecapitulatif);
+
+    actualiserRecapitulatif();
 });
+
 
 
