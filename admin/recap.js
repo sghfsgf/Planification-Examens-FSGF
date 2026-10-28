@@ -546,12 +546,38 @@ async function exporterRecapExcel() {
 }
 
 
+function ajouterDateEditionRecap() {
+    let dateEdition = document.getElementById("dateEditionRecap");
+
+    if (!dateEdition) {
+        dateEdition = document.createElement("p");
+        dateEdition.id = "dateEditionRecap";
+        dateEdition.className = "date-edition-recap";
+
+        const conteneur = document.getElementById("tableauRecapLocaux");
+        conteneur?.prepend(dateEdition);
+    }
+
+    const maintenant = new Date();
+
+    dateEdition.textContent =
+        "Date d'édition : " +
+        maintenant.toLocaleDateString("fr-FR") +
+        " à " +
+        maintenant.toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+}
+
 function imprimerRecap() {
     const tableau = obtenirTableauRecapPourExport();
     if (!tableau) return;
 
+    ajouterDateEditionRecap();
     window.print();
 }
+
 
 function exporterRecapPDF() {
     imprimerRecap();
