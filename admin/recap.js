@@ -62,6 +62,48 @@ console.table(
     }
 }
 
-// Exécution du chargement
-chargerCalendriersRecap();
+// =====================================================
+// ÉTAPE 2 — FILTRE ANNÉE UNIVERSITAIRE
+// =====================================================
+
+const selectAnneeRecap = document.getElementById("anneeRecap");
+
+function initialiserFiltreAnneeRecap(calendriers) {
+    if (!selectAnneeRecap) {
+        console.error("❌ Élément HTML #anneeRecap introuvable.");
+        return;
+    }
+
+    // Réinitialiser le menu
+    selectAnneeRecap.innerHTML =
+        '<option value="">Choisir une année universitaire</option>';
+
+    // Récupérer les années présentes dans les calendriers publiés
+    const annees = [
+        ...new Set(
+            calendriers
+                .map(calendrier => calendrier.anneeUniversitaire)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    // Ajouter les années au menu
+    annees.forEach(annee => {
+        const option = document.createElement("option");
+        option.value = annee;
+        option.textContent = annee;
+        selectAnneeRecap.appendChild(option);
+    });
+
+    console.log("✅ Années universitaires disponibles :", annees);
+}
+
+// =====================================================
+// EXÉCUTION DU CHARGEMENT
+// =====================================================
+
+chargerCalendriersRecap().then(calendriers => {
+    initialiserFiltreAnneeRecap(calendriers);
+});
+
 
