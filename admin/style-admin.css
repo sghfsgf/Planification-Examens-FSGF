@@ -1469,3 +1469,22 @@ body {
         padding: 10px;
     }
 }
+
+
+
+.date-edition-recap {
+    margin: 0 0 12px;
+    text-align: right;
+    color: #475569;
+    font-size: 12px;
+    font-style: italic;
+}
+
+@media print {
+    .date-edition-recap {
+        display: block !important;
+        color: #000 !important;
+        font-size: 10pt !important;
+        margin-bottom: 10px !important;
+    }
+}
