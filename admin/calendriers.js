@@ -1103,8 +1103,10 @@ boutonRegenerer.addEventListener(
             // Contrôle global avant enregistrement
             // Sauf après un déplacement manuel d'une matière spécifique
             // -----------------------------------------
-
-            if (!deplacementMatiereSpecifiqueEffectue) {
+                  if (
+                  !deplacementMatiereSpecifiqueEffectue &&
+                 !affectationAmphiManuelleEffectuee
+                   ) {
 
                 const resultatControle =
                     controleExamens.verifierPlanningGlobal(
@@ -1132,13 +1134,13 @@ boutonRegenerer.addEventListener(
                     return;
                 }
 
-            } else {
+              } else {
 
-                console.log(
-                    "📘 Déplacement manuel d'une matière spécifique : contrôle global ignoré."
-                );
+                           console.log(
+                                 "📘 Modification manuelle détectée : contrôle global ignoré."
+                           );
 
-            } 
+                     }
 
             // -----------------------------------------
             // Enregistrement Firestore
@@ -1156,7 +1158,10 @@ boutonRegenerer.addEventListener(
     console.log(
         "✓ Calendrier enregistré dans Firestore."
     );
+                   
+      affectationAmphiManuelleEffectuee = false;
 
+                   
         // Mémoriser le calendrier pour la publication
     if (
         resultat.id &&
