@@ -1480,6 +1480,21 @@
             const premierDocument = resultatCalendriers.docs[0];
 
             console.log(
+    "CLÉS DU DOCUMENT :",
+    Object.keys(premierDocument.data())
+);
+
+console.log(
+    "CLÉS DU PLANNING :",
+    Object.keys(premierDocument.data().planning || {})
+);
+
+console.log(
+    "PREMIÈRE CELLULE :",
+    premierDocument.data().planning?.filieres?.[0]?.cellules?.[0]
+);
+
+            console.log(
                 "ID du calendrier :",
                 premierDocument.id
             );
