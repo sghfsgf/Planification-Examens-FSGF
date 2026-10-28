@@ -1197,21 +1197,6 @@ button,
     background: white !important;
 }
 
-/* Afficher les valeurs sélectionnées */
-#calendriers .filtres-calendrier label {
-    font-size: 9pt !important;
-    color: #000 !important;
-}
-
-#calendriers .filtres-calendrier select {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    border: none !important;
-    background: white !important;
-    color: #000 !important;
-    font-size: 9pt !important;
-    padding: 0 !important;
-}
 
     /* Titre */
    
