@@ -1399,5 +1399,32 @@ button,
     border: 1px solid #000000 !important;
 }
 
- 
+
+/* =====================================================
+   PAGINATION DU CALENDRIER PUBLIC
+   ===================================================== */
+
+#tableauCalendrier {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+    break-inside: auto;
+}
+
+/* Répéter les en-têtes sur les pages suivantes */
+#tableauCalendrier thead {
+    display: table-header-group;
+}
+
+/* Éviter de couper les lignes entre deux pages */
+#tableauCalendrier tr {
+    height: auto !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+
+   
 }
