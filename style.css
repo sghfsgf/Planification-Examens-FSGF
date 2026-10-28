@@ -1128,7 +1128,6 @@ select:focus-visible {
 }
 
 @media print {
-
    /* Masquer uniquement les éléments inutiles à l'impression */
 .menu-principal,
 .pied-page,
@@ -1227,25 +1226,34 @@ button,
         background: #ffffff;
     }
 
-    /* Cellules */
-    #tableauCalendrier th,
-    #tableauCalendrier td {
-        min-width: 0 !important;
-        max-width: none !important;
+  
+/* Cellules du calendrier à l'impression */
+#tableauCalendrier th,
+#tableauCalendrier td {
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
 
-        border: 1px solid #000000 !important;
+    border: 1px solid #000000 !important;
+    padding: 4px !important;
 
-        padding: 5px;
+    text-align: center;
+    vertical-align: middle;
 
-        text-align: center;
-        vertical-align: middle;
+    /* Autoriser le texte à occuper plusieurs lignes */
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    line-height: 1.25;
+}
 
-        overflow: hidden;
-
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-    }
-
+/* Hauteur des lignes adaptée à leur contenu */
+#tableauCalendrier tr {
+    height: auto !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
 
 /* =====================================================
    EN-TÊTES ET COLONNES DU CALENDRIER
@@ -1326,39 +1334,36 @@ button,
     padding: 3px;
 }
 
-   /* MATIÈRES */
+
+/* MATIÈRES */
 #tableauCalendrier .cellule-examen {
     background: rgb(153, 204, 255) !important;
     color: #000000 !important;
 
-    font-family:
-        "Calibri Light",
-        Calibri,
-        sans-serif !important;
-
+    font-family: "Calibri Light", Calibri, sans-serif !important;
     font-size: 11pt !important;
     font-weight: 400 !important;
-    line-height: 1.1;
+    line-height: 1.2 !important;
 
-    padding: 3px;
+    padding: 4px !important;
+    height: auto !important;
 
-    /* Texte vertical de bas vers le haut */
+    /* Conserver le texte vertical */
     writing-mode: vertical-rl;
     transform: rotate(180deg);
 
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
 }
+ 
 /* Cellules vides */
 #tableauCalendrier tbody td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
     background: #ffffff !important;
     color: #000000 !important;
-}
-
-/* Éviter de couper une ligne */
-#tableauCalendrier tr {
-    page-break-inside: avoid;
-    break-inside: avoid;
 }
 
 /* Réduire les en-têtes et les noms des filières à l'impression */
@@ -1374,4 +1379,25 @@ button,
     line-height: 1 !important;
     padding: 2px !important;
 }
+
+  
+
+/* =====================================================
+   BORDURES DE TOUTES LES CELLULES DU CALENDRIER
+   ===================================================== */
+
+#tableauCalendrier {
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+#tableauCalendrier th,
+#tableauCalendrier td {
+    border: 1px solid #000000 !important;
+}
+
+ 
 }
