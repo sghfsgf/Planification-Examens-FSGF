@@ -1699,13 +1699,12 @@ document.addEventListener(
         // MODIFICATION ACCEPTÉE
         // =================================================
 
-        window.planningCalendrierAdmin =
-            planning;
+      window.planningCalendrierAdmin =
+    planning;
 
-        console.log(let forcerDeplacementMatiereSpecifique = !estMatiereCommune;
-            "✅ Modification acceptée : planning valide."
-        );
-
+console.log(
+    "✅ Modification acceptée : planning mis à jour."
+);
         // =================================================
         // RÉAFFICHER LE CALENDRIER
         // =================================================
