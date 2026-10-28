@@ -383,6 +383,7 @@ function construireTableauCalendrier(planning) {
             celluleFiliere
         );
 
+       
         // -------------------------------------------------
         // Amphis
         // -------------------------------------------------
@@ -390,14 +391,34 @@ function construireTableauCalendrier(planning) {
         const celluleAmphis =
             document.createElement("td");
 
-       celluleAmphis.textContent =
-    filiere.amphis &&
-    filiere.amphis.length > 0
-        ? filiere.amphis.join(" || ")
-        : "";
+        celluleAmphis.textContent =
+            filiere.amphis &&
+            filiere.amphis.length > 0
+                ? filiere.amphis.join(" || ")
+                : "";
+
+        celluleAmphis.dataset.filiere =
+            filiere.filiereCode;
+
+        // Une cellule vide seulement peut recevoir un local
+        if (
+            celluleAmphis.textContent.trim() === ""
+        ) {
+            celluleAmphis.classList.add(
+                "cellule-amphis-vide"
+            );
+
+            celluleAmphis.title =
+                "Cliquer pour choisir un local";
+
+            celluleAmphis.style.cursor =
+                "pointer";
+        }
+
         ligne.appendChild(
             celluleAmphis
         );
+
 
         // -------------------------------------------------
         // Matières
@@ -1294,7 +1315,7 @@ initialiserCalendriersApresFirestore();
 // MODIFICATION MANUELLE DU CALENDRIER
 // Échange / déplacement de deux cellules par clic
 // =====================================================
-
+ let affectationAmphiManuelleEffectuee = false;
  let deplacementMatiereSpecifiqueEffectue = false;
  let premiereCelluleSelectionnee = null;
 
