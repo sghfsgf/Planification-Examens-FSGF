@@ -342,7 +342,11 @@ if (lignes.length === 0) {
     return;
 }
 
-const dates = [...new Set(lignes.map(ligne => ligne.date))];
+const dates = [...new Map(
+    lignes.map(ligne => [ligne.date, ligne.dateTri])
+).entries()]
+    .sort((a, b) => a[1] - b[1])
+    .map(([date]) => date);
 
 const creneaux = [...new Set(
     lignes.map(ligne => `${ligne.debut}–${ligne.fin}`)
@@ -367,15 +371,6 @@ for (const ligne of lignes) {
 
     tableau[creneau][date].push(...locaux);
 }
-
-const echapperHTML = valeur =>
-    String(valeur).replace(/[&<>"']/g, caractere => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    })[caractere]);
 
 conteneur.innerHTML = `
     <table>
