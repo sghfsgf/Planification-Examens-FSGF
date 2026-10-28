@@ -1498,7 +1498,22 @@ console.log(
     "PREMIÈRE FILIÈRE COMPLÈTE :",
     premierDocument.data().planning?.filieres?.[0]
 );
+console.log(
+    "AMPHIS DE LA PREMIÈRE FILIÈRE :",
+    premierDocument.data().planning?.filieres?.[0]?.amphis
+);
 
+console.log(
+    "CELLULE OCCUPÉE COMPLÈTE :",
+    premierDocument.data().planning?.filieres
+        ?.flatMap(
+            filiere => filiere.cellules || []
+        )
+        .find(
+            cellule => cellule.estOccupee === true
+        )
+);
+            
 console.log(
     "OBJET CONTROLE :",
     premierDocument.data().controle
