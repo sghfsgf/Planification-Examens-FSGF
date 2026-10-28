@@ -1476,73 +1476,88 @@
             resultatCalendriers.size
         );
 
-        if (!resultatCalendriers.empty) {
-            const premierDocument = resultatCalendriers.docs[0];
+if (!resultatCalendriers.empty) {
 
-            console.log(
-    "CLÉS DU DOCUMENT :",
-    Object.keys(premierDocument.data())
-);
+    const premierDocument = resultatCalendriers.docs[0];
+    const donnees = premierDocument.data();
+    const planning = donnees.planning || {};
+    const filieres = planning.filieres || [];
 
-console.log(
-    "CLÉS DU PLANNING :",
-    Object.keys(premierDocument.data().planning || {})
-);
+    console.log(
+        "CLÉS DU DOCUMENT :",
+        Object.keys(donnees)
+    );
 
-console.log(
-    "PREMIÈRE CELLULE :",
-    premierDocument.data().planning?.filieres?.[0]?.cellules?.[0]
-);
+    console.log(
+        "CLÉS DU PLANNING :",
+        Object.keys(planning)
+    );
 
-        console.log(
-    "PREMIÈRE FILIÈRE COMPLÈTE :",
-    premierDocument.data().planning?.filieres?.[0]
-);
-console.log(
-    "AMPHIS DE LA PREMIÈRE FILIÈRE :",
-    premierDocument.data().planning?.filieres?.[0]?.amphis
-);
+    console.log(
+        "PREMIÈRE CELLULE :",
+        filieres[0]?.cellules?.[0]
+    );
 
-console.log(
-    "CELLULE OCCUPÉE COMPLÈTE :",
-    premierDocument.data().planning?.filieres
-        ?.flatMap(
-            filiere => filiere.cellules || []
+    console.log(
+        "PREMIÈRE FILIÈRE COMPLÈTE :",
+        filieres[0]
+    );
+
+    console.log(
+        "AMPHIS DE LA PREMIÈRE FILIÈRE :",
+        filieres[0]?.amphis
+    );
+
+    console.log(
+        "CELLULE OCCUPÉE COMPLÈTE :",
+        filieres
+            .flatMap(filiere => filiere.cellules || [])
+            .find(cellule => cellule.estOccupee === true)
+    );
+
+    console.log(
+        "OBJET CONTROLE :",
+        donnees.controle
+    );
+
+    console.log(
+        "ID DU CALENDRIER :",
+        premierDocument.id
+    );
+
+    console.log(
+        "DOCUMENT COMPLET DU CALENDRIER :",
+        JSON.stringify(
+            donnees,
+            (cle, valeur) =>
+                valeur && typeof valeur.toDate === "function"
+                    ? valeur.toDate().toISOString()
+                    : valeur,
+            2
         )
-        .find(
-            cellule => cellule.estOccupee === true
-        )
-);
-            
-console.log(
-    "OBJET CONTROLE :",
-    premierDocument.data().controle
-);
+    );
 
-console.log(
-    "PREMIÈRE CELLULE OCCUPÉE :",
-    premierDocument.data().planning?.filieres
-        ?.flatMap(filiere => filiere.cellules || [])
-        .find(cellule => cellule.estOccupee === true)
-);    
+    console.log(
+        "TOUTES LES FILIÈRES ET LEURS AMPHIS :",
+        filieres.map(filiere => ({
+            filiereCode: filiere.filiereCode,
+            amphis: filiere.amphis,
+            cellulesOccupees: (filiere.cellules || [])
+                .filter(cellule => cellule.estOccupee === true)
+                .map(cellule => ({
+                    date: cellule.dateAffichage,
+                    heureDebut: cellule.heureDebutAffichage,
+                    heureFin: cellule.heureFinAffichage,
+                    matiere: cellule.matiereLibelle,
+                    regime: cellule.regimeCode,
+                    semestre: cellule.semestreCode
+                }))
+        }))
+    );
 
-            console.log(
-                "ID du calendrier :",
-                premierDocument.id
-            );
+}
 
-            console.log(
-    "Document complet du calendrier :",
-    JSON.stringify(
-        premierDocument.data(),
-        (cle, valeur) =>
-            valeur && typeof valeur.toDate === "function"
-                ? valeur.toDate().toISOString()
-                : valeur,
-        2
-    )
-);
-        }
+        
     } catch (erreur) {
         console.error(
             "Erreur de lecture des calendriers :",
