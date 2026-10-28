@@ -1485,9 +1485,16 @@
             );
 
             console.log(
-                "Champs du calendrier :",
-                premierDocument.data()
-            );
+    "Document complet du calendrier :",
+    JSON.stringify(
+        premierDocument.data(),
+        (cle, valeur) =>
+            valeur && typeof valeur.toDate === "function"
+                ? valeur.toDate().toISOString()
+                : valeur,
+        2
+    )
+);
         }
     } catch (erreur) {
         console.error(
