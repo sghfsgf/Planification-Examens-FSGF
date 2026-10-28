@@ -1186,17 +1186,10 @@ button,
         box-shadow: none !important;
     }
 
-/* Conserver l'année et la session sur le document imprimé */
+/* Masquer les filtres sur le document imprimé */
 #calendriers .filtres-calendrier {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 3mm !important;
-    margin: 0 0 4mm !important;
-    padding: 0 !important;
-    border: none !important;
-    background: white !important;
+    display: none !important;
 }
-
 
     /* Titre */
    
