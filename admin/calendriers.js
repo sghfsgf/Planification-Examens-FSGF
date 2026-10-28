@@ -922,7 +922,8 @@ selectSemestre.addEventListener(
 // AFFICHAGE
 // =========================================
 
-
+deplacementMatiereSpecifiqueEffectue = false;
+        
 window.planningCalendrierAdmin = planning;
 
 afficherPlanning(planning);
@@ -959,6 +960,10 @@ boutonRegenerer.addEventListener(
 
             return;
         }
+
+        
+        // Réinitialiser l'indicateur pour le nouveau calendrier
+        deplacementMatiereSpecifiqueEffectue = false;
 
         console.log("------------------------------------------");
         console.log("RÉGÉNÉRATION DU CALENDRIER ADMIN");
@@ -1073,29 +1078,46 @@ boutonRegenerer.addEventListener(
 
                 return;
             }
-
             // -----------------------------------------
             // Contrôle global avant enregistrement
+            // Sauf après un déplacement manuel d'une matière spécifique
             // -----------------------------------------
 
-            const resultatControle =
-                controleExamens.verifierPlanningGlobal(
-                    planning
+            if (!deplacementMatiereSpecifiqueEffectue) {
+
+                const resultatControle =
+                    controleExamens.verifierPlanningGlobal(
+                        planning
+                    );
+
+                console.log(
+                    "Résultat du contrôle avant enregistrement :",
+                    resultatControle
                 );
 
-            console.log(
-                "Résultat du contrôle avant enregistrement :",
-                resultatControle
-            );
+                // -----------------------------------------
+                // Refuser si le planning n'est pas valide
+                // -----------------------------------------
 
-            // -----------------------------------------
-            // Refuser si le planning n'est pas valide
-            // -----------------------------------------
+                if (
+                    !resultatControle ||
+                    !resultatControle.valide
+                ) {
 
-            if (
-                !resultatControle ||
-                !resultatControle.valide
-            ) {
+                    console.warn(
+                        "⚠️ Planning non valide : enregistrement refusé."
+                    );
+
+                    return;
+                }
+
+            } else {
+
+                console.log(
+                    "📘 Déplacement manuel d'une matière spécifique : contrôle global ignoré."
+                );
+
+            } {
 
                 console.warn(
                     "⚠️ Planning non valide : enregistrement refusé."
@@ -1280,7 +1302,8 @@ initialiserCalendriersApresFirestore();
 // Échange / déplacement de deux cellules par clic
 // =====================================================
 
-let premiereCelluleSelectionnee = null;
+ let deplacementMatiereSpecifiqueEffectue = false;
+ let premiereCelluleSelectionnee = null;
 
 document.addEventListener(
     "click",
@@ -1636,7 +1659,8 @@ document.addEventListener(
 
             console.log(
                 "🔄 Matière spécifique échangée."
-            );
+               );
+            deplacementMatiereSpecifiqueEffectue = true;
         }
         
         // =================================================
