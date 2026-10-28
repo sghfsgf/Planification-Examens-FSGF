@@ -1319,6 +1319,121 @@ initialiserCalendriersApresFirestore();
  let deplacementMatiereSpecifiqueEffectue = false;
  let premiereCelluleSelectionnee = null;
 
+document.addEventListener("click", function (evenement) {
+
+    // =================================================
+    // AFFECTATION MANUELLE D'UN LOCAL
+    // =================================================
+
+    const celluleAmphis = evenement.target.closest(
+        "td.cellule-amphis-vide"
+    );
+
+    if (!celluleAmphis) {
+        return;
+    }
+
+    // Une cellule déjà remplie ne doit pas être modifiée.
+    if (celluleAmphis.textContent.trim() !== "") {
+        return;
+    }
+
+    const planning = window.planningCalendrierAdmin;
+
+    if (!planning || !window.generationExamens) {
+        console.error("❌ Planning ou moteur introuvable.");
+        return;
+    }
+
+    const donnees = window.generationExamens.obtenirDonnees();
+    const salles = donnees && donnees.sallesAmphis;
+
+    if (!Array.isArray(salles) || salles.length === 0) {
+        alert("Aucun local disponible dans les données.");
+        return;
+    }
+
+    // Créer la liste des locaux.
+    const liste = document.createElement("select");
+    liste.style.maxWidth = "180px";
+
+    const optionInitiale = document.createElement("option");
+    optionInitiale.value = "";
+    optionInitiale.textContent = "Choisir un local...";
+    liste.appendChild(optionInitiale);
+
+    salles.forEach(function (salle) {
+
+        if (
+            salle.disponible &&
+            salle.disponible !== "Oui"
+        ) {
+            return;
+        }
+
+        const option = document.createElement("option");
+        option.value = salle.code;
+
+        option.textContent =
+            salle.code + " : " +
+            salle.capacite + " places";
+
+        liste.appendChild(option);
+    });
+
+    // Remplacer temporairement le contenu de la cellule.
+    celluleAmphis.textContent = "";
+    celluleAmphis.appendChild(liste);
+    liste.focus();
+
+    // Empêcher le clic dans la liste de déclencher
+    // le gestionnaire de déplacement des matières.
+    liste.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+
+    liste.addEventListener("change", function () {
+
+        const codeLocal = liste.value;
+
+        if (!codeLocal) {
+            return;
+        }
+
+        const filiere = planning.filieres.find(
+            function (f) {
+                return f.filiereCode ===
+                    celluleAmphis.dataset.filiere;
+            }
+        );
+
+        if (!filiere) {
+            console.error("❌ Filière introuvable.");
+            afficherPlanning(planning);
+            return;
+        }
+
+        // Enregistrer le code du local dans le planning.
+        filiere.amphis = [codeLocal];
+
+        celluleAmphis.textContent = codeLocal;
+        celluleAmphis.classList.remove("cellule-amphis-vide");
+        celluleAmphis.title = "";
+        celluleAmphis.style.cursor = "";
+
+        window.planningCalendrierAdmin = planning;
+        affectationAmphiManuelleEffectuee = true;
+
+        console.log(
+            "✅ Local affecté manuellement :",
+            filiere.filiereCode,
+            codeLocal
+        );
+    });
+
+});
+
+
 document.addEventListener(
     "click",
     function (evenement) {
