@@ -424,24 +424,127 @@ function obtenirTableauRecapPourExport() {
     return tableau;
 }
 
-function exporterRecapExcel() {
-    const tableau = obtenirTableauRecapPourExport();
-    if (!tableau) return;
+async function exporterRecapExcel() {
+    const tableauHTML = obtenirTableauRecapPourExport();
+    if (!tableauHTML) return;
 
-    const classeur = XLSX.utils.table_to_book(tableau, {
-        sheet: "Récapitulatif"
+    const classeur = new ExcelJS.Workbook();
+    const feuille = classeur.addWorksheet("Récapitulatif");
+
+    // Reprendre les données et les styles du tableau HTML
+    const lignesHTML = [...tableauHTML.querySelectorAll("tr")];
+
+    lignesHTML.forEach((ligneHTML, indexLigne) => {
+        const cellulesHTML = [...ligneHTML.querySelectorAll("th, td")];
+
+        const ligneExcel = feuille.getRow(indexLigne + 1);
+
+        cellulesHTML.forEach((celluleHTML, indexColonne) => {
+            const celluleExcel = ligneExcel.getCell(indexColonne + 1);
+            const style = getComputedStyle(celluleHTML);
+
+            celluleExcel.value = celluleHTML.innerText.trim();
+
+            celluleExcel.font = {
+                name: "Arial",
+                size: parseFloat(style.fontSize) * 0.75 || 10,
+                bold: style.fontWeight === "bold" ||
+                      Number(style.fontWeight) >= 600,
+                color: {
+                    argb: "FF" + style.color.match(/\d+/g)
+                        .slice(0, 3)
+                        .map(v => Number(v).toString(16).padStart(2, "0"))
+                        .join("")
+                        .toUpperCase()
+                }
+            };
+
+            celluleExcel.alignment = {
+                horizontal: style.textAlign === "start"
+                    ? "left"
+                    : style.textAlign,
+                vertical: "middle",
+                wrapText: true
+            };
+
+            celluleExcel.border = {
+                top: { style: "thin", color: { argb: "FFCBD5E1" } },
+                left: { style: "thin", color: { argb: "FFCBD5E1" } },
+                bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+                right: { style: "thin", color: { argb: "FFCBD5E1" } }
+            };
+
+            if (style.backgroundColor !== "rgba(0, 0, 0, 0)") {
+                const couleurs = style.backgroundColor.match(/\d+/g);
+
+                if (couleurs && couleurs.length >= 3) {
+                    const couleurHex = couleurs.slice(0, 3)
+                        .map(v => Number(v).toString(16).padStart(2, "0"))
+                        .join("")
+                        .toUpperCase();
+
+                    celluleExcel.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+                        fgColor: { argb: "FF" + couleurHex }
+                    };
+                }
+            }
+        });
+
+        ligneExcel.commit();
     });
 
-    const annee = selectAnneeRecap.value;
-    const semestre = selectSemestreRecap.value;
-    const regime = selectRegimeRecap.value;
-    const session = selectSessionRecap.value;
+    // Ajuster les colonnes à leur contenu
+    feuille.columns.forEach(colonne => {
+        let largeurMax = 10;
+
+        colonne.eachCell({ includeEmpty: true }, cellule => {
+            largeurMax = Math.max(
+                largeurMax,
+                String(cellule.value ?? "").length + 2
+            );
+        });
+
+        colonne.width = Math.min(largeurMax, 35);
+    });
+
+    // Ajuster la hauteur des lignes
+    feuille.eachRow(ligne => {
+        ligne.height = 24;
+    });
+
+    // Figer la première colonne et répéter l'en-tête
+    feuille.views = [{ state: "frozen", xSplit: 1, ySplit: 1 }];
+    feuille.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: {
+            row: 1,
+            column: feuille.columnCount
+        }
+    };
 
     const nomFichier =
-        `Recap_Locaux_${annee}_${semestre}_${regime}_${session}.xlsx`;
+        `Recap_Locaux_${selectAnneeRecap.value}_${selectSemestreRecap.value}_${selectRegimeRecap.value}_${selectSessionRecap.value}.xlsx`;
 
-    XLSX.writeFile(classeur, nomFichier);
+    const contenu = await classeur.xlsx.writeBuffer();
+    const fichier = new Blob(
+        [contenu],
+        {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+    );
+
+    const url = URL.createObjectURL(fichier);
+    const lien = document.createElement("a");
+
+    lien.href = url;
+    lien.download = nomFichier;
+    lien.click();
+
+    URL.revokeObjectURL(url);
 }
+
 
 function imprimerRecap() {
     const tableau = obtenirTableauRecapPourExport();
