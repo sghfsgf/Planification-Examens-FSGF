@@ -1639,68 +1639,62 @@ document.addEventListener(
             );
         }
         
-        let forcerDeplacementMatiereSpecifique = !estMatiereCommune;
         // =================================================
         // CONTRÔLE DU PLANNING MODIFIÉ
+        // Uniquement pour les matières communes
         // =================================================
 
-        console.log(
-            "🔎 Contrôle du planning après modification..."
-        );
+        if (estMatiereCommune) {
 
-        const resultat =
-            controleExamens.verifierPlanningGlobal(
-                planning
+            console.log(
+                "🔎 Contrôle du planning après déplacement d'une matière commune..."
             );
 
-        console.log(
-            "Résultat du contrôle :",
-            resultat
-        );
-// =================================================
-// MODIFICATION REFUSÉE
-// =================================================
+            const resultat =
+                controleExamens.verifierPlanningGlobal(
+                    planning
+                );
 
-if (
-    (!resultat || !resultat.valide) &&
-    !forcerDeplacementMatiereSpecifique
-) {
+            console.log(
+                "Résultat du contrôle :",
+                resultat
+            );
 
-    console.warn(
-        "⚠️ Modification annulée : planning non valide."
-    );
+            // =============================================
+            // MODIFICATION REFUSÉE SI PLANNING INVALIDE
+            // =============================================
 
-    // -------------------------------------------------
-    // Restaurer exactement l'ancien planning
-    // -------------------------------------------------
+            if (!resultat || !resultat.valide) {
 
-    window.planningCalendrierAdmin =
-        structuredClone(
-            planningAvantModification
-        );
+                console.warn(
+                    "⚠️ Modification annulée : planning non valide."
+                );
 
-    // -------------------------------------------------
-    // Réafficher l'ancien calendrier
-    // -------------------------------------------------
+                window.planningCalendrierAdmin =
+                    structuredClone(
+                        planningAvantModification
+                    );
 
-    afficherPlanning(
-        window.planningCalendrierAdmin
-    );
+                afficherPlanning(
+                    window.planningCalendrierAdmin
+                );
 
-    // -------------------------------------------------
-    // Réinitialiser la sélection
-    // -------------------------------------------------
+                premiereCelluleSelectionnee = null;
 
-    premiereCelluleSelectionnee =
-        null;
+                alert(
+                    "Vous ne pouvez pas faire ce déplacement : le planning deviendrait non valide."
+                );
 
-    alert(
-        "Vous ne pouvez pas faire ce déplacement : le planning deviendrait non valide."
-    );
+                return;
+            }
 
-    return;
-}
+        } else {
 
+            console.log(
+                "📘 Matière spécifique : aucun contrôle global après déplacement."
+            );
+
+        }
         // =================================================
         // MODIFICATION ACCEPTÉE
         // =================================================
@@ -1708,7 +1702,7 @@ if (
         window.planningCalendrierAdmin =
             planning;
 
-        console.log(
+        console.log(let forcerDeplacementMatiereSpecifique = !estMatiereCommune;
             "✅ Modification acceptée : planning valide."
         );
 
