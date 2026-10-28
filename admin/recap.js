@@ -149,17 +149,88 @@ function initialiserFiltreSemestreRecap(calendriers, anneeSelectionnee) {
 }
 
 // =====================================================
+// ÉTAPE 4 — FILTRE RÉGIME
+// =====================================================
+
+const selectRegimeRecap = document.getElementById("regimeRecap");
+
+function initialiserFiltreRegimeRecap(
+    calendriers,
+    anneeSelectionnee,
+    semestreSelectionne
+) {
+    if (!selectRegimeRecap) {
+        console.error("❌ Élément HTML #regimeRecap introuvable.");
+        return;
+    }
+
+    selectRegimeRecap.innerHTML =
+        '<option value="">Choisir un régime</option>';
+
+    selectRegimeRecap.disabled = true;
+
+    if (!anneeSelectionnee || !semestreSelectionne) {
+        return;
+    }
+
+    const regimes = [
+        ...new Set(
+            calendriers
+                .filter(
+                    calendrier =>
+                        calendrier.anneeUniversitaire === anneeSelectionnee &&
+                        calendrier.semestreCode === semestreSelectionne
+                )
+                .map(calendrier => calendrier.regimeCode)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    regimes.forEach(regime => {
+        const option = document.createElement("option");
+        option.value = regime;
+        option.textContent = regime;
+        selectRegimeRecap.appendChild(option);
+    });
+
+    selectRegimeRecap.disabled = regimes.length === 0;
+
+    console.log(
+        "✅ Régimes disponibles pour",
+        anneeSelectionnee,
+        semestreSelectionne,
+        ":",
+        regimes
+    );
+}
+
+// =====================================================
 // EXÉCUTION DU CHARGEMENT
 // =====================================================
 
 chargerCalendriersRecap().then(calendriers => {
     initialiserFiltreAnneeRecap(calendriers);
 
-    // Réinitialiser le semestre lorsque l'année change
+    // Changement d'année
     selectAnneeRecap.addEventListener("change", () => {
         initialiserFiltreSemestreRecap(
             calendriers,
             selectAnneeRecap.value
+        );
+
+        initialiserFiltreRegimeRecap(
+            calendriers,
+            selectAnneeRecap.value,
+            selectSemestreRecap.value
+        );
+    });
+
+    // Changement de semestre
+    selectSemestreRecap.addEventListener("change", () => {
+        initialiserFiltreRegimeRecap(
+            calendriers,
+            selectAnneeRecap.value,
+            selectSemestreRecap.value
         );
     });
 });
