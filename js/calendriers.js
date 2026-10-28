@@ -1173,6 +1173,29 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    
+// =====================================================
+// EXPORTER LE CALENDRIER EN PDF
+// =====================================================
+const btnExporterPDFCalendrier =
+    document.getElementById("btnExporterPDFCalendrier");
+
+if (btnExporterPDFCalendrier) {
+    btnExporterPDFCalendrier.addEventListener("click", function () {
+        const tableau =
+            document.getElementById("tableauCalendrier");
+
+        if (!tableau) {
+            console.error("❌ Tableau du calendrier introuvable.");
+            return;
+        }
+
+        console.log("📄 Préparation du calendrier pour export PDF...");
+        window.print();
+    });
+}
+
+   
     // =====================================================
     // EXPOSITION POUR LES AUTRES FICHIERS
     // =====================================================
