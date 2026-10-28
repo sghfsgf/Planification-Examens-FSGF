@@ -1638,7 +1638,8 @@ document.addEventListener(
                 "🔄 Matière spécifique échangée."
             );
         }
-
+        
+        let forcerDeplacementMatiereSpecifique = !estMatiereCommune;
         // =================================================
         // CONTRÔLE DU PLANNING MODIFIÉ
         // =================================================
@@ -1656,50 +1657,49 @@ document.addEventListener(
             "Résultat du contrôle :",
             resultat
         );
+// =================================================
+// MODIFICATION REFUSÉE
+// =================================================
 
-        // =================================================
-        // MODIFICATION REFUSÉE
-        // =================================================
+if (
+    (!resultat || !resultat.valide) &&
+    !forcerDeplacementMatiereSpecifique
+) {
 
-        if (
-            !resultat ||
-            !resultat.valide
-        ) {
+    console.warn(
+        "⚠️ Modification annulée : planning non valide."
+    );
 
-            console.warn(
-                "⚠️ Modification annulée : planning non valide."
-            );
+    // -------------------------------------------------
+    // Restaurer exactement l'ancien planning
+    // -------------------------------------------------
 
-            // -------------------------------------------------
-            // Restaurer exactement l'ancien planning
-            // -------------------------------------------------
+    window.planningCalendrierAdmin =
+        structuredClone(
+            planningAvantModification
+        );
 
-            window.planningCalendrierAdmin =
-                structuredClone(
-                    planningAvantModification
-                );
+    // -------------------------------------------------
+    // Réafficher l'ancien calendrier
+    // -------------------------------------------------
 
-            // -------------------------------------------------
-            // Réafficher l'ancien calendrier
-            // -------------------------------------------------
+    afficherPlanning(
+        window.planningCalendrierAdmin
+    );
 
-            afficherPlanning(
-                window.planningCalendrierAdmin
-            );
+    // -------------------------------------------------
+    // Réinitialiser la sélection
+    // -------------------------------------------------
 
-            // -------------------------------------------------
-            // Réinitialiser la sélection
-            // -------------------------------------------------
+    premiereCelluleSelectionnee =
+        null;
 
-            premiereCelluleSelectionnee =
-                null;
+    alert(
+        "Vous ne pouvez pas faire ce déplacement : le planning deviendrait non valide."
+    );
 
-            alert(
-                "Vous ne pouvez pas faire ce déplacement : le planning deviendrait non valide."
-            );
-
-            return;
-        }
+    return;
+}
 
         // =================================================
         // MODIFICATION ACCEPTÉE
