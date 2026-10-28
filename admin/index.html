@@ -1494,6 +1494,23 @@ console.log(
     premierDocument.data().planning?.filieres?.[0]?.cellules?.[0]
 );
 
+        console.log(
+    "PREMIÈRE FILIÈRE COMPLÈTE :",
+    premierDocument.data().planning?.filieres?.[0]
+);
+
+console.log(
+    "OBJET CONTROLE :",
+    premierDocument.data().controle
+);
+
+console.log(
+    "PREMIÈRE CELLULE OCCUPÉE :",
+    premierDocument.data().planning?.filieres
+        ?.flatMap(filiere => filiere.cellules || [])
+        .find(cellule => cellule.estOccupee === true)
+);    
+
             console.log(
                 "ID du calendrier :",
                 premierDocument.id
