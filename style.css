@@ -1651,7 +1651,37 @@ button,
     page-break-inside: avoid;
     break-inside: avoid;
 }
-
-
-   
+  
 }
+
+/* =========================================================
+   IMPRESSION CALENDRIER PUBLIC
+   Uniformisation des colonnes de créneaux
+   FILIÈRE et AMPHIS préservés
+========================================================= */
+
+@media print {
+
+    #calendriers #tableauCalendrier {
+        table-layout: fixed !important;
+    }
+
+    /* Préserver les largeurs des deux premières colonnes */
+    #calendriers #tableauCalendrier th:first-child,
+    #calendriers #tableauCalendrier td:first-child,
+    #calendriers #tableauCalendrier th:nth-child(2),
+    #calendriers #tableauCalendrier td:nth-child(2) {
+        /* Aucune largeur modifiée ici */
+    }
+
+    /* Éviter les débordements du texte dans les en-têtes */
+    #calendriers #tableauCalendrier thead th {
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        word-break: normal;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+}
+
