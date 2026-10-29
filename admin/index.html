@@ -712,61 +712,87 @@
                 de chaque salle ou amphithéâtre reste une contrainte
                 absolue.
             </p>
+
 <!-- =================================================
      FILTRES DE L'AFFECTATION DES SALLES / AMPHIS
 ================================================== -->
 
 <div class="filtres-affectation-salles">
 
-    <h4>📅 Sélection des calendriers à traiter</h4>
+    <div class="entete-filtres-affectation">
+        <h4>📅 Sélection des calendriers à traiter</h4>
 
-    <div class="champ-filtre">
-        <label for="anneeAffectationSalles">
-            Année universitaire :
-        </label>
-
-        <select id="anneeAffectationSalles">
-            <option value="">Chargement des années...</option>
-        </select>
+        <p>
+            Choisissez les critères dans l'ordre pour afficher
+            les calendriers publiés correspondants.
+        </p>
     </div>
 
-   <div class="champ-filtre">
-    <label for="semestreAffectationSalles">
-        Semestre :
-    </label>
+    <div class="grille-filtres-affectation">
 
-<select id="semestreAffectationSalles" disabled>
-    <option value="">Chargement des semestres...</option>
-</select>
+        <div class="champ-filtre">
+            <label for="anneeAffectationSalles">
+                <span class="numero-filtre">1</span>
+                Année universitaire
+            </label>
 
-</div>
+            <select id="anneeAffectationSalles">
+                <option value="">Chargement des années...</option>
+            </select>
+        </div>
 
-    <div class="champ-filtre">
-    <label for="regimeAffectationSalles">
-        Régime :
-    </label>
+        <div class="champ-filtre">
+            <label for="semestreAffectationSalles">
+                <span class="numero-filtre">2</span>
+                Semestre
+            </label>
 
-    <select id="regimeAffectationSalles" disabled>
-        <option value="">Chargement des régimes...</option>
-    </select>
-</div>
-    <div class="champ-filtre">
-        <label for="sessionAffectationSalles">
-            Session :
-        </label>
+            <select
+                id="semestreAffectationSalles"
+                disabled
+            >
+                <option value="">Choisir d'abord une année</option>
+            </select>
+        </div>
 
-        <select id="sessionAffectationSalles" disabled>
-            <option value="">Choisir d'abord le semestre et le régime</option>
-        </select>
+        <div class="champ-filtre">
+            <label for="regimeAffectationSalles">
+                <span class="numero-filtre">3</span>
+                Régime
+            </label>
+
+            <select
+                id="regimeAffectationSalles"
+                disabled
+            >
+                <option value="">Choisir d'abord un semestre</option>
+            </select>
+        </div>
+
+        <div class="champ-filtre">
+            <label for="sessionAffectationSalles">
+                <span class="numero-filtre">4</span>
+                Session
+            </label>
+
+            <select
+                id="sessionAffectationSalles"
+                disabled
+            >
+                <option value="">Choisir d'abord un régime</option>
+            </select>
+        </div>
+
     </div>
 
-    <p>
-        ℹ️ La génération et le contrôle porteront sur tous les niveaux
+    <p class="info-filtres-affectation">
+        <span aria-hidden="true">ℹ️</span>
+        La génération et le contrôle porteront sur tous les niveaux
         disponibles (L1, L2, L3, MP et MR) correspondant à cette sélection.
     </p>
 
 </div>
-   
+
 
            
 
