@@ -1257,21 +1257,14 @@ window.affecterLocauxFixes = affecterLocauxFixes;
         );
 
         remplirSelect(
-            selectSemestre,
-            semestres,
-            annee
-                ? (semestres.length
-                    ? "Choisir un semestre"
-                    : "Aucun semestre publié")
-                : "Choisir d'abord une année",
-            function (semestre) {
-                return semestre === "S1"
-                    ? "Semestre 1 (S1)"
-                    : semestre === "S2"
-                        ? "Semestre 2 (S2)"
-                        : semestre;
-            }
-        );
+    selectSemestre,
+    semestres,
+    annee
+        ? (semestres.length
+            ? "Choisir un semestre"
+            : "Aucun semestre publié")
+        : "Choisir d'abord une année"
+);
 
         if (semestres.includes(ancienSemestre)) {
             selectSemestre.value = ancienSemestre;
