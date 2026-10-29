@@ -1149,8 +1149,12 @@ window.affecterLocauxFixes = affecterLocauxFixes;
         const semestre = selectSemestre.value;
         const regime = selectRegime.value;
 
-        selectSession.replaceChildren();
-        ajouterOption(selectSession, "", "Choisir une session");
+       selectSession.replaceChildren();
+              ajouterOption(
+                      selectSession,
+                     "",
+    "Choisir une session"
+);
 
         if (!annee || !semestre || !regime) {
             selectSession.disabled = true;
@@ -1192,10 +1196,12 @@ window.affecterLocauxFixes = affecterLocauxFixes;
                 });
 
             selectSession.disabled = sessions.size === 0;
-            if (sessions.size === 0) {
-                selectSession.options[0].textContent =
-                    "Aucune session disponible pour cette sélection";
-            }
+           if (sessions.size === 0) {
+    selectSession.options[0].textContent =
+        "Aucune session disponible pour cette sélection";
+} else {
+    selectSession.options[0].textContent = "Choisir une session";
+}
         } catch (erreur) {
             console.error("❌ Impossible de charger les sessions :", erreur);
             selectSession.replaceChildren();
