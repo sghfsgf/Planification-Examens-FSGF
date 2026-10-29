@@ -1488,3 +1488,116 @@ body {
         margin-bottom: 10px !important;
     }
 }
+
+
+/* =================================================
+   ERGONOMIE DES FILTRES D'AFFECTATION DES SALLES
+================================================== */
+
+.filtres-affectation-salles {
+    margin: 24px 0;
+    padding: 22px;
+    background: #f7f9fc;
+    border: 1px solid #d8e1ec;
+    border-radius: 12px;
+}
+
+.entete-filtres-affectation h4 {
+    margin: 0 0 8px;
+    color: #1f4e79;
+    font-size: 1.1rem;
+}
+
+.entete-filtres-affectation p {
+    margin: 0 0 20px;
+    color: #526173;
+    line-height: 1.5;
+}
+
+.grille-filtres-affectation {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.grille-filtres-affectation .champ-filtre {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.grille-filtres-affectation .champ-filtre label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    font-weight: 600;
+    color: #24364b;
+}
+
+.numero-filtre {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1f4e79;
+    color: #fff;
+    font-size: 0.82rem;
+}
+
+.grille-filtres-affectation .champ-filtre select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #b8c5d3;
+    border-radius: 7px;
+    background-color: #fff;
+    color: #24364b;
+    font: inherit;
+    cursor: pointer;
+}
+
+.grille-filtres-affectation .champ-filtre select:focus {
+    outline: 3px solid rgba(31, 78, 121, 0.18);
+    border-color: #1f4e79;
+}
+
+.grille-filtres-affectation .champ-filtre select:disabled {
+    background-color: #e9edf2;
+    color: #697586;
+    cursor: not-allowed;
+}
+
+.info-filtres-affectation {
+    margin: 20px 0 0;
+    padding: 12px 14px;
+    border-left: 4px solid #1f4e79;
+    border-radius: 4px;
+    background: #edf3f9;
+    color: #34465a;
+    line-height: 1.6;
+}
+
+/* Tablettes */
+@media (max-width: 1000px) {
+    .grille-filtres-affectation {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Téléphones */
+@media (max-width: 560px) {
+    .filtres-affectation-salles {
+        padding: 15px;
+    }
+
+    .grille-filtres-affectation {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 15px;
+    }
+}
