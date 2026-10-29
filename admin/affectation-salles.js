@@ -1120,19 +1120,37 @@ window.affecterLocauxFixes = affecterLocauxFixes;
 // INITIALISER LES FILTRES (inchangé)
 // =================================================
 
-(function initialiserFiltresAffectation() {
-    const selectAnnee = document.getElementById("anneeAffectationSalles");
-    const selectSemestre = document.getElementById("semestreAffectationSalles");
-    const selectRegime = document.getElementById("regimeAffectationSalles");
-    const selectSession = document.getElementById("sessionAffectationSalles");
 
-    if (!selectAnnee || !selectSemestre || !selectRegime || !selectSession) {
-        console.error("❌ Filtres d'affectation introuvables dans la page.");
+(function initialiserFiltresAffectation() {
+    const selectAnnee =
+        document.getElementById("anneeAffectationSalles");
+
+    const selectSemestre =
+        document.getElementById("semestreAffectationSalles");
+
+    const selectRegime =
+        document.getElementById("regimeAffectationSalles");
+
+    const selectSession =
+        document.getElementById("sessionAffectationSalles");
+
+    if (
+        !selectAnnee ||
+        !selectSemestre ||
+        !selectRegime ||
+        !selectSession
+    ) {
+        console.error(
+            "❌ Filtres d'affectation introuvables dans la page."
+        );
         return;
     }
 
-    let calendriersFiltresDisponibles = [];
-    let numeroActualisationSessions = 0;
+    let calendriersPublies = [];
+
+    // =================================================
+    // OUTILS POUR LES FILTRES
+    // =================================================
     function valeurTexte(valeur) {
         return valeur == null ? "" : String(valeur).trim();
     }
@@ -1144,268 +1162,290 @@ window.affecterLocauxFixes = affecterLocauxFixes;
         select.appendChild(option);
     }
 
-    async function actualiserSessions() {
-    const numeroDemande = ++numeroActualisationSessions;
+    function valeursDistinctes(calendriers, champ) {
+        return [
+            ...new Set(
+                calendriers
+                    .map(function (calendrier) {
+                        return valeurTexte(calendrier[champ]);
+                    })
+                    .filter(Boolean)
+            )
+        ].sort(function (a, b) {
+            return a.localeCompare(b, "fr");
+        });
+    }
 
-    const annee = selectAnnee.value;
-    const semestre = selectSemestre.value;
-    const regime = selectRegime.value;
+    // Reconstruire une liste et conserver la sélection
+    // uniquement si elle reste disponible.
+    function remplirSelect(
+        select,
+        valeurs,
+        texteInitial,
+        fonctionLibelle
+    ) {
+        const ancienneValeur = select.value;
 
-       selectSession.replaceChildren();
-              ajouterOption(
-                      selectSession,
-                     "",
-    "Choisir une session"
-);
+        select.replaceChildren();
 
-        if (!annee || !semestre || !regime) {
-            selectSession.disabled = true;
-            selectSession.options[0].textContent =
-                "Choisir d'abord l'année, le semestre et le régime";
-            return;
+        ajouterOption(select, "", texteInitial);
+
+        valeurs.forEach(function (valeur) {
+            ajouterOption(
+                select,
+                valeur,
+                fonctionLibelle
+                    ? fonctionLibelle(valeur)
+                    : valeur
+            );
+        });
+
+        if (valeurs.includes(ancienneValeur)) {
+            select.value = ancienneValeur;
+        } else {
+            select.value = "";
         }
 
-        try {
-            const chargement = await window.generationExamens.chargerDonnees();
+        select.disabled = valeurs.length === 0;
+    }
 
-                 // Ignorer les résultats d'une ancienne demande.
-               if (numeroDemande !== numeroActualisationSessions) {
-                   return;
-                              }
+    // =================================================
+    // ACTUALISATION EN CASCADE
+    // Année → Semestre → Régime → Session
+    // =================================================
+    function actualiserFiltres() {
+        // ---------------------------------------------
+        // 1. Années universitaires publiées
+        // ---------------------------------------------
+        const annees = valeursDistinctes(
+            calendriersPublies,
+            "anneeUniversitaire"
+        );
 
-                 if (!chargement) {
-                   throw new Error("Impossible de charger les données de génération.");
-                 }
+        remplirSelect(
+            selectAnnee,
+            annees,
+            annees.length
+                ? "Choisir une année universitaire"
+                : "Aucune année publiée"
+        );
 
-            const donnees = window.generationExamens.obtenirDonnees();
+        const annee = selectAnnee.value;
 
-            const sessionsDisponibles = donnees.sessions.filter(function (session) {
+        // ---------------------------------------------
+        // 2. Semestres de l'année sélectionnée
+        // ---------------------------------------------
+        const calendriersAnnee = calendriersPublies.filter(
+            function (calendrier) {
                 return (
-                    valeurTexte(session.semestreCode) === semestre &&
-                    valeurTexte(session.regimeCode) === regime
+                    annee !== "" &&
+                    valeurTexte(calendrier.anneeUniversitaire) === annee
                 );
-            });
+            }
+        );
 
-            const sessions = new Map();
-            sessionsDisponibles.forEach(function (session) {
-                const code = valeurTexte(session.sessionCode);
-                const libelle = valeurTexte(session.sessionLibelle);
-                if (code && !sessions.has(code)) {
-                    sessions.set(code, libelle || code);
+        const semestres = valeursDistinctes(
+            calendriersAnnee,
+            "semestreCode"
+        );
+
+        remplirSelect(
+            selectSemestre,
+            semestres,
+            annee
+                ? (
+                    semestres.length
+                        ? "Choisir un semestre"
+                        : "Aucun semestre publié"
+                )
+                : "Choisir d'abord une année",
+            function (semestre) {
+                if (semestre === "S1") {
+                    return "Semestre 1 (S1)";
                 }
-            });
 
-            Array.from(sessions.entries())
-                .sort(function (a, b) {
-                    return a[0].localeCompare(b[0]);
+                if (semestre === "S2") {
+                    return "Semestre 2 (S2)";
+                }
+
+                return semestre;
+            }
+        );
+
+        const semestre = selectSemestre.value;
+
+        // ---------------------------------------------
+        // 3. Régimes de l'année et du semestre
+        // ---------------------------------------------
+        const calendriersSemestre = calendriersAnnee.filter(
+            function (calendrier) {
+                return (
+                    semestre !== "" &&
+                    valeurTexte(calendrier.semestreCode) === semestre
+                );
+            }
+        );
+
+        const regimes = valeursDistinctes(
+            calendriersSemestre,
+            "regimeCode"
+        );
+
+        remplirSelect(
+            selectRegime,
+            regimes,
+            semestre
+                ? (
+                    regimes.length
+                        ? "Choisir un régime"
+                        : "Aucun régime publié"
+                )
+                : "Choisir d'abord un semestre"
+        );
+
+        const regime = selectRegime.value;
+
+        // ---------------------------------------------
+        // 4. Sessions de la combinaison sélectionnée
+        // ---------------------------------------------
+        const calendriersRegime = calendriersSemestre.filter(
+            function (calendrier) {
+                return (
+                    regime !== "" &&
+                    valeurTexte(calendrier.regimeCode) === regime
+                );
+            }
+        );
+
+        const sessionsMap = new Map();
+
+        calendriersRegime.forEach(function (calendrier) {
+            const code = valeurTexte(calendrier.sessionCode);
+
+            if (!code) {
+                return;
+            }
+
+            const libelle =
+                valeurTexte(calendrier.sessionLibelle) || code;
+
+            if (!sessionsMap.has(code)) {
+                sessionsMap.set(code, libelle);
+            }
+        });
+
+        const sessions = Array.from(sessionsMap.keys()).sort(
+            function (a, b) {
+                return a.localeCompare(b, "fr");
+            }
+        );
+
+        remplirSelect(
+            selectSession,
+            sessions,
+            regime
+                ? (
+                    sessions.length
+                        ? "Choisir une session"
+                        : "Aucune session publiée"
+                )
+                : "Choisir d'abord un régime",
+            function (code) {
+                return sessionsMap.get(code) || code;
+            }
+        );
+
+        console.log("✓ Filtres d'affectation actualisés :", {
+            calendriersPublies: calendriersPublies.length,
+            annee: selectAnnee.value,
+            semestres: semestres,
+            semestre: selectSemestre.value,
+            regimes: regimes,
+            regime: selectRegime.value,
+            sessions: sessions,
+            session: selectSession.value
+        });
+    }
+
+    // =================================================
+    // ÉVÉNEMENTS DES FILTRES
+    // =================================================
+    selectAnnee.addEventListener(
+        "change",
+        actualiserFiltres
+    );
+
+    selectSemestre.addEventListener(
+        "change",
+        actualiserFiltres
+    );
+
+    selectRegime.addEventListener(
+        "change",
+        actualiserFiltres
+    );
+
+    // =================================================
+    // SOURCE UNIQUE : CALENDRIERS PUBLIÉS
+    // =================================================
+    [
+        selectAnnee,
+        selectSemestre,
+        selectRegime,
+        selectSession
+    ].forEach(function (select) {
+        select.disabled = true;
+    });
+
+    onSnapshot(
+        collection(db, "calendriers"),
+
+        function (snapshot) {
+            calendriersPublies = snapshot.docs
+                .map(function (documentFirestore) {
+                    return {
+                        id: documentFirestore.id,
+                        ...documentFirestore.data()
+                    };
                 })
-                .forEach(function ([code, libelle]) {
-                    ajouterOption(selectSession, code, libelle);
+                .filter(function (calendrier) {
+                    return calendrier.statut === "publie";
                 });
 
-            selectSession.disabled = sessions.size === 0;
-           if (sessions.size === 0) {
-    selectSession.options[0].textContent =
-        "Aucune session disponible pour cette sélection";
-} else {
-    selectSession.options[0].textContent = "Choisir une session";
-}
-        } catch (erreur) {
-    // Ignorer les erreurs provenant d'une ancienne demande.
-    if (numeroDemande !== numeroActualisationSessions) {
-        return;
-    }
+            actualiserFiltres();
 
-    console.error("❌ Impossible de charger les sessions :", erreur);
+            console.log(
+                "✓ Calendriers publiés chargés pour les filtres :",
+                calendriersPublies.length
+            );
+        },
 
-    selectSession.replaceChildren();
-    ajouterOption(selectSession, "", "Erreur de chargement des sessions");
-    selectSession.disabled = true;
-}
-    }
+        function (erreur) {
+            console.error(
+                "❌ Erreur de lecture des calendriers publiés :",
+                erreur
+            );
 
-    async function chargerFiltres() {
-        selectAnnee.disabled = true;
-        selectSemestre.disabled = true;
-        selectRegime.disabled = true;
-        selectSession.disabled = true;
-
-        try {
-            const snapshot = await getDocs(collection(db, "calendriers"));
-            calendriersFiltresDisponibles = snapshot.docs.map(function (d) {
-                return d.data();
-            });
-
-            const annees = Array.from(
-                new Set(
-                    calendriersFiltresDisponibles
-                        .map(function (c) {
-                            return valeurTexte(c.anneeUniversitaire);
-                        })
-                        .filter(Boolean)
-                )
-            ).sort();
-
-            selectAnnee.replaceChildren();
-            ajouterOption(
+            [
                 selectAnnee,
-                "",
-                annees.length ? "Choisir une année universitaire" : "Aucune année disponible"
-            );
-
-            annees.forEach(function (annee) {
-                ajouterOption(selectAnnee, annee, annee);
-            });
-
-           selectSemestre.value = "";
-
-         selectAnnee.disabled = annees.length === 0;
-         selectSemestre.disabled = annees.length === 0;
-
-           actualiserSessions();
-
-            console.log("✓ Années universitaires chargées :", annees);
-
-            console.log("✓ Filtres d'affectation initialisés.", {
-                calendriers: snapshot.size,
-                annees: annees
-            });
-        } catch (erreur) {
-            console.error("❌ Impossible de charger les filtres d'affectation :", erreur);
-            selectAnnee.replaceChildren();
-            ajouterOption(selectAnnee, "", "Erreur de chargement");
-            selectAnnee.disabled = true;
-            selectSemestre.disabled = true;
-            selectRegime.disabled = true;
-            selectSession.disabled = true;
-        }
-    }
-
-    selectAnnee.addEventListener("change", actualiserSessions);
-    selectSemestre.addEventListener("change", actualiserSessions);
-    selectRegime.addEventListener("change", actualiserSessions);
-
-// =================================================
-// SEMESTRES ET RÉGIMES : SYNCHRONISATION FIRESTORE
-// =================================================
-onSnapshot(
-    collection(db, "sessions"),
-    function (snapshot) {
-        const semestreSelectionne = selectSemestre.value;
-        const regimeSelectionne = selectRegime.value;
-
-        const documentsSessions = snapshot.docs.map(function (documentFirestore) {
-            return documentFirestore.data();
-        });
-
-        // ---------------------------------------------
-        // 1. Récupérer les semestres disponibles
-        // ---------------------------------------------
-        const semestres = Array.from(
-            new Set(
-                documentsSessions
-                    .map(function (session) {
-                        return valeurTexte(session.semestreCode);
-                    })
-                    .filter(Boolean)
-            )
-        ).sort();
-
-        selectSemestre.replaceChildren();
-
-        ajouterOption(
-            selectSemestre,
-            "",
-            semestres.length
-                ? "Choisir un semestre"
-                : "Aucun semestre disponible"
-        );
-
-        semestres.forEach(function (semestre) {
-            ajouterOption(
                 selectSemestre,
-                semestre,
-                semestre === "S1"
-                    ? "Semestre 1 (S1)"
-                    : semestre === "S2"
-                        ? "Semestre 2 (S2)"
-                        : semestre
-            );
-        });
+                selectRegime,
+                selectSession
+            ].forEach(function (select) {
+                select.replaceChildren();
 
-        if (semestres.includes(semestreSelectionne)) {
-            selectSemestre.value = semestreSelectionne;
+                ajouterOption(
+                    select,
+                    "",
+                    "Erreur de chargement"
+                );
+
+                select.disabled = true;
+            });
         }
-
-        selectSemestre.disabled = semestres.length === 0;
-
-        // ---------------------------------------------
-        // 2. Récupérer les régimes disponibles
-        // ---------------------------------------------
-        const regimes = Array.from(
-            new Set(
-                documentsSessions
-                    .map(function (session) {
-                        return valeurTexte(session.regimeCode);
-                    })
-                    .filter(Boolean)
-            )
-        ).sort();
-
-        selectRegime.replaceChildren();
-
-        ajouterOption(
-            selectRegime,
-            "",
-            regimes.length
-                ? "Choisir un régime"
-                : "Aucun régime disponible"
-        );
-
-        regimes.forEach(function (regime) {
-            ajouterOption(selectRegime, regime, regime);
-        });
-
-        if (regimes.includes(regimeSelectionne)) {
-            selectRegime.value = regimeSelectionne;
-        }
-
-        selectRegime.disabled = regimes.length === 0;
-
-        console.log("✓ Semestres Firestore actualisés :", semestres);
-        console.log("✓ Régimes Firestore actualisés :", regimes);
-
-        // Actualiser les sessions après la mise à jour des filtres.
-        actualiserSessions();
-    },
-    function (erreur) {
-        console.error(
-            "❌ Erreur de lecture des semestres et régimes Firestore :",
-            erreur
-        );
-
-        selectSemestre.replaceChildren();
-        ajouterOption(
-            selectSemestre,
-            "",
-            "Erreur de chargement des semestres"
-        );
-        selectSemestre.disabled = true;
-
-        selectRegime.replaceChildren();
-        ajouterOption(
-            selectRegime,
-            "",
-            "Erreur de chargement des régimes"
-        );
-        selectRegime.disabled = true;
-
-        selectSession.disabled = true;
-    }
-);
-
-    chargerFiltres();
+    );
 })();
+
 
 /* =================================================
    GÉNÉRER LES AFFECTATIONS DE TOUS LES CALENDRIERS
