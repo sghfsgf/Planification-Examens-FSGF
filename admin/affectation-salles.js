@@ -1132,7 +1132,7 @@ window.affecterLocauxFixes = affecterLocauxFixes;
     }
 
     let calendriersFiltresDisponibles = [];
-
+    let numeroActualisationSessions = 0;
     function valeurTexte(valeur) {
         return valeur == null ? "" : String(valeur).trim();
     }
@@ -1145,9 +1145,11 @@ window.affecterLocauxFixes = affecterLocauxFixes;
     }
 
     async function actualiserSessions() {
-        const annee = selectAnnee.value;
-        const semestre = selectSemestre.value;
-        const regime = selectRegime.value;
+    const numeroDemande = ++numeroActualisationSessions;
+
+    const annee = selectAnnee.value;
+    const semestre = selectSemestre.value;
+    const regime = selectRegime.value;
 
        selectSession.replaceChildren();
               ajouterOption(
@@ -1165,9 +1167,15 @@ window.affecterLocauxFixes = affecterLocauxFixes;
 
         try {
             const chargement = await window.generationExamens.chargerDonnees();
-            if (!chargement) {
-                throw new Error("Impossible de charger les données de génération.");
-            }
+
+                 // Ignorer les résultats d'une ancienne demande.
+               if (numeroDemande !== numeroActualisationSessions) {
+                   return;
+                              }
+
+                 if (!chargement) {
+                   throw new Error("Impossible de charger les données de génération.");
+                 }
 
             const donnees = window.generationExamens.obtenirDonnees();
 
@@ -1203,11 +1211,17 @@ window.affecterLocauxFixes = affecterLocauxFixes;
     selectSession.options[0].textContent = "Choisir une session";
 }
         } catch (erreur) {
-            console.error("❌ Impossible de charger les sessions :", erreur);
-            selectSession.replaceChildren();
-            ajouterOption(selectSession, "", "Erreur de chargement des sessions");
-            selectSession.disabled = true;
-        }
+    // Ignorer les erreurs provenant d'une ancienne demande.
+    if (numeroDemande !== numeroActualisationSessions) {
+        return;
+    }
+
+    console.error("❌ Impossible de charger les sessions :", erreur);
+
+    selectSession.replaceChildren();
+    ajouterOption(selectSession, "", "Erreur de chargement des sessions");
+    selectSession.disabled = true;
+}
     }
 
     async function chargerFiltres() {
