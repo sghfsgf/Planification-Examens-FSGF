@@ -1266,26 +1266,74 @@ window.affecterLocauxFixes = affecterLocauxFixes;
     selectRegime.addEventListener("change", actualiserSessions);
 
 // =================================================
-// RÉGIMES : SYNCHRONISATION FIRESTORE EN TEMPS RÉEL
+// SEMESTRES ET RÉGIMES : SYNCHRONISATION FIRESTORE
 // =================================================
 onSnapshot(
     collection(db, "sessions"),
     function (snapshot) {
+        const semestreSelectionne = selectSemestre.value;
         const regimeSelectionne = selectRegime.value;
 
+        const documentsSessions = snapshot.docs.map(function (documentFirestore) {
+            return documentFirestore.data();
+        });
+
+        // ---------------------------------------------
+        // 1. Récupérer les semestres disponibles
+        // ---------------------------------------------
+        const semestres = Array.from(
+            new Set(
+                documentsSessions
+                    .map(function (session) {
+                        return valeurTexte(session.semestreCode);
+                    })
+                    .filter(Boolean)
+            )
+        ).sort();
+
+        selectSemestre.replaceChildren();
+
+        ajouterOption(
+            selectSemestre,
+            "",
+            semestres.length
+                ? "Choisir un semestre"
+                : "Aucun semestre disponible"
+        );
+
+        semestres.forEach(function (semestre) {
+            ajouterOption(
+                selectSemestre,
+                semestre,
+                semestre === "S1"
+                    ? "Semestre 1 (S1)"
+                    : semestre === "S2"
+                        ? "Semestre 2 (S2)"
+                        : semestre
+            );
+        });
+
+        if (semestres.includes(semestreSelectionne)) {
+            selectSemestre.value = semestreSelectionne;
+        }
+
+        selectSemestre.disabled = semestres.length === 0;
+
+        // ---------------------------------------------
+        // 2. Récupérer les régimes disponibles
+        // ---------------------------------------------
         const regimes = Array.from(
             new Set(
-                snapshot.docs
-                    .map(function (documentFirestore) {
-                        return valeurTexte(
-                            documentFirestore.data().regimeCode
-                        );
+                documentsSessions
+                    .map(function (session) {
+                        return valeurTexte(session.regimeCode);
                     })
                     .filter(Boolean)
             )
         ).sort();
 
         selectRegime.replaceChildren();
+
         ajouterOption(
             selectRegime,
             "",
@@ -1304,15 +1352,25 @@ onSnapshot(
 
         selectRegime.disabled = regimes.length === 0;
 
+        console.log("✓ Semestres Firestore actualisés :", semestres);
         console.log("✓ Régimes Firestore actualisés :", regimes);
 
+        // Actualiser les sessions après la mise à jour des filtres.
         actualiserSessions();
     },
     function (erreur) {
         console.error(
-            "❌ Erreur de lecture des régimes Firestore :",
+            "❌ Erreur de lecture des semestres et régimes Firestore :",
             erreur
         );
+
+        selectSemestre.replaceChildren();
+        ajouterOption(
+            selectSemestre,
+            "",
+            "Erreur de chargement des semestres"
+        );
+        selectSemestre.disabled = true;
 
         selectRegime.replaceChildren();
         ajouterOption(
@@ -1321,6 +1379,7 @@ onSnapshot(
             "Erreur de chargement des régimes"
         );
         selectRegime.disabled = true;
+
         selectSession.disabled = true;
     }
 );
