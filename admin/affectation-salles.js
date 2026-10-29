@@ -1237,13 +1237,10 @@ window.affecterLocauxFixes = affecterLocauxFixes;
                 ajouterOption(selectAnnee, annee, annee);
             });
 
-            selectSemestre.value = "";
-            selectRegime.replaceChildren();
-            ajouterOption(selectRegime, "", "Chargement des régimes...");
+           selectSemestre.value = "";
 
-            selectAnnee.disabled = annees.length === 0;
-            selectSemestre.disabled = annees.length === 0;
-            selectRegime.disabled = true;
+         selectAnnee.disabled = annees.length === 0;
+         selectSemestre.disabled = annees.length === 0;
 
            actualiserSessions();
 
