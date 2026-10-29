@@ -8,6 +8,7 @@ import {
     getFirestore,
     getDocs,
     collection,
+    onSnapshot,
     doc,
     updateDoc,
     writeBatch
@@ -1237,13 +1238,16 @@ window.affecterLocauxFixes = affecterLocauxFixes;
             });
 
             selectSemestre.value = "";
-            selectRegime.value = "";
+            selectRegime.replaceChildren();
+            ajouterOption(selectRegime, "", "Chargement des régimes...");
 
             selectAnnee.disabled = annees.length === 0;
             selectSemestre.disabled = annees.length === 0;
-            selectRegime.disabled = annees.length === 0;
+            selectRegime.disabled = true;
 
-            actualiserSessions();
+           actualiserSessions();
+
+            console.log("✓ Années universitaires chargées :", annees);
 
             console.log("✓ Filtres d'affectation initialisés.", {
                 calendriers: snapshot.size,
@@ -1263,6 +1267,95 @@ window.affecterLocauxFixes = affecterLocauxFixes;
     selectAnnee.addEventListener("change", actualiserSessions);
     selectSemestre.addEventListener("change", actualiserSessions);
     selectRegime.addEventListener("change", actualiserSessions);
+
+    ```javascript
+// =================================================
+// RÉGIMES : SYNCHRONISATION FIRESTORE EN TEMPS RÉEL
+// =================================================
+onSnapshot(
+    collection(db, "sessions"),
+    function (snapshot) {
+        const regimeSelectionne = selectRegime.value;
+
+        const regimes = Array.from(
+            new Set(
+                snapshot.docs
+                    .map(function (documentFirestore) {
+                        return valeurTexte(
+                            documentFirestore.data().regimeCode
+                        );
+                    })
+                    .filter(Boolean)
+            )
+        ).sort();
+
+        selectRegime.replaceChildren();
+        ajouterOption(
+            selectRegime,
+            "",
+            regimes.length
+                ? "Choisir un régime"
+                : "Aucun régime disponible"
+        );
+
+        regimes.forEach(function (regime) {
+            ajouterOption(selectRegime, regime, regime);
+        });
+
+        if (regimes.includes(regimeSelectionne)) {
+            selectRegime.value = regimeSelectionne;
+        }
+
+        selectRegime.disabled = regimes.length === 0;
+
+        console.log("✓ Régimes Firestore actualisés :", regimes);
+
+        actualiserSessions();
+    },
+    function (erreur) {
+        console.error(
+            "❌ Erreur de lecture des régimes Firestore :",
+            erreur
+        );
+
+        selectRegime.replaceChildren();
+        ajouterOption(
+            selectRegime,
+            "",
+            "Erreur de chargement des régimes"
+        );
+        selectRegime.disabled = true;
+        selectSession.disabled = true;
+    }
+);
+```
+
+### Étape 6 — Vérifier les imports
+
+En haut du fichier, l'import Firestore doit contenir `onSnapshot` :
+
+```javascript
+import {
+    getFirestore,
+    getDocs,
+    collection,
+    onSnapshot,
+    doc,
+    updateDoc,
+    writeBatch
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+```
+
+### Étape 7 — Tester sans toucher à l'algorithme
+
+Enregistre les modifications et recharge l'administration.
+
+Vérifie que :
+1. Le filtre **Régime** affiche les valeurs présentes dans Firestore, par exemple `CC` et `MX`.
+2. Le choix du régime actualise le filtre **Session**.
+3. Les autres filtres continuent de fonctionner.
+
+**Attention :** cet écouteur actualise la liste des régimes, mais les sessions affichées sont toujours chargées par `window.generationExamens.chargerDonnees()`. Nous vérifierons donc le comportement après cette première modification avant d'envisager toute autre intervention.
 
     chargerFiltres();
 })();
