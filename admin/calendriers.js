@@ -698,109 +698,141 @@ if (
     // METTRE À JOUR LES SESSIONS
     // =================================================
 
-    function mettreAJourSessions() {
-
-        const semestre =
-            selectSemestre.value;
-
-        const regime =
-            selectRegime.value;
-
-
-        selectSession.innerHTML = "";
-
-
-      // =================================================
-// RÉCUPÉRER LES SESSIONS DEPUIS FIRESTORE
 // =================================================
-
-const donneesGeneration =
-    generationExamens.obtenirDonnees();
-
-if (
-    !donneesGeneration ||
-    !Array.isArray(donneesGeneration.sessions)
-) {
-
-    console.error(
-        "❌ Sessions Firestore indisponibles."
-    );
-
-    return;
+// OUTILS POUR LES FILTRES
+// =================================================
+function valeurTexte(valeur) {
+    return valeur == null ? "" : String(valeur).trim();
 }
 
-const sessionsDisponibles =
-    donneesGeneration.sessions.filter(
-        function (session) {
+function ajouterOption(select, valeur, libelle) {
+    const option = document.createElement("option");
+    option.value = valeur;
+    option.textContent = libelle;
+    select.appendChild(option);
+}
 
-            return (
-                session.semestreCode === semestre &&
-                session.regimeCode === regime
-            );
+function valeursDistinctes(tableau, champ) {
+    return [
+        ...new Set(
+            tableau
+                .map(function (item) {
+                    return valeurTexte(item[champ]);
+                })
+                .filter(Boolean)
+        )
+    ].sort(function (a, b) {
+        return a.localeCompare(b, "fr");
+    });
+}
 
-        }
-    );
+function remplirSelect(select, valeurs, texteInitial) {
+    const ancienneValeur = select.value;
+    select.replaceChildren();
+    ajouterOption(select, "", texteInitial);
 
-console.log(
-    "✓ Sessions Firestore disponibles :",
-    sessionsDisponibles.length
-);
+    valeurs.forEach(function (valeur) {
+        ajouterOption(select, valeur, valeur); // valeur brute Firestore
+    });
 
-        sessionsDisponibles.forEach(
-            function (session) {
+    if (valeurs.includes(ancienneValeur)) {
+        select.value = ancienneValeur;
+    } else {
+        select.value = "";
+    }
+    select.disabled = valeurs.length === 0;
+}
 
-                const option =
-                    document.createElement("option");
+// =================================================
+// ACTUALISER LES FILTRES DEPUIS LES SESSIONS FIRESTORE
+// =================================================
+function actualiserFiltres() {
+    const donnees = window.generationExamens?.obtenirDonnees();
 
-                option.value =
-                    session.sessionCode;
-
-                option.textContent =
-                    session.sessionLibelle;
-
-                selectSession.appendChild(option);
-
-            }
-        );
-
-
-        if (sessionsDisponibles.length === 0) {
-
-            const option =
-                document.createElement("option");
-
-            option.value = "";
-
-            option.textContent =
-                "Aucune session disponible";
-
-            selectSession.appendChild(option);
-
-        }
-
+    if (!donnees || !Array.isArray(donnees.sessions)) {
+        console.error("❌ Sessions Firestore indisponibles.");
+        return;
     }
 
+    const sessions = donnees.sessions;
 
-    // =================================================
-    // CHANGEMENT SEMESTRE
-    // =================================================
-selectSemestre.addEventListener(
-        "change",
-        function () {
-            mettreAJourSessions();
-        }
+    // 1. Semestres (valeurs brutes)
+    const semestres = valeursDistinctes(sessions, "semestreCode");
+    remplirSelect(
+        selectSemestre,
+        semestres,
+        semestres.length ? "Choisir un semestre" : "Aucun semestre disponible"
     );
 
-    // =================================================
-    // CHANGEMENT RÉGIME
-    // =================================================
+    const semestre = selectSemestre.value;
 
-    selectRegime.addEventListener(
-        "change",
-        function () {
-            mettreAJourSessions();
-        }
+    // 2. Régimes (valeurs brutes filtrées par semestre)
+    const sessionsSemestre = sessions.filter(function (s) {
+        return semestre !== "" && valeurTexte(s.semestreCode) === semestre;
+    });
+
+    const regimes = valeursDistinctes(sessionsSemestre, "regimeCode");
+    remplirSelect(
+        selectRegime,
+        regimes,
+        semestre
+            ? (regimes.length ? "Choisir un régime" : "Aucun régime disponible")
+            : "Choisir d'abord un semestre"
     );
+
+    const regime = selectRegime.value;
+
+    // 3. Sessions (filtrées par semestre + régime)
+    const sessionsFiltrees = sessionsSemestre.filter(function (s) {
+        return regime !== "" && valeurTexte(s.regimeCode) === regime;
+    });
+
+    const sessionsMap = new Map();
+    sessionsFiltrees.forEach(function (s) {
+        const code = valeurTexte(s.sessionCode);
+        if (!code) return;
+        const libelle = valeurTexte(s.sessionLibelle) || code;
+        if (!sessionsMap.has(code)) {
+            sessionsMap.set(code, libelle);
+        }
+    });
+
+    const codesSessions = Array.from(sessionsMap.keys()).sort(function (a, b) {
+        return a.localeCompare(b, "fr");
+    });
+
+    const ancienneSession = selectSession.value;
+    selectSession.replaceChildren();
+    ajouterOption(
+        selectSession,
+        "",
+        regime
+            ? (codesSessions.length ? "Choisir une session" : "Aucune session disponible")
+            : "Choisir d'abord un régime"
+    );
+
+    codesSessions.forEach(function (code) {
+        ajouterOption(selectSession, code, sessionsMap.get(code));
+    });
+
+    if (codesSessions.includes(ancienneSession)) {
+        selectSession.value = ancienneSession;
+    } else {
+        selectSession.value = "";
+    }
+    selectSession.disabled = codesSessions.length === 0;
+}
+
+// =================================================
+// ÉVÉNEMENTS
+// =================================================
+selectSemestre.addEventListener("change", actualiserFiltres);
+selectRegime.addEventListener("change", actualiserFiltres);
+
+// =================================================
+// INITIALISATION
+// =================================================
+actualiserFiltres();
 
     // =================================================
     // MISE À JOUR DU TITRE DU CALENDRIER
