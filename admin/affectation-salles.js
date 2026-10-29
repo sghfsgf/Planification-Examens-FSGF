@@ -1209,14 +1209,19 @@ window.affecterLocauxFixes = affecterLocauxFixes;
         select.disabled = valeurs.length === 0;
     }
 
+
     // =================================================
     // ACTUALISATION EN CASCADE
     // Année → Semestre → Régime → Session
+    // Uniquement à partir des calendriers publiés
     // =================================================
     function actualiserFiltres() {
-        // ---------------------------------------------
+        const ancienneAnnee = selectAnnee.value;
+        const ancienSemestre = selectSemestre.value;
+        const ancienRegime = selectRegime.value;
+        const ancienneSession = selectSession.value;
+
         // 1. Années universitaires publiées
-        // ---------------------------------------------
         const annees = valeursDistinctes(
             calendriersPublies,
             "anneeUniversitaire"
@@ -1230,11 +1235,13 @@ window.affecterLocauxFixes = affecterLocauxFixes;
                 : "Aucune année publiée"
         );
 
+        if (annees.includes(ancienneAnnee)) {
+            selectAnnee.value = ancienneAnnee;
+        }
+
         const annee = selectAnnee.value;
 
-        // ---------------------------------------------
         // 2. Semestres de l'année sélectionnée
-        // ---------------------------------------------
         const calendriersAnnee = calendriersPublies.filter(
             function (calendrier) {
                 return (
@@ -1253,30 +1260,26 @@ window.affecterLocauxFixes = affecterLocauxFixes;
             selectSemestre,
             semestres,
             annee
-                ? (
-                    semestres.length
-                        ? "Choisir un semestre"
-                        : "Aucun semestre publié"
-                )
+                ? (semestres.length
+                    ? "Choisir un semestre"
+                    : "Aucun semestre publié")
                 : "Choisir d'abord une année",
             function (semestre) {
-                if (semestre === "S1") {
-                    return "Semestre 1 (S1)";
-                }
-
-                if (semestre === "S2") {
-                    return "Semestre 2 (S2)";
-                }
-
-                return semestre;
+                return semestre === "S1"
+                    ? "Semestre 1 (S1)"
+                    : semestre === "S2"
+                        ? "Semestre 2 (S2)"
+                        : semestre;
             }
         );
 
+        if (semestres.includes(ancienSemestre)) {
+            selectSemestre.value = ancienSemestre;
+        }
+
         const semestre = selectSemestre.value;
 
-        // ---------------------------------------------
-        // 3. Régimes de l'année et du semestre
-        // ---------------------------------------------
+        // 3. Régimes disponibles pour l'année et le semestre
         const calendriersSemestre = calendriersAnnee.filter(
             function (calendrier) {
                 return (
@@ -1295,19 +1298,19 @@ window.affecterLocauxFixes = affecterLocauxFixes;
             selectRegime,
             regimes,
             semestre
-                ? (
-                    regimes.length
-                        ? "Choisir un régime"
-                        : "Aucun régime publié"
-                )
+                ? (regimes.length
+                    ? "Choisir un régime"
+                    : "Aucun régime publié")
                 : "Choisir d'abord un semestre"
         );
 
+        if (regimes.includes(ancienRegime)) {
+            selectRegime.value = ancienRegime;
+        }
+
         const regime = selectRegime.value;
 
-        // ---------------------------------------------
-        // 4. Sessions de la combinaison sélectionnée
-        // ---------------------------------------------
+        // 4. Sessions disponibles pour la sélection
         const calendriersRegime = calendriersSemestre.filter(
             function (calendrier) {
                 return (
@@ -1322,9 +1325,7 @@ window.affecterLocauxFixes = affecterLocauxFixes;
         calendriersRegime.forEach(function (calendrier) {
             const code = valeurTexte(calendrier.sessionCode);
 
-            if (!code) {
-                return;
-            }
+            if (!code) return;
 
             const libelle =
                 valeurTexte(calendrier.sessionLibelle) || code;
@@ -1344,28 +1345,27 @@ window.affecterLocauxFixes = affecterLocauxFixes;
             selectSession,
             sessions,
             regime
-                ? (
-                    sessions.length
-                        ? "Choisir une session"
-                        : "Aucune session publiée"
-                )
+                ? (sessions.length
+                    ? "Choisir une session"
+                    : "Aucune session publiée")
                 : "Choisir d'abord un régime",
             function (code) {
                 return sessionsMap.get(code) || code;
             }
         );
 
-        console.log("✓ Filtres d'affectation actualisés :", {
-            calendriersPublies: calendriersPublies.length,
+        if (sessions.includes(ancienneSession)) {
+            selectSession.value = ancienneSession;
+        }
+
+        console.log("✓ Filtres actualisés :", {
             annee: selectAnnee.value,
-            semestres: semestres,
             semestre: selectSemestre.value,
-            regimes: regimes,
             regime: selectRegime.value,
-            sessions: sessions,
             session: selectSession.value
         });
     }
+
 
     // =================================================
     // ÉVÉNEMENTS DES FILTRES
