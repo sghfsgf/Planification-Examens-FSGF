@@ -2067,28 +2067,27 @@ function placerMatieresSpecifiques(planning) {
         );
     });
 
+
     // -------------------------------------------------
     // Backtracking léger : tenter de permuter avec une
-    // matière spécifique déjà placée de la même filière
-    // si certaines matières n'ont pas trouvé de place.
+    // matière spécifique déjà placée de la même filière.
+    // Tester directement la cellule libérée.
     // -------------------------------------------------
 
     if (matieresNonPlacees.length > 0) {
-        console.log(
-            "------------------------------------------"
-        );
+
+        console.log("------------------------------------------");
         console.log(
             "🔄 TENTATIVE DE BACKTRACKING LÉGER (",
             matieresNonPlacees.length,
             "matière(s) non placée(s))"
         );
-        console.log(
-            "------------------------------------------"
-        );
+        console.log("------------------------------------------");
 
         matieresNonPlacees.forEach(function (matiereNonPlacee) {
 
             const filiereCode = matiereNonPlacee.filiereCode;
+
             const filiere = planning.filieres.find(
                 function (f) {
                     return f.filiereCode === filiereCode;
@@ -2099,8 +2098,6 @@ function placerMatieresSpecifiques(planning) {
                 return;
             }
 
-            // Chercher une matière spécifique déjà placée
-            // dans la même filière qui pourrait être déplacée.
             const cellulesCandidates = filiere.cellules.filter(
                 function (c) {
                     return (
@@ -2113,9 +2110,14 @@ function placerMatieresSpecifiques(planning) {
 
             let echangeReussi = false;
 
-            for (let i = 0; i < cellulesCandidates.length && !echangeReussi; i++) {
+            for (
+                let i = 0;
+                i < cellulesCandidates.length && !echangeReussi;
+                i++
+            ) {
 
                 const celluleExistante = cellulesCandidates[i];
+
                 const ancienneMatiere = {
                     matiereLibelle: celluleExistante.matiereLibelle,
                     regimeCode: celluleExistante.regimeCode,
@@ -2123,32 +2125,57 @@ function placerMatieresSpecifiques(planning) {
                     filiereCode: filiereCode
                 };
 
-                // Libérer temporairement la cellule
+                // Libérer temporairement la cellule.
                 celluleExistante.estOccupee = false;
                 celluleExistante.matiereLibelle = "";
                 celluleExistante.regimeCode = "";
                 celluleExistante.semestreCode = "";
                 celluleExistante.filiereCode = undefined;
 
-                // Essayer de placer la nouvelle matière
-                const nouvellePosition =
-                    trouverPositionPourMatiereSpecifique(
-                        planning,
-                        filiereCode
+                // Vérifier directement si cette cellule
+                // peut accueillir la matière non placée.
+                const cellulesMemeJour = filiere.cellules.filter(
+                    function (autre) {
+                        return autre.dateAffichage ===
+                            celluleExistante.dateAffichage;
+                    }
+                );
+
+                const precedente = cellulesMemeJour.find(
+                    function (autre) {
+                        return autre.creneauOrdre ===
+                            celluleExistante.creneauOrdre - 1;
+                    }
+                );
+
+                const suivante = cellulesMemeJour.find(
+                    function (autre) {
+                        return autre.creneauOrdre ===
+                            celluleExistante.creneauOrdre + 1;
+                    }
+                );
+
+                const celluleAdmissible =
+                    !(
+                        (precedente && precedente.estOccupee) ||
+                        (suivante && suivante.estOccupee)
                     );
 
-                if (nouvellePosition) {
-                    // Placer la matière non placée
-                    nouvellePosition.estOccupee = true;
-                    nouvellePosition.matiereLibelle =
-                        matiereNonPlacee.matiereLibelle;
-                    nouvellePosition.regimeCode =
-                        matiereNonPlacee.regimeCode;
-                    nouvellePosition.semestreCode =
-                        matiereNonPlacee.semestreCode;
-                    nouvellePosition.filiereCode = filiereCode;
+                if (celluleAdmissible) {
 
-                    // Essayer de replacer l'ancienne matière
+                    // Placer la matière non placée
+                    // directement dans la cellule libérée.
+                    celluleExistante.estOccupee = true;
+                    celluleExistante.matiereLibelle =
+                        matiereNonPlacee.matiereLibelle;
+                    celluleExistante.regimeCode =
+                        matiereNonPlacee.regimeCode;
+                    celluleExistante.semestreCode =
+                        matiereNonPlacee.semestreCode;
+                    celluleExistante.filiereCode = filiereCode;
+
+                    // Rechercher une nouvelle position
+                    // pour l'ancienne matière.
                     const positionAncienne =
                         trouverPositionPourMatiereSpecifique(
                             planning,
@@ -2156,6 +2183,7 @@ function placerMatieresSpecifiques(planning) {
                         );
 
                     if (positionAncienne) {
+
                         positionAncienne.estOccupee = true;
                         positionAncienne.matiereLibelle =
                             ancienneMatiere.matiereLibelle;
@@ -2163,7 +2191,8 @@ function placerMatieresSpecifiques(planning) {
                             ancienneMatiere.regimeCode;
                         positionAncienne.semestreCode =
                             ancienneMatiere.semestreCode;
-                        positionAncienne.filiereCode = filiereCode;
+                        positionAncienne.filiereCode =
+                            filiereCode;
 
                         console.log(
                             "✓ Échange réussi :",
@@ -2171,14 +2200,17 @@ function placerMatieresSpecifiques(planning) {
                             "↔",
                             ancienneMatiere.matiereLibelle
                         );
+
                         echangeReussi = true;
+
                     } else {
-                        // Annuler : remettre l'ancienne et libérer la nouvelle
-                        nouvellePosition.estOccupee = false;
-                        nouvellePosition.matiereLibelle = "";
-                        nouvellePosition.regimeCode = "";
-                        nouvellePosition.semestreCode = "";
-                        nouvellePosition.filiereCode = undefined;
+
+                        // Annuler intégralement l'échange.
+                        celluleExistante.estOccupee = false;
+                        celluleExistante.matiereLibelle = "";
+                        celluleExistante.regimeCode = "";
+                        celluleExistante.semestreCode = "";
+                        celluleExistante.filiereCode = undefined;
 
                         celluleExistante.estOccupee = true;
                         celluleExistante.matiereLibelle =
@@ -2189,8 +2221,11 @@ function placerMatieresSpecifiques(planning) {
                             ancienneMatiere.semestreCode;
                         celluleExistante.filiereCode = filiereCode;
                     }
+
                 } else {
-                    // Remettre l'ancienne matière
+
+                    // La cellule libérée reste incompatible.
+                    // Restaurer l'ancienne matière.
                     celluleExistante.estOccupee = true;
                     celluleExistante.matiereLibelle =
                         ancienneMatiere.matiereLibelle;
@@ -2210,6 +2245,8 @@ function placerMatieresSpecifiques(planning) {
             }
         });
     }
+
+    
 
     console.log("------------------------------------------");
     console.log("✓ MATIÈRES SPÉCIFIQUES PLACÉES");
