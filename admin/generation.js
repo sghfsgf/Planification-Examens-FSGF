@@ -887,7 +887,7 @@ function preparerMatieresPourSession(niveauCode, sessionCode) {
 
     const matieresCommunes = [];
     const matieresSpecifiques = [];
-
+    
     Object.keys(groupes).forEach(function (libelle) {
 
         const groupe = groupes[libelle];
@@ -2035,9 +2035,10 @@ function placerMatieresSpecifiques(planning) {
     return planning;
 }
 
-const matieresSpecifiques =
+    const matieresSpecifiques =
     planning.matieresSpecifiques || [];
-
+    const matieresNonPlacees = [];
+    
     if (matieresSpecifiques.length === 0) {
 
         console.log(
@@ -2064,17 +2065,19 @@ const matieresSpecifiques =
                 filiereCode
             );
 
-        if (!position) {
+      if (!position) {
 
-            console.warn(
-                "⚠️ Impossible de placer la matière :",
-                matiere.matiereLibelle,
-                "| Filière :",
-                filiereCode
-            );
+    console.warn(
+        "⚠️ Impossible de placer la matière :",
+        matiere.matiereLibelle,
+        "| Filière :",
+        filiereCode
+    );
 
-            return;
-        }
+    matieresNonPlacees.push(matiere);
+
+    return;
+}
 
         // -------------------------------------------------
         // Placer réellement la matière dans la cellule
