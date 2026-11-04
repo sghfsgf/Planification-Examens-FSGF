@@ -9,16 +9,11 @@
 // 4. Regrouper ensuite par filière
 // 5. Identifier les matières communes
 // 6. Construire la grille Dates × Créneaux
-// 7. Placer matières communes puis spécifiques
-// 8. Contrôler équilibre et enregistrer
 //
 // IMPORTANT :
-// Version améliorée selon priorités P0/P1/P2 :
-// - Suppression du bloc d'enregistrement dupliqué
-// - Contrôle des créneaux adjacents dans les matières communes
-// - Chargement factorisé via chargerCollection (avec id)
-// - Backtracking léger pour matières spécifiques non placées
-// - Préparation à une architecture ES Modules pure
+// Cette version ne génère pas encore les examens.
+// Les règles de planification seront ajoutées
+// progressivement dans les prochaines étapes.
 //
 // RÈGLES MÉTIER À CONSERVER :
 // - 1 niveau = 1 calendrier
@@ -126,37 +121,110 @@ async function chargerDonneesGeneration() {
 
         // -------------------------------------------------
         // Attendre que data.js ait terminé le chargement
-        // (compatibilité temporaire ; préférer import ES module)
         // -------------------------------------------------
 
-        if (typeof window !== "undefined" && window.donneesChargees) {
-            const chargementOK = await window.donneesChargees;
-            if (!chargementOK) {
-                throw new Error(
-                    "Le chargement des données Excel a échoué."
-                );
-            }
+        if (!window.donneesChargees) {
+
+            throw new Error(
+                "Les données de data.js ne sont pas disponibles."
+            );
+        }
+
+        const chargementOK =
+            await window.donneesChargees;
+
+        if (!chargementOK) {
+
+            throw new Error(
+                "Le chargement des données Excel a échoué."
+            );
         }
 
         // -------------------------------------------------
-        // Récupérer les données depuis Firestore via helper
-        // (inclut l'id du document)
+        // Récupérer les données déjà chargées par data.js
         // -------------------------------------------------
 
-        donneesGeneration.matieres =
-            await chargerCollection("matieres");
+       // -------------------------------------------------
+// Récupérer les données actuelles depuis Firestore
+// -------------------------------------------------
 
-        donneesGeneration.sessions =
-            await chargerCollection("sessions");
+const snapshotMatieres =
+    await getDocs(
+        collection(
+            db,
+            "matieres"
+        )
+    );
 
-        donneesGeneration.creneaux =
-            await chargerCollection("creneaux");
+donneesGeneration.matieres =
+    snapshotMatieres.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
 
-        donneesGeneration.sallesAmphis =
-            await chargerCollection("salles_amphis");
 
-        donneesGeneration.effectifs =
-            await chargerCollection("effectifs");
+const snapshotSessions =
+    await getDocs(
+        collection(
+            db,
+            "sessions"
+        )
+    );
+
+donneesGeneration.sessions =
+    snapshotSessions.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
+
+const snapshotCreneaux =
+    await getDocs(
+        collection(
+            db,
+            "creneaux"
+        )
+    );
+
+donneesGeneration.creneaux =
+    snapshotCreneaux.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
+
+const snapshotSallesAmphis =
+    await getDocs(
+        collection(
+            db,
+            "salles_amphis"
+        )
+    );
+
+donneesGeneration.sallesAmphis =
+    snapshotSallesAmphis.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
+
+        const snapshotEffectifs =
+    await getDocs(
+        collection(
+            db,
+            "effectifs"
+        )
+    );
+
+donneesGeneration.effectifs =
+    snapshotEffectifs.docs.map(
+        function (documentFirestore) {
+            return documentFirestore.data();
+        }
+    );
 
         // -------------------------------------------------
         // Contrôle
@@ -183,13 +251,13 @@ async function chargerDonneesGeneration() {
         );
 
         console.log(
-            "Effectifs :",
-            donneesGeneration.effectifs.length
-        );
+    "Effectifs :",
+    donneesGeneration.effectifs.length
+);
 
         console.log(
-            "✓ Données de génération récupérées depuis Firestore"
-        );
+    "✓ Données de génération récupérées depuis Firestore"
+);
 
         return true;
 
@@ -1584,10 +1652,9 @@ function placerMatieresCommunes(planning) {
             const celluleCandidate =
                 premiereFiliere.cellules[i];
 
-            // Vérifier que la même position existe,
-            // est libre, ET respecte les créneaux adjacents
-            // (pas d'examens successifs le même jour)
-            // pour TOUTES les filières concernées.
+            // Vérifier que la même position existe
+            // et est libre dans toutes les filières
+            // concernées.
             const positionDisponible =
                 filieresConcernees.every(
                     function (filiereCode) {
@@ -1609,6 +1676,7 @@ function placerMatieresCommunes(planning) {
                         const cellule =
                             filiere.cellules.find(
                                 function (c) {
+
                                     return (
                                         c.dateAffichage ===
                                             celluleCandidate.dateAffichage
@@ -1616,43 +1684,15 @@ function placerMatieresCommunes(planning) {
                                         c.creneauOrdre ===
                                             celluleCandidate.creneauOrdre
                                     );
+
                                 }
                             );
 
-                        if (!cellule || cellule.estOccupee) {
-                            return false;
-                        }
-
-                        // Contrôle des créneaux adjacents (même jour)
-                        const cellulesMemeJour = filiere.cellules.filter(
-                            function (autre) {
-                                return autre.dateAffichage ===
-                                    celluleCandidate.dateAffichage;
-                            }
+                        return (
+                            cellule &&
+                            cellule.estOccupee === false
                         );
 
-                        const cellulePrecedente = cellulesMemeJour.find(
-                            function (autre) {
-                                return autre.creneauOrdre ===
-                                    celluleCandidate.creneauOrdre - 1;
-                            }
-                        );
-
-                        const celluleSuivante = cellulesMemeJour.find(
-                            function (autre) {
-                                return autre.creneauOrdre ===
-                                    celluleCandidate.creneauOrdre + 1;
-                            }
-                        );
-
-                        if (
-                            (cellulePrecedente && cellulePrecedente.estOccupee) ||
-                            (celluleSuivante && celluleSuivante.estOccupee)
-                        ) {
-                            return false;
-                        }
-
-                        return true;
                     }
                 );
 
@@ -1987,21 +2027,25 @@ function placerMatieresSpecifiques(planning) {
     console.log("------------------------------------------");
 
     if (!planning) {
-        console.error("❌ Planning introuvable.");
-        return planning;
-    }
 
-    const matieresSpecifiques =
-        planning.matieresSpecifiques || [];
+    console.error(
+        "❌ Planning introuvable."
+    );
+
+    return planning;
+}
+
+const matieresSpecifiques =
+    planning.matieresSpecifiques || [];
 
     if (matieresSpecifiques.length === 0) {
+
         console.log(
             "ℹ️ Aucune matière spécifique à placer."
         );
+
         return planning;
     }
-
-    const matieresNonPlacees = [];
 
     matieresSpecifiques.forEach(function (matiere) {
 
@@ -2021,13 +2065,14 @@ function placerMatieresSpecifiques(planning) {
             );
 
         if (!position) {
+
             console.warn(
                 "⚠️ Impossible de placer la matière :",
                 matiere.matiereLibelle,
                 "| Filière :",
                 filiereCode
             );
-            matieresNonPlacees.push(matiere);
+
             return;
         }
 
@@ -2066,187 +2111,6 @@ function placerMatieresSpecifiques(planning) {
             ")"
         );
     });
-
-
-    // -------------------------------------------------
-    // Backtracking léger : tenter de permuter avec une
-    // matière spécifique déjà placée de la même filière.
-    // Tester directement la cellule libérée.
-    // -------------------------------------------------
-
-    if (matieresNonPlacees.length > 0) {
-
-        console.log("------------------------------------------");
-        console.log(
-            "🔄 TENTATIVE DE BACKTRACKING LÉGER (",
-            matieresNonPlacees.length,
-            "matière(s) non placée(s))"
-        );
-        console.log("------------------------------------------");
-
-        matieresNonPlacees.forEach(function (matiereNonPlacee) {
-
-            const filiereCode = matiereNonPlacee.filiereCode;
-
-            const filiere = planning.filieres.find(
-                function (f) {
-                    return f.filiereCode === filiereCode;
-                }
-            );
-
-            if (!filiere) {
-                return;
-            }
-
-            const cellulesCandidates = filiere.cellules.filter(
-                function (c) {
-                    return (
-                        c.estOccupee &&
-                        !c.estCommune &&
-                        c.matiereLibelle
-                    );
-                }
-            );
-
-            let echangeReussi = false;
-
-            for (
-                let i = 0;
-                i < cellulesCandidates.length && !echangeReussi;
-                i++
-            ) {
-
-                const celluleExistante = cellulesCandidates[i];
-
-                const ancienneMatiere = {
-                    matiereLibelle: celluleExistante.matiereLibelle,
-                    regimeCode: celluleExistante.regimeCode,
-                    semestreCode: celluleExistante.semestreCode,
-                    filiereCode: filiereCode
-                };
-
-                // Libérer temporairement la cellule.
-                celluleExistante.estOccupee = false;
-                celluleExistante.matiereLibelle = "";
-                celluleExistante.regimeCode = "";
-                celluleExistante.semestreCode = "";
-                celluleExistante.filiereCode = undefined;
-
-                // Vérifier directement si cette cellule
-                // peut accueillir la matière non placée.
-                const cellulesMemeJour = filiere.cellules.filter(
-                    function (autre) {
-                        return autre.dateAffichage ===
-                            celluleExistante.dateAffichage;
-                    }
-                );
-
-                const precedente = cellulesMemeJour.find(
-                    function (autre) {
-                        return autre.creneauOrdre ===
-                            celluleExistante.creneauOrdre - 1;
-                    }
-                );
-
-                const suivante = cellulesMemeJour.find(
-                    function (autre) {
-                        return autre.creneauOrdre ===
-                            celluleExistante.creneauOrdre + 1;
-                    }
-                );
-
-                const celluleAdmissible =
-                    !(
-                        (precedente && precedente.estOccupee) ||
-                        (suivante && suivante.estOccupee)
-                    );
-
-                if (celluleAdmissible) {
-
-                    // Placer la matière non placée
-                    // directement dans la cellule libérée.
-                    celluleExistante.estOccupee = true;
-                    celluleExistante.matiereLibelle =
-                        matiereNonPlacee.matiereLibelle;
-                    celluleExistante.regimeCode =
-                        matiereNonPlacee.regimeCode;
-                    celluleExistante.semestreCode =
-                        matiereNonPlacee.semestreCode;
-                    celluleExistante.filiereCode = filiereCode;
-
-                    // Rechercher une nouvelle position
-                    // pour l'ancienne matière.
-                    const positionAncienne =
-                        trouverPositionPourMatiereSpecifique(
-                            planning,
-                            filiereCode
-                        );
-
-                    if (positionAncienne) {
-
-                        positionAncienne.estOccupee = true;
-                        positionAncienne.matiereLibelle =
-                            ancienneMatiere.matiereLibelle;
-                        positionAncienne.regimeCode =
-                            ancienneMatiere.regimeCode;
-                        positionAncienne.semestreCode =
-                            ancienneMatiere.semestreCode;
-                        positionAncienne.filiereCode =
-                            filiereCode;
-
-                        console.log(
-                            "✓ Échange réussi :",
-                            matiereNonPlacee.matiereLibelle,
-                            "↔",
-                            ancienneMatiere.matiereLibelle
-                        );
-
-                        echangeReussi = true;
-
-                    } else {
-
-                        // Annuler intégralement l'échange.
-                        celluleExistante.estOccupee = false;
-                        celluleExistante.matiereLibelle = "";
-                        celluleExistante.regimeCode = "";
-                        celluleExistante.semestreCode = "";
-                        celluleExistante.filiereCode = undefined;
-
-                        celluleExistante.estOccupee = true;
-                        celluleExistante.matiereLibelle =
-                            ancienneMatiere.matiereLibelle;
-                        celluleExistante.regimeCode =
-                            ancienneMatiere.regimeCode;
-                        celluleExistante.semestreCode =
-                            ancienneMatiere.semestreCode;
-                        celluleExistante.filiereCode = filiereCode;
-                    }
-
-                } else {
-
-                    // La cellule libérée reste incompatible.
-                    // Restaurer l'ancienne matière.
-                    celluleExistante.estOccupee = true;
-                    celluleExistante.matiereLibelle =
-                        ancienneMatiere.matiereLibelle;
-                    celluleExistante.regimeCode =
-                        ancienneMatiere.regimeCode;
-                    celluleExistante.semestreCode =
-                        ancienneMatiere.semestreCode;
-                    celluleExistante.filiereCode = filiereCode;
-                }
-            }
-
-            if (!echangeReussi) {
-                console.warn(
-                    "⚠️ Backtracking échoué pour :",
-                    matiereNonPlacee.matiereLibelle
-                );
-            }
-        });
-    }
-
-    
 
     console.log("------------------------------------------");
     console.log("✓ MATIÈRES SPÉCIFIQUES PLACÉES");
@@ -2991,6 +2855,98 @@ if (documentExistant.exists()) {
         return null;
     }
 
+    // -------------------------------------------------
+    // Enregistrer dans Firestore
+    // -------------------------------------------------
+
+    try {
+
+        await setDoc(
+            referenceCalendrier,
+            documentCalendrier
+        );
+
+        console.log("------------------------------------------");
+
+        console.log(
+            "✓ CALENDRIER ENREGISTRÉ DANS FIRESTORE"
+        );
+
+        console.log(
+            "Collection : calendriers"
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Année universitaire :",
+            anneeUniversitaire
+        );
+
+        console.log(
+            "Niveau :",
+            planning.niveauCode
+        );
+
+        console.log(
+            "Semestre :",
+            semestreCode
+        );
+
+        console.log(
+            "Régime :",
+            regimeCode
+        );
+
+        console.log(
+            "Session :",
+            planning.sessionCode
+        );
+
+        console.log(
+            "Statut : brouillon"
+        );
+
+        console.log("------------------------------------------");
+
+        return {
+
+            id:
+                idCalendrier,
+
+            anneeUniversitaire:
+                anneeUniversitaire,
+
+            niveauCode:
+                planning.niveauCode,
+
+            semestreCode:
+                semestreCode,
+
+            regimeCode:
+                regimeCode,
+
+            sessionCode:
+                planning.sessionCode,
+
+            statut:
+                "brouillon"
+
+        };
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de l'enregistrement du calendrier :",
+            erreur
+        );
+
+        return null;
+    }
+
 }
 
 
@@ -3156,67 +3112,76 @@ function definirDernierCalendrierEnregistre(idCalendrier) {
 }
 
 
-// =====================================================
-// EXPORTS ES MODULES (architecture propre)
-// + exposition window pour compatibilité UI existante
-// =====================================================
+window.generationExamens = {
 
-export {
-    chargerDonneesGeneration,
+    definirDernierCalendrierEnregistre:
+    definirDernierCalendrierEnregistre,
+
+    chargerDonnees:
+        chargerDonneesGeneration,
+    obtenirDonnees:
     obtenirDonneesGeneration,
-    verifierDonneesGeneration,
-    obtenirNiveaux,
-    obtenirFilieresDuNiveau,
-    obtenirMatieresDeFiliere,
-    identifierMatieresCommunes,
-    preparerMatieresPourPlanification,
-    preparerMatieresPourSession,
-    obtenirSession,
-    obtenirCreneauxDeSession,
-    genererListeDates,
-    construireGrilleSession,
-    construireMatricePlanning,
-    placerMatieresCommunes,
-    trouverPositionPourMatiereSpecifique,
-    calculerChargeDesCreneaux,
-    placerMatieresSpecifiques,
-    construireStructureGeneration,
-    chargerCalendrier,
-    enregistrerCalendrier,
-    publierCalendrier,
-    preparerGeneration,
-    definirDernierCalendrierEnregistre
-};
+    verifierDonnees:
+        verifierDonneesGeneration,
 
-// Compatibilité avec l'UI existante (à migrer progressivement)
-if (typeof window !== "undefined") {
-    window.generationExamens = {
-        definirDernierCalendrierEnregistre,
-        chargerDonnees: chargerDonneesGeneration,
-        obtenirDonnees: obtenirDonneesGeneration,
-        verifierDonnees: verifierDonneesGeneration,
+    obtenirNiveaux:
         obtenirNiveaux,
-        obtenirFilieres: obtenirFilieresDuNiveau,
-        obtenirMatieres: obtenirMatieresDeFiliere,
+
+    obtenirFilieres:
+        obtenirFilieresDuNiveau,
+
+    obtenirMatieres:
+        obtenirMatieresDeFiliere,
+
+    identifierMatieresCommunes:
         identifierMatieresCommunes,
+    preparerMatieresPourPlanification: 
         preparerMatieresPourPlanification,
+
+    obtenirSession:
         obtenirSession,
+
+    obtenirCreneauxDeSession:
         obtenirCreneauxDeSession,
+
+    genererListeDates:
         genererListeDates,
+
+    construireGrilleSession:
         construireGrilleSession,
+
+    construireMatricePlanning:
         construireMatricePlanning,
+    placerMatieresCommunes: 
         placerMatieresCommunes,
+
+    preparerMatieresPourSession: 
         preparerMatieresPourSession,
-        trouverPositionPourMatiereSpecifique,
-        calculerChargeDesCreneaux,
+    
+     trouverPositionPourMatiereSpecifique:
+         trouverPositionPourMatiereSpecifique,
+    
+     calculerChargeDesCreneaux: 
+         calculerChargeDesCreneaux,
+
+    placerMatieresSpecifiques:
         placerMatieresSpecifiques,
-        construireStructure: construireStructureGeneration,
+    construireStructure:
+         construireStructureGeneration,
+    chargerCalendrier:
         chargerCalendrier,
+
+        enregistrerCalendrier:
         enregistrerCalendrier,
-        publierCalendrier,
-        preparer: preparerGeneration
-    };
-}
+
+
+    publierCalendrier:
+    publierCalendrier,
+    
+    preparer:
+        preparerGeneration
+
+};
 
 
 // =====================================================
@@ -3339,30 +3304,17 @@ console.log(
 
                 // =================================================
                 // CONTRÔLE GLOBAL DU PLANNING
-                // (dépend du module controleExamens s'il est chargé)
                 // =================================================
 
-                let resultatControle = { valide: true };
-
-                if (
-                    typeof window !== "undefined" &&
-                    window.controleExamens &&
-                    typeof window.controleExamens.verifierPlanningGlobal === "function"
-                ) {
-                    resultatControle =
-                        window.controleExamens.verifierPlanningGlobal(
-                            planning
-                        );
-
-                    console.log(
-                        "✓ Résultat du contrôle global :",
-                        resultatControle
+                const resultatControle =
+                    controleExamens.verifierPlanningGlobal(
+                        planning
                     );
-                } else {
-                    console.warn(
-                        "⚠️ Module controleExamens non disponible. Contrôle global ignoré."
-                    );
-                }
+
+                console.log(
+                    "✓ Résultat du contrôle global :",
+                    resultatControle
+                );
 
                 // =================================================
                 // VÉRIFIER QUE LE PLANNING EST VALIDE
