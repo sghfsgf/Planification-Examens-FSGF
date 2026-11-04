@@ -1,12 +1,38 @@
 // =====================================================
-// GENERATION.JS - Moteur de Planification des Examens
-// Version refactorisée & optimisée
+// GENERATION.JS
+// Planification des examens - FSGF
+// =====================================================
+// Rôle actuel :
+// 1. Lire les données depuis Firestore
+// 2. Vérifier les données nécessaires
+// 3. Regrouper les matières par niveau
+// 4. Regrouper ensuite par filière
+// 5. Identifier les matières communes
+// 6. Construire la grille Dates × Créneaux
+// 7. Placer matières communes puis spécifiques
+// 8. Contrôler équilibre et enregistrer
+//
+// IMPORTANT :
+// Version améliorée selon priorités P0/P1/P2 :
+// - Suppression du bloc d'enregistrement dupliqué
+// - Contrôle des créneaux adjacents dans les matières communes
+// - Chargement factorisé via chargerCollection (avec id)
+// - Backtracking léger pour matières spécifiques non placées
+// - Préparation à une architecture ES Modules pure
+//
+// RÈGLES MÉTIER À CONSERVER :
+// - 1 niveau = 1 calendrier
+// - matière commune = présente dans au moins 2 filières
+// - éviter deux matières successives d'une même filière
+//   le même jour
+// - équilibrer les matières entre les créneaux
+// - équilibre global considéré atteint si l'écart
+//   entre le créneau le plus chargé et le moins chargé
+//   est inférieur ou égal à 1
 // =====================================================
 
-// [P1 - Architecture] Imports ES Modules
 import { app } from "../firebase-config.js";
-import { donneesChargees as promiseDonneesChargees } from "./data.js";
-import { controleExamens as moduleControleExamens } from "./controle.js";
+
 
 import {
     getFirestore,
@@ -20,89 +46,160 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 // =====================================================
-// FIRESTORE & ÉTAT
+// FIRESTORE
 // =====================================================
 
 const db = getFirestore(app);
 
-let donneesGeneration = {
-    matieres: [],
-    sessions: [],
-    creneaux: [],
-    sallesAmphis: [],
-    effectifs: []
-};
-
-let generationChargee = false;
-let dernierCalendrierEnregistre = null;
 
 // =====================================================
-// [P2 - Nettoyage] CHARGER UNE COLLECTION (AVEC ID)
+// DONNÉES DU MOTEUR DE GÉNÉRATION
+// =====================================================
+
+let donneesGeneration = {
+
+    matieres: [],
+
+    sessions: [],
+
+    creneaux: [],
+
+    sallesAmphis: [],
+
+     effectifs: []
+
+};
+
+
+// =====================================================
+// ÉTAT DU MOTEUR
+// =====================================================
+
+let generationChargee = false;
+
+// =====================================================
+// DERNIER CALENDRIER ENREGISTRÉ
+// =====================================================
+
+let dernierCalendrierEnregistre = null;
+// =====================================================
+// CHARGER UNE COLLECTION FIRESTORE
 // =====================================================
 
 async function chargerCollection(nomCollection) {
-    const snapshot = await getDocs(collection(db, nomCollection));
+
+    const snapshot = await getDocs(
+        collection(db, nomCollection)
+    );
+
     const donnees = [];
 
+
     snapshot.forEach(function (document) {
+
         donnees.push({
+
             id: document.id,
+
             ...document.data()
+
         });
+
     });
+
 
     return donnees;
 }
 
+
 // =====================================================
-// CHARGER TOUTES LES DONNÉES EN PARALLÈLE
+// CHARGER TOUTES LES DONNÉES
 // =====================================================
 
 async function chargerDonneesGeneration() {
+
     console.log("==========================================");
     console.log("CHARGEMENT DES DONNÉES POUR LA GÉNÉRATION");
     console.log("==========================================");
 
     try {
-        // [P1 - Architecture] Vérification modulaire avec fallback window
-        const attenteDonnees = promiseDonneesChargees || window.donneesChargees;
 
-        if (!attenteDonnees) {
-            throw new Error("Le module data.js n'a pas initialisé les données.");
+        // -------------------------------------------------
+        // Attendre que data.js ait terminé le chargement
+        // (compatibilité temporaire ; préférer import ES module)
+        // -------------------------------------------------
+
+        if (typeof window !== "undefined" && window.donneesChargees) {
+            const chargementOK = await window.donneesChargees;
+            if (!chargementOK) {
+                throw new Error(
+                    "Le chargement des données Excel a échoué."
+                );
+            }
         }
 
-        const chargementOK = await attenteDonnees;
-        if (!chargementOK) {
-            throw new Error("Le chargement des données sources a échoué.");
-        }
+        // -------------------------------------------------
+        // Récupérer les données depuis Firestore via helper
+        // (inclut l'id du document)
+        // -------------------------------------------------
 
-        // [P2 - Nettoyage / Performance] Chargement parallélisé via chargerCollection
-        const [matieres, sessions, creneaux, sallesAmphis, effectifs] = await Promise.all([
-            chargerCollection("matieres"),
-            chargerCollection("sessions"),
-            chargerCollection("creneaux"),
-            chargerCollection("salles_amphis"),
-            chargerCollection("effectifs")
-        ]);
+        donneesGeneration.matieres =
+            await chargerCollection("matieres");
 
-        donneesGeneration.matieres = matieres;
-        donneesGeneration.sessions = sessions;
-        donneesGeneration.creneaux = creneaux;
-        donneesGeneration.sallesAmphis = sallesAmphis;
-        donneesGeneration.effectifs = effectifs;
+        donneesGeneration.sessions =
+            await chargerCollection("sessions");
 
-        console.log("Matières chargées :", donneesGeneration.matieres.length);
-        console.log("Sessions chargées :", donneesGeneration.sessions.length);
-        console.log("Créneaux chargés :", donneesGeneration.creneaux.length);
-        console.log("Salles / amphis :", donneesGeneration.sallesAmphis.length);
-        console.log("Effectifs :", donneesGeneration.effectifs.length);
-        console.log("✓ Données prêtes avec identifiants Firestore.");
+        donneesGeneration.creneaux =
+            await chargerCollection("creneaux");
 
-        generationChargee = true;
+        donneesGeneration.sallesAmphis =
+            await chargerCollection("salles_amphis");
+
+        donneesGeneration.effectifs =
+            await chargerCollection("effectifs");
+
+        // -------------------------------------------------
+        // Contrôle
+        // -------------------------------------------------
+
+        console.log(
+            "Matières :",
+            donneesGeneration.matieres.length
+        );
+
+        console.log(
+            "Sessions :",
+            donneesGeneration.sessions.length
+        );
+
+        console.log(
+            "Créneaux :",
+            donneesGeneration.creneaux.length
+        );
+
+        console.log(
+            "Salles / amphis :",
+            donneesGeneration.sallesAmphis.length
+        );
+
+        console.log(
+            "Effectifs :",
+            donneesGeneration.effectifs.length
+        );
+
+        console.log(
+            "✓ Données de génération récupérées depuis Firestore"
+        );
+
         return true;
 
     } catch (erreur) {
-        console.error("❌ Erreur lors du chargement des données :", erreur);
+
+        console.error(
+            "❌ Erreur lors du chargement des données de génération :",
+            erreur
+        );
+
         return false;
     }
 }
@@ -112,163 +209,611 @@ async function chargerDonneesGeneration() {
 // =====================================================
 
 function verifierDonneesGeneration() {
-    if (donneesGeneration.matieres.length === 0) {
-        console.error("❌ Aucune matière disponible.");
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "VÉRIFICATION DES DONNÉES"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    if (
+        donneesGeneration.matieres.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucune matière disponible."
+        );
+
         return false;
+
     }
-    if (donneesGeneration.sessions.length === 0) {
-        console.error("❌ Aucune session disponible.");
+
+
+    if (
+        donneesGeneration.sessions.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucune session disponible."
+        );
+
         return false;
+
     }
-    if (donneesGeneration.creneaux.length === 0) {
-        console.error("❌ Aucun créneau disponible.");
+
+
+    if (
+        donneesGeneration.creneaux.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucun créneau disponible."
+        );
+
         return false;
+
     }
+
+
+    if (
+        donneesGeneration.sallesAmphis.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucune salle / amphi disponible."
+        );
+
+        return false;
+
+    }
+
+
+    console.log(
+        "✓ Matières disponibles"
+    );
+
+    console.log(
+        "✓ Sessions disponibles"
+    );
+
+    console.log(
+        "✓ Créneaux disponibles"
+    );
+
+    console.log(
+        "✓ Salles / amphis disponibles"
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "✓ VÉRIFICATION TERMINÉE"
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
     return true;
+
 }
 
+
 // =====================================================
-// FONCTIONS UTILITAIRES FILIÈRES / CRÉNEAUX / DATES
+// OBTENIR LES NIVEAUX
 // =====================================================
 
 function obtenirNiveaux() {
+
     const niveaux = [];
-    donneesGeneration.matieres.forEach(function (matiere) {
-        if (matiere.niveauCode && !niveaux.includes(matiere.niveauCode)) {
-            niveaux.push(matiere.niveauCode);
+
+
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
+
+            const niveau =
+                matiere.niveauCode;
+
+
+            if (!niveau) {
+
+                return;
+
+            }
+
+
+            if (!niveaux.includes(niveau)) {
+
+                niveaux.push(niveau);
+
+            }
+
         }
-    });
-    return niveaux.sort();
+    );
+
+
+    niveaux.sort();
+
+
+    return niveaux;
+
 }
 
-function obtenirFilieresDuNiveau(niveauCode) {
+
+// =====================================================
+// OBTENIR LES FILIÈRES D'UN NIVEAU
+// =====================================================
+
+function obtenirFilieresDuNiveau(
+    niveauCode
+) {
+
     const filieres = [];
-    donneesGeneration.matieres.forEach(function (matiere) {
-        if (matiere.niveauCode === niveauCode && matiere.filiereCode) {
-            if (!filieres.includes(matiere.filiereCode)) {
+
+
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
+
+            if (
+                matiere.niveauCode !==
+                niveauCode
+            ) {
+
+                return;
+
+            }
+
+
+            const filiere =
+                matiere.filiereCode;
+
+
+            if (!filiere) {
+
+                return;
+
+            }
+
+
+            if (!filieres.includes(filiere)) {
+
+                filieres.push(filiere);
+
+            }
+
+        }
+    );
+
+
+    filieres.sort();
+
+
+    return filieres;
+
+}
+
+
+// =====================================================
+// OBTENIR LES MATIÈRES D'UNE FILIÈRE
+// =====================================================
+
+function obtenirMatieresDeFiliere(
+    niveauCode,
+    filiereCode
+) {
+
+    return donneesGeneration.matieres.filter(
+        function (matiere) {
+
+            return (
+
+                matiere.niveauCode ===
+                niveauCode
+
+                &&
+
+                matiere.filiereCode ===
+                filiereCode
+
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// IDENTIFIER LES MATIÈRES COMMUNES
+// =====================================================
+// RÈGLE :
+// Une matière est commune si elle existe
+// dans au moins deux filières du même niveau.
+// =====================================================
+
+function identifierMatieresCommunes(
+    niveauCode
+) {
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "IDENTIFICATION DES MATIÈRES COMMUNES"
+    );
+
+    console.log(
+        "Niveau :",
+        niveauCode
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
+    const compteurMatieres =
+        new Map();
+
+
+    // =================================================
+    // PARCOURIR LES MATIÈRES DU NIVEAU
+    // =================================================
+
+    donneesGeneration.matieres.forEach(
+        function (matiere) {
+
+            if (
+                matiere.niveauCode !==
+                niveauCode
+            ) {
+
+                return;
+
+            }
+
+
+            const matiereLibelle =
+                matiere.matiereLibelle;
+
+
+            const filiereCode =
+                matiere.filiereCode;
+
+
+            if (
+                !matiereLibelle ||
+                !filiereCode
+            ) {
+
+                return;
+
+            }
+
+
+            // =========================================
+            // CRÉER L'ENTRÉE DE LA MATIÈRE
+            // =========================================
+
+            if (
+                !compteurMatieres.has(
+                    matiereLibelle
+                )
+            ) {
+
+                compteurMatieres.set(
+
+                    matiereLibelle,
+
+                    new Set()
+
+                );
+
+            }
+
+
+            // =========================================
+            // AJOUTER LA FILIÈRE
+            // =========================================
+
+            compteurMatieres
+                .get(matiereLibelle)
+                .add(filiereCode);
+
+        }
+    );
+
+
+    // =================================================
+    // CONSERVER LES MATIÈRES PRÉSENTES
+    // DANS AU MOINS DEUX FILIÈRES
+    // =================================================
+
+    const matieresCommunes = [];
+
+
+    compteurMatieres.forEach(
+        function (
+            filieres,
+            matiereLibelle
+        ) {
+
+            if (
+                filieres.size >= 2
+            ) {
+
+                matieresCommunes.push({
+
+                    matiereLibelle:
+                        matiereLibelle,
+
+                    filieres:
+                        Array.from(
+                            filieres
+                        ),
+
+                    nombreFilieres:
+                        filieres.size
+
+                });
+
+            }
+
+        }
+    );
+
+
+    // =================================================
+    // TRI ALPHABÉTIQUE
+    // =================================================
+
+    matieresCommunes.sort(
+        function (a, b) {
+
+            return a.matiereLibelle.localeCompare(
+                b.matiereLibelle
+            );
+
+        }
+    );
+
+
+    // =================================================
+    // AFFICHAGE CONSOLE
+    // =================================================
+
+    console.log(
+        "Matières communes détectées :",
+        matieresCommunes.length
+    );
+
+
+    matieresCommunes.forEach(
+        function (matiere) {
+
+            console.log(
+
+                "✓",
+
+                matiere.matiereLibelle,
+
+                "→",
+
+                matiere.nombreFilieres,
+
+                "filières :",
+
+                matiere.filieres
+
+            );
+
+        }
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
+    return matieresCommunes;
+
+}
+// =====================================================
+// PRÉPARATION DES MATIÈRES À PLANIFIER
+// =====================================================
+// Pour un niveau donné :
+// - les matières communes sont placées en premier
+// - puis les matières spécifiques à chaque filière
+//
+// Règle métier :
+// Une matière est commune lorsqu'elle existe
+// dans au moins deux filières du même niveau.
+// =====================================================
+
+function preparerMatieresPourPlanification(niveauCode) {
+
+    const matieresNiveau = donneesGeneration.matieres.filter(function (matiere) {
+        return matiere.niveauCode === niveauCode;
+    });
+
+    if (matieresNiveau.length === 0) {
+        console.warn(
+            "⚠️ Aucune matière trouvée pour le niveau :",
+            niveauCode
+        );
+        return {
+            niveauCode: niveauCode,
+            matieresCommunes: [],
+            matieresSpecifiques: []
+        };
+    }
+
+    // -------------------------------------------------
+    // Regrouper les matières par libellé
+    // -------------------------------------------------
+
+    const groupesMatieres = {};
+
+    matieresNiveau.forEach(function (matiere) {
+
+        const libelle = String(
+            matiere.matiereLibelle || ""
+        ).trim();
+
+        if (!libelle) {
+            return;
+        }
+
+        if (!groupesMatieres[libelle]) {
+            groupesMatieres[libelle] = [];
+        }
+
+        groupesMatieres[libelle].push(matiere);
+    });
+
+    // -------------------------------------------------
+    // Identifier communes / spécifiques
+    // -------------------------------------------------
+
+    const matieresCommunes = [];
+    const matieresSpecifiques = [];
+
+    Object.keys(groupesMatieres).forEach(function (libelle) {
+
+        const occurrences = groupesMatieres[libelle];
+
+        // Ensemble des filières concernées
+        const filieres = [];
+
+        occurrences.forEach(function (matiere) {
+
+            if (
+                matiere.filiereCode &&
+                !filieres.includes(matiere.filiereCode)
+            ) {
                 filieres.push(matiere.filiereCode);
             }
+
+        });
+
+        const information = {
+            matiereLibelle: libelle,
+            filieres: filieres,
+            occurrences: occurrences
+        };
+
+        // Matière commune :
+        // présente dans au moins deux filières
+        if (filieres.length >= 2) {
+
+            matieresCommunes.push(information);
+
+        } else {
+
+            matieresSpecifiques.push(information);
+
         }
     });
-    return filieres.sort();
-}
 
-function obtenirMatieresDeFiliere(niveauCode, filiereCode) {
-    return donneesGeneration.matieres.filter(function (m) {
-        return m.niveauCode === niveauCode && m.filiereCode === filiereCode;
-    });
-}
+    // -------------------------------------------------
+    // Affichage diagnostic
+    // -------------------------------------------------
 
-function obtenirSession(sessionCode) {
-    return donneesGeneration.sessions.find(function (s) {
-        return s.sessionCode === sessionCode;
-    });
-}
+    console.log(
+        "PRÉPARATION DES MATIÈRES POUR LE NIVEAU :",
+        niveauCode
+    );
 
-function obtenirCreneauxDeSession(sessionCode) {
-    return donneesGeneration.creneaux
-        .filter(function (c) { return c.sessionCode === sessionCode; })
-        .sort(function (a, b) { return Number(a.creneauOrdre) - Number(b.creneauOrdre); });
-}
+    console.log(
+        "→ Matières communes :",
+        matieresCommunes.length
+    );
 
-function convertirDateExcelPourGeneration(valeur) {
-    if (valeur instanceof Date) {
-        return new Date(valeur.getFullYear(), valeur.getMonth(), valeur.getDate());
-    }
-    if (typeof valeur === "number") {
-        const date = new Date(Date.UTC(1899, 11, 30));
-        date.setUTCDate(date.getUTCDate() + valeur);
-        return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-    }
-    if (typeof valeur === "string" && valeur.trim() !== "") {
-        const date = new Date(valeur);
-        if (!isNaN(date.getTime())) {
-            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        }
-    }
-    return null;
-}
+    console.table(
+        matieresCommunes.map(function (matiere) {
+            return {
+                Matiere: matiere.matiereLibelle,
+                Filieres: matiere.filieres.join(" / ")
+            };
+        })
+    );
 
-function formaterDateGeneration(date) {
-    const jour = String(date.getDate()).padStart(2, "0");
-    const mois = String(date.getMonth() + 1).padStart(2, "0");
-    return jour + "/" + mois + "/" + date.getFullYear();
-}
+    console.log(
+        "→ Matières spécifiques :",
+        matieresSpecifiques.length
+    );
 
-function genererListeDates(dateDebut, dateFin) {
-    const dates = [];
-    const debut = convertirDateExcelPourGeneration(dateDebut);
-    const fin = convertirDateExcelPourGeneration(dateFin);
+    console.table(
+        matieresSpecifiques.map(function (matiere) {
+            return {
+                Matiere: matiere.matiereLibelle,
+                Filiere: matiere.filieres.join(" / ")
+            };
+        })
+    );
 
-    if (!debut || !fin || debut > fin) {
-        console.error("❌ Dates de session invalides.");
-        return dates;
-    }
-
-    let dateCourante = new Date(debut);
-    while (dateCourante <= fin) {
-        // Règle : Pas d'examen le dimanche
-        if (dateCourante.getDay() !== 0) {
-            dates.push({
-                date: new Date(dateCourante),
-                dateAffichage: formaterDateGeneration(dateCourante)
-            });
-        }
-        dateCourante.setDate(dateCourante.getDate() + 1);
-    }
-    return dates;
+    return {
+        niveauCode: niveauCode,
+        matieresCommunes: matieresCommunes,
+        matieresSpecifiques: matieresSpecifiques
+    };
 }
 
 // =====================================================
-// [P0 - Métier] HELPER DE VÉRIFICATION D'ADJACENCE
-// =====================================================
-
-/**
- * Vérifie qu'aucun examen n'est déjà placé immédiatement
- * avant (N-1) ou après (N+1) le même jour pour la même filière.
- */
-function verifierCreneauAdjacentLibre(cellulesFiliere, dateAffichage, creneauOrdre) {
-    const cellulesMemeJour = cellulesFiliere.filter(function (c) {
-        return c.dateAffichage === dateAffichage;
-    });
-
-    const precedent = cellulesMemeJour.find(function (c) {
-        return c.creneauOrdre === creneauOrdre - 1;
-    });
-
-    const suivant = cellulesMemeJour.find(function (c) {
-        return c.creneauOrdre === creneauOrdre + 1;
-    });
-
-    if (precedent && precedent.estOccupee) return false;
-    if (suivant && suivant.estOccupee) return false;
-
-    return true;
-}
-
-// =====================================================
-// PRÉPARATION DU PLANNING & DES MATIÈRES
+// PRÉPARER LES MATIÈRES POUR UNE SESSION
 // =====================================================
 
 function preparerMatieresPourSession(niveauCode, sessionCode) {
+
+    console.log("------------------------------------------");
+    console.log("PRÉPARATION DES MATIÈRES POUR LA SESSION");
+    console.log("Niveau :", niveauCode);
+    console.log("Session :", sessionCode);
+    console.log("------------------------------------------");
+
     const session = obtenirSession(sessionCode);
+
     if (!session) {
         console.error("❌ Session introuvable :", sessionCode);
         return null;
     }
 
-    const matieresNiveau = donneesGeneration.matieres.filter(function (m) {
+    const matieresNiveau = donneesGeneration.matieres.filter(function (matiere) {
         return (
-            m.niveauCode === niveauCode &&
-            m.regimeCode === session.regimeCode &&
-            m.semestreCode === session.semestreCode
+            matiere.niveauCode === niveauCode &&
+            matiere.regimeCode === session.regimeCode &&
+            matiere.semestreCode === session.semestreCode
         );
     });
 
+    console.log("Régime :", session.regimeCode);
+    console.log("Semestre :", session.semestreCode);
+    console.log("Matières compatibles :", matieresNiveau.length);
+
+    // Regrouper les matières par libellé
     const groupes = {};
+
     matieresNiveau.forEach(function (matiere) {
+
         const libelle = matiere.matiereLibelle;
-        if (!groupes[libelle]) groupes[libelle] = [];
+
+        if (!groupes[libelle]) {
+            groupes[libelle] = [];
+        }
+
         groupes[libelle].push(matiere);
     });
 
@@ -276,227 +821,1076 @@ function preparerMatieresPourSession(niveauCode, sessionCode) {
     const matieresSpecifiques = [];
 
     Object.keys(groupes).forEach(function (libelle) {
+
         const groupe = groupes[libelle];
-        const filieres = [...new Set(groupe.map(function (m) { return m.filiereCode; }))];
-        const premiere = groupe[0];
+
+        const filieres = [...new Set(
+            groupe.map(function (matiere) {
+                return matiere.filiereCode;
+            })
+        )];
+
+        const premiereMatiere = groupe[0];
 
         if (filieres.length >= 2) {
+
             matieresCommunes.push({
                 matiereLibelle: libelle,
                 filieres: filieres,
-                regimeCode: premiere.regimeCode,
-                semestreCode: premiere.semestreCode
+                regimeCode: premiereMatiere.regimeCode,
+                semestreCode: premiereMatiere.semestreCode
             });
+
         } else {
+
             matieresSpecifiques.push({
                 matiereLibelle: libelle,
                 filiereCode: filieres[0],
-                regimeCode: premiere.regimeCode,
-                semestreCode: premiere.semestreCode
+                regimeCode: premiereMatiere.regimeCode,
+                semestreCode: premiereMatiere.semestreCode
             });
         }
     });
 
+    console.log("→ Matières communes :", matieresCommunes.length);
+
+    matieresCommunes.forEach(function (matiere) {
+        console.log(
+            "  ",
+            matiere.matiereLibelle,
+            "|",
+            matiere.filieres.join(" / ")
+        );
+    });
+
+    console.log("→ Matières spécifiques :", matieresSpecifiques.length);
+
+    matieresSpecifiques.forEach(function (matiere) {
+        console.log(
+            "  ",
+            matiere.matiereLibelle,
+            "|",
+            matiere.filiereCode
+        );
+    });
+
     return {
-        niveauCode,
-        sessionCode,
+        niveauCode: niveauCode,
+        sessionCode: sessionCode,
         regimeCode: session.regimeCode,
         semestreCode: session.semestreCode,
-        matieresCommunes,
-        matieresSpecifiques
+        matieresCommunes: matieresCommunes,
+        matieresSpecifiques: matieresSpecifiques
     };
 }
 
-function construireGrilleSession(sessionCode) {
-    const session = obtenirSession(sessionCode);
-    if (!session) return [];
+// =====================================================
+// OBTENIR UNE SESSION
+// =====================================================
 
-    const creneaux = obtenirCreneauxDeSession(sessionCode);
-    const dates = genererListeDates(session.dateDebut, session.dateFin);
+function obtenirSession(sessionCode) {
+
+    return donneesGeneration.sessions.find(
+        function (session) {
+
+            return (
+                session.sessionCode ===
+                sessionCode
+            );
+
+        }
+    );
+
+}
+
+
+// =====================================================
+// OBTENIR LES CRÉNEAUX D'UNE SESSION
+// =====================================================
+
+function obtenirCreneauxDeSession(
+    sessionCode
+) {
+
+    const creneaux =
+        donneesGeneration.creneaux.filter(
+            function (creneau) {
+
+                return (
+                    creneau.sessionCode ===
+                    sessionCode
+                );
+
+            }
+        );
+
+
+    creneaux.sort(
+        function (a, b) {
+
+            return Number(
+                a.creneauOrdre
+            ) - Number(
+                b.creneauOrdre
+            );
+
+        }
+    );
+
+
+    return creneaux;
+
+}
+
+
+// =====================================================
+// CONVERTIR UNE DATE EXCEL EN OBJET DATE
+// =====================================================
+
+function convertirDateExcelPourGeneration(
+    valeur
+) {
+
+    if (
+        valeur instanceof Date
+    ) {
+
+        return new Date(
+            valeur.getFullYear(),
+            valeur.getMonth(),
+            valeur.getDate()
+        );
+
+    }
+
+
+    if (
+        typeof valeur === "number"
+    ) {
+
+        const date =
+            new Date(
+                Date.UTC(
+                    1899,
+                    11,
+                    30
+                )
+            );
+
+
+        date.setUTCDate(
+            date.getUTCDate() +
+            valeur
+        );
+
+
+        return new Date(
+            date.getUTCFullYear(),
+            date.getUTCMonth(),
+            date.getUTCDate()
+        );
+
+    }
+
+
+    if (
+        typeof valeur === "string" &&
+        valeur.trim() !== ""
+    ) {
+
+        const date =
+            new Date(valeur);
+
+
+        if (
+            !isNaN(date.getTime())
+        ) {
+
+            return new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate()
+            );
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+// =====================================================
+// FORMATER UNE DATE
+// =====================================================
+
+function formaterDateGeneration(
+    date
+) {
+
+    const jour =
+        String(
+            date.getDate()
+        ).padStart(2, "0");
+
+
+    const mois =
+        String(
+            date.getMonth() + 1
+        ).padStart(2, "0");
+
+
+    const annee =
+        date.getFullYear();
+
+
+    return (
+        jour +
+        "/" +
+        mois +
+        "/" +
+        annee
+    );
+
+}
+
+
+// =====================================================
+// GÉNÉRER LA LISTE DES DATES
+// =====================================================
+
+function genererListeDates(
+    dateDebut,
+    dateFin
+) {
+
+    const dates = [];
+
+
+    const debut =
+        convertirDateExcelPourGeneration(
+            dateDebut
+        );
+
+
+    const fin =
+        convertirDateExcelPourGeneration(
+            dateFin
+        );
+
+
+    if (
+        !debut ||
+        !fin
+    ) {
+
+        console.error(
+            "❌ Dates de session invalides."
+        );
+
+        return dates;
+
+    }
+
+
+    if (
+        debut > fin
+    ) {
+
+        console.error(
+            "❌ La date de début est après la date de fin."
+        );
+
+        return dates;
+
+    }
+
+
+    let dateCourante =
+        new Date(debut);
+
+
+   while (
+    dateCourante <= fin
+) {
+
+    // ⛔ Dimanche interdit pour les examens
+    if (
+        dateCourante.getDay() !== 0
+    ) {
+
+        dates.push({
+
+            date:
+                new Date(dateCourante),
+
+            dateAffichage:
+                formaterDateGeneration(
+                    dateCourante
+                )
+
+        });
+
+    }
+
+
+    dateCourante.setDate(
+        dateCourante.getDate() + 1
+    );
+
+}
+
+
+    return dates;
+
+}
+
+
+// =====================================================
+// CONSTRUIRE LA GRILLE D'UNE SESSION
+// =====================================================
+// Structure :
+//
+// Session
+//   ↓
+// Date
+//   ↓
+// Créneaux disponibles
+//
+// Chaque élément de la grille représente
+// une combinaison Date + Créneau.
+// =====================================================
+
+function construireGrilleSession(
+    sessionCode
+) {
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "CONSTRUCTION DE LA GRILLE"
+    );
+
+    console.log(
+        "Session :",
+        sessionCode
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    const session =
+        obtenirSession(sessionCode);
+
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            sessionCode
+        );
+
+        return [];
+
+    }
+
+
+    const creneaux =
+        obtenirCreneauxDeSession(
+            sessionCode
+        );
+
+
+    if (
+        creneaux.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucun créneau trouvé pour :",
+            sessionCode
+        );
+
+        return [];
+
+    }
+
+
+    const dates =
+        genererListeDates(
+            session.dateDebut,
+            session.dateFin
+        );
+
+
+    if (
+        dates.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucune date disponible pour la session."
+        );
+
+        return [];
+
+    }
+
+
     const grille = [];
 
-    dates.forEach(function (dateInfo) {
-        creneaux.forEach(function (creneau) {
-            grille.push({
-                sessionCode,
-                date: dateInfo.date,
-                dateAffichage: dateInfo.dateAffichage,
-                creneauOrdre: Number(creneau.creneauOrdre),
-                heureDebut: creneau.heureDebut,
-                heureFin: creneau.heureFin,
-                heureDebutAffichage: creneau.heureDebutAffichage || "",
-                heureFinAffichage: creneau.heureFinAffichage || "",
-                nombreMatieres: 0
-            });
-        });
-    });
+
+    // =================================================
+    // DATE → TOUS LES CRÉNEAUX
+    // =================================================
+
+    dates.forEach(
+        function (dateInfo) {
+
+            creneaux.forEach(
+                function (creneau) {
+
+                    grille.push({
+
+                        sessionCode:
+                            sessionCode,
+
+                        date:
+                            dateInfo.date,
+
+                        dateAffichage:
+                            dateInfo.dateAffichage,
+
+                        creneauOrdre:
+                            Number(
+                                creneau.creneauOrdre
+                            ),
+
+                        heureDebut:
+                            creneau.heureDebut,
+
+                        heureFin:
+                            creneau.heureFin,
+
+                        heureDebutAffichage:
+                            creneau.heureDebutAffichage ||
+                            "",
+
+                        heureFinAffichage:
+                            creneau.heureFinAffichage ||
+                            "",
+
+                        nombreMatieres:
+                            0
+
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    // =================================================
+    // AFFICHAGE DU RÉSULTAT
+    // =================================================
+
+    console.log(
+        "Dates disponibles :",
+        dates.length
+    );
+
+    console.log(
+        "Créneaux par jour :",
+        creneaux.length
+    );
+
+    console.log(
+        "Nombre total de positions :",
+        grille.length
+    );
+
+
+    console.table(
+        grille.map(
+            function (position) {
+
+                return {
+
+                    Date:
+                        position.dateAffichage,
+
+                    Créneau:
+                        position.creneauOrdre,
+
+                    Horaire:
+                        (
+                            position.heureDebutAffichage
+                            || ""
+                        )
+                        +
+                        " - "
+                        +
+                        (
+                            position.heureFinAffichage
+                            || ""
+                        ),
+
+                    Matieres:
+                        position.nombreMatieres
+
+                };
+
+            }
+        )
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "✓ GRILLE CONSTRUITE"
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
 
     return grille;
+
 }
 
 function construireMatricePlanning(niveauCode, sessionCode) {
-    const structure = preparerMatieresPourSession(niveauCode, sessionCode);
-    const grille = construireGrilleSession(sessionCode);
-    const filieres = obtenirFilieresDuNiveau(niveauCode);
 
-    if (!structure || !grille.length || !filieres.length) {
-        console.error("❌ Données insuffisantes pour la matrice.");
+    const structure = preparerMatieresPourSession(niveauCode, sessionCode);
+
+    const grille = construireGrilleSession(sessionCode);
+
+    if (!grille || grille.length === 0) {
+        console.error("❌ Impossible de construire la matrice : grille vide.");
         return null;
     }
 
+    const filieres = obtenirFilieresDuNiveau(niveauCode);
+
+    if (!filieres || filieres.length === 0) {
+        console.error(
+            "❌ Aucune filière trouvée pour le niveau :",
+            niveauCode
+        );
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Création de la matrice
+    // -------------------------------------------------
+
     const planning = {
-        niveauCode,
-        sessionCode,
+        niveauCode: niveauCode,
+        sessionCode: sessionCode,
         filieres: []
     };
 
     filieres.forEach(function (filiereCode) {
+
         const ligneFiliere = {
-            filiereCode,
+            filiereCode: filiereCode,
             amphis: [],
-            cellules: grille.map(function (pos) {
-                return {
-                    date: pos.date,
-                    dateAffichage: pos.dateAffichage,
-                    creneauOrdre: pos.creneauOrdre,
-                    heureDebut: pos.heureDebut,
-                    heureFin: pos.heureFin,
-                    heureDebutAffichage: pos.heureDebutAffichage,
-                    heureFinAffichage: pos.heureFinAffichage,
-                    matiereLibelle: "",
-                    regimeCode: "",
-                    semestreCode: "",
-                    estOccupee: false,
-                    estCommune: false
-                };
-            })
+            cellules: []
         };
+
+        grille.forEach(function (position) {
+
+            ligneFiliere.cellules.push({
+
+                date: position.date,
+                dateAffichage: position.dateAffichage,
+
+                creneauOrdre: position.creneauOrdre,
+
+                heureDebut: position.heureDebut,
+                heureFin: position.heureFin,
+
+                heureDebutAffichage:
+                    position.heureDebutAffichage || "",
+
+                heureFinAffichage:
+                    position.heureFinAffichage || "",
+
+                // -------------------------------------------------
+                // Aucune matière n'est encore affectée
+                // -------------------------------------------------
+
+                matiereLibelle: "",
+                regimeCode: "",
+                semestreCode: "",
+
+                // -------------------------------------------------
+                // Informations qui seront utilisées plus tard
+                // -------------------------------------------------
+
+                estOccupee: false,
+                estCommune: false
+
+            });
+
+        });
+
         planning.filieres.push(ligneFiliere);
     });
+
+    // -------------------------------------------------
+    // Informations générales
+    // -------------------------------------------------
 
     planning.matieresCommunes = structure.matieresCommunes;
     planning.matieresSpecifiques = structure.matieresSpecifiques;
 
+    // -------------------------------------------------
+    // Diagnostic
+    // -------------------------------------------------
+
+    console.log(
+        "MATRICE DU PLANNING CONSTRUITE"
+    );
+
+    console.log(
+        "Niveau :",
+        niveauCode
+    );
+
+    console.log(
+        "Session :",
+        sessionCode
+    );
+
+    console.log(
+        "Filières :",
+        planning.filieres.map(function (filiere) {
+            return filiere.filiereCode;
+        })
+    );
+
+    console.log(
+        "Nombre de positions par filière :",
+        grille.length
+    );
+
+    console.log(
+        "Matières communes disponibles :",
+        planning.matieresCommunes.length
+    );
+
+    console.log(
+        "Matières spécifiques disponibles :",
+        planning.matieresSpecifiques.length
+    );
+
+    // -------------------------------------------------
+    // Vérification visuelle des lignes
+    // -------------------------------------------------
+
+    planning.filieres.forEach(function (filiere) {
+
+        console.log(
+            "Filière :",
+            filiere.filiereCode,
+            "→",
+            filiere.cellules.length,
+            "cellules"
+        );
+
+    });
+
     return planning;
 }
-
-// =====================================================
-// [P0 - Métier] PLACEMENT DES MATIÈRES COMMUNES
-// =====================================================
-
 function placerMatieresCommunes(planning) {
-    if (!planning || !planning.matieresCommunes) return planning;
+
+    if (!planning) {
+        console.error("❌ Planning absent.");
+        return null;
+    }
+
+    if (
+        !planning.matieresCommunes ||
+        planning.matieresCommunes.length === 0
+    ) {
+        console.log("ℹ️ Aucune matière commune à placer.");
+        return planning;
+    }
+
+    console.log("------------------------------------------");
+    console.log("PLACEMENT DES MATIÈRES COMMUNES");
+    console.log("------------------------------------------");
+
+    // -------------------------------------------------
+    // Pour chaque matière commune
+    // -------------------------------------------------
 
     planning.matieresCommunes.forEach(function (matiereCommune) {
+
         const filieresConcernees = matiereCommune.filieres;
-        const premiereFiliere = planning.filieres.find(function (f) {
-            return filieresConcernees.includes(f.filiereCode);
-        });
 
-        if (!premiereFiliere) return;
-
-        let positionChoisie = null;
-
-        for (let i = 0; i < premiereFiliere.cellules.length; i++) {
-            const candidat = premiereFiliere.cellules[i];
-
-            // Doit être disponible ET sans adjacence occupée pour TOUTES les filières concernées
-            const positionValidePourToutes = filieresConcernees.every(function (filiereCode) {
-                const filiere = planning.filieres.find(function (f) {
-                    return f.filiereCode === filiereCode;
-                });
-                if (!filiere) return false;
-
-                const cellule = filiere.cellules.find(function (c) {
-                    return c.dateAffichage === candidat.dateAffichage &&
-                           c.creneauOrdre === candidat.creneauOrdre;
-                });
-
-                if (!cellule || cellule.estOccupee) return false;
-
-                // [P0 - Règle métier appliquée] : vérifier N-1 et N+1 le même jour
-                return verifierCreneauAdjacentLibre(
-                    filiere.cellules,
-                    candidat.dateAffichage,
-                    candidat.creneauOrdre
-                );
-            });
-
-            if (positionValidePourToutes) {
-                positionChoisie = candidat;
-                break;
-            }
-        }
-
-        if (!positionChoisie) {
-            console.error("❌ Impossible de placer la matière commune :", matiereCommune.matiereLibelle);
+        if (!filieresConcernees || filieresConcernees.length < 2) {
+            console.warn(
+                "⚠️ Matière commune invalide :",
+                matiereCommune.matiereLibelle
+            );
             return;
         }
 
-        // Affecter à chaque filière concernée
+        // -------------------------------------------------
+        // Recherche d'une position disponible commune
+        // à toutes les filières concernées
+        // -------------------------------------------------
+
+        let positionChoisie = null;
+
+        const premiereFiliere = planning.filieres.find(
+            function (filiere) {
+                return filieresConcernees.includes(
+                    filiere.filiereCode
+                );
+            }
+        );
+
+        if (!premiereFiliere) {
+            console.warn(
+                "⚠️ Filière introuvable pour :",
+                matiereCommune.matiereLibelle
+            );
+            return;
+        }
+
+        // -------------------------------------------------
+        // On parcourt les cellules dans l'ordre
+        // date → créneau
+        // -------------------------------------------------
+
+        for (
+            let i = 0;
+            i < premiereFiliere.cellules.length;
+            i++
+        ) {
+
+            const celluleCandidate =
+                premiereFiliere.cellules[i];
+
+            // Vérifier que la même position existe,
+            // est libre, ET respecte les créneaux adjacents
+            // (pas d'examens successifs le même jour)
+            // pour TOUTES les filières concernées.
+            const positionDisponible =
+                filieresConcernees.every(
+                    function (filiereCode) {
+
+                        const filiere =
+                            planning.filieres.find(
+                                function (f) {
+                                    return (
+                                        f.filiereCode ===
+                                        filiereCode
+                                    );
+                                }
+                            );
+
+                        if (!filiere) {
+                            return false;
+                        }
+
+                        const cellule =
+                            filiere.cellules.find(
+                                function (c) {
+                                    return (
+                                        c.dateAffichage ===
+                                            celluleCandidate.dateAffichage
+                                        &&
+                                        c.creneauOrdre ===
+                                            celluleCandidate.creneauOrdre
+                                    );
+                                }
+                            );
+
+                        if (!cellule || cellule.estOccupee) {
+                            return false;
+                        }
+
+                        // Contrôle des créneaux adjacents (même jour)
+                        const cellulesMemeJour = filiere.cellules.filter(
+                            function (autre) {
+                                return autre.dateAffichage ===
+                                    celluleCandidate.dateAffichage;
+                            }
+                        );
+
+                        const cellulePrecedente = cellulesMemeJour.find(
+                            function (autre) {
+                                return autre.creneauOrdre ===
+                                    celluleCandidate.creneauOrdre - 1;
+                            }
+                        );
+
+                        const celluleSuivante = cellulesMemeJour.find(
+                            function (autre) {
+                                return autre.creneauOrdre ===
+                                    celluleCandidate.creneauOrdre + 1;
+                            }
+                        );
+
+                        if (
+                            (cellulePrecedente && cellulePrecedente.estOccupee) ||
+                            (celluleSuivante && celluleSuivante.estOccupee)
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                );
+
+            if (positionDisponible) {
+
+                positionChoisie = celluleCandidate;
+                break;
+
+            }
+
+        }
+
+        // -------------------------------------------------
+        // Aucune position disponible
+        // -------------------------------------------------
+
+        if (!positionChoisie) {
+
+            console.error(
+                "❌ Aucune position disponible pour la matière commune :",
+                matiereCommune.matiereLibelle
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // Affectation dans toutes les filières concernées
+        // -------------------------------------------------
+
         filieresConcernees.forEach(function (filiereCode) {
-            const filiere = planning.filieres.find(function (f) { return f.filiereCode === filiereCode; });
-            const cellule = filiere.cellules.find(function (c) {
-                return c.dateAffichage === positionChoisie.dateAffichage &&
-                       c.creneauOrdre === positionChoisie.creneauOrdre;
-            });
-            cellule.matiereLibelle = matiereCommune.matiereLibelle;
+
+            const filiere =
+                planning.filieres.find(
+                    function (f) {
+                        return f.filiereCode === filiereCode;
+                    }
+                );
+
+            if (!filiere) {
+                return;
+            }
+
+            const cellule =
+                filiere.cellules.find(
+                    function (c) {
+
+                        return (
+                            c.dateAffichage ===
+                                positionChoisie.dateAffichage
+                            &&
+                            c.creneauOrdre ===
+                                positionChoisie.creneauOrdre
+                        );
+
+                    }
+                );
+
+            if (!cellule) {
+                return;
+            }
+
+            cellule.matiereLibelle =
+                matiereCommune.matiereLibelle;
+
             cellule.estOccupee = true;
             cellule.estCommune = true;
+
         });
 
-        console.log("✓ Commune placée :", matiereCommune.matiereLibelle, "au", positionChoisie.dateAffichage, "Créneau", positionChoisie.creneauOrdre);
+        console.log(
+            "✓ Matière commune placée :",
+            matiereCommune.matiereLibelle
+        );
+
+        console.log(
+            "  Filières :",
+            filieresConcernees.join(" / ")
+        );
+
+        console.log(
+            "  Date :",
+            positionChoisie.dateAffichage
+        );
+
+        console.log(
+            "  Créneau :",
+            positionChoisie.creneauOrdre,
+            "(" +
+            (positionChoisie.heureDebutAffichage || "") +
+            " - " +
+            (positionChoisie.heureFinAffichage || "") +
+            ")"
+        );
+
+    });
+
+    // -------------------------------------------------
+    // Diagnostic final
+    // -------------------------------------------------
+
+    console.log("------------------------------------------");
+    console.log("✓ MATIÈRES COMMUNES PLACÉES");
+    console.log("------------------------------------------");
+
+    planning.filieres.forEach(function (filiere) {
+
+        const matieresPlacees =
+            filiere.cellules.filter(
+                function (cellule) {
+                    return cellule.estOccupee;
+                }
+            );
+
+        console.log(
+            filiere.filiereCode +
+            " → " +
+            matieresPlacees.length +
+            " matière(s) placée(s)"
+        );
+
     });
 
     return planning;
 }
 
 // =====================================================
-// CHARGE DES CRÉNEAUX
-// =====================================================
-
-function calculerChargeDesCreneaux(planning) {
-    const charges = {};
-    const examensComptes = new Set();
-
-    planning.filieres.forEach(function (filiere) {
-        filiere.cellules.forEach(function (cellule) {
-            if (charges[cellule.creneauOrdre] === undefined) {
-                charges[cellule.creneauOrdre] = 0;
-            }
-            if (!cellule.estOccupee) return;
-
-            const cleExamen = cellule.estCommune
-                ? "COMMUNE|" + cellule.dateAffichage + "|" + cellule.creneauOrdre + "|" + cellule.matiereLibelle
-                : "SPECIFIQUE|" + filiere.filiereCode + "|" + cellule.dateAffichage + "|" + cellule.creneauOrdre + "|" + cellule.matiereLibelle;
-
-            if (!examensComptes.has(cleExamen)) {
-                examensComptes.add(cleExamen);
-                charges[cellule.creneauOrdre]++;
-            }
-        });
-    });
-
-    return charges;
-}
-
-// =====================================================
-// HEURISTIQUE PLACEMENT SPÉCIFIQUE
+// TROUVER UNE POSITION POUR UNE MATIÈRE SPÉCIFIQUE
 // =====================================================
 
 function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
-    const filiere = planning.filieres.find(function (f) { return f.filiereCode === filiereCode; });
-    if (!filiere) return null;
 
-    const chargesCreneaux = calculerChargeDesCreneaux(planning);
+    const ECART_MAX_AUTORISE = 1;
 
-    // [P0 - Métier] Vérifier disponibilité et non-adjacence
-    const positionsPossibles = filiere.cellules.filter(function (cellule) {
-        if (cellule.estOccupee) return false;
-        return verifierCreneauAdjacentLibre(filiere.cellules, cellule.dateAffichage, cellule.creneauOrdre);
+    // -------------------------------------------------
+    // 1. Rechercher la filière
+    // -------------------------------------------------
+
+    const filiere = planning.filieres.find(function (f) {
+        return f.filiereCode === filiereCode;
     });
 
-    if (positionsPossibles.length === 0) return null;
+    if (!filiere) {
+        console.error(
+            "❌ Filière introuvable dans le planning :",
+            filiereCode
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // 2. Calculer la charge globale des créneaux
+    // -------------------------------------------------
+
+    const chargesCreneaux =
+        calculerChargeDesCreneaux(planning);
+
+    console.log(
+        "Charge globale utilisée pour",
+        filiereCode,
+        ":",
+        chargesCreneaux
+    );
+
+    // -------------------------------------------------
+    // 3. Rechercher les cellules disponibles
+    // -------------------------------------------------
+
+    const positionsPossibles = filiere.cellules.filter(
+        function (cellule) {
+
+            // Une cellule déjà occupée ne peut pas être utilisée.
+            if (cellule.estOccupee) {
+                return false;
+            }
+
+            // Rechercher les cellules du même jour.
+            const cellulesMemeJour = filiere.cellules.filter(
+                function (autre) {
+                    return autre.dateAffichage ===
+                        cellule.dateAffichage;
+                }
+            );
+
+            // Vérifier le créneau précédent.
+            const cellulePrecedente = cellulesMemeJour.find(
+                function (autre) {
+                    return autre.creneauOrdre ===
+                        cellule.creneauOrdre - 1;
+                }
+            );
+
+            // Vérifier le créneau suivant.
+            const celluleSuivante = cellulesMemeJour.find(
+                function (autre) {
+                    return autre.creneauOrdre ===
+                        cellule.creneauOrdre + 1;
+                }
+            );
+
+            // Interdire deux examens successifs le même jour.
+            if (
+                cellulePrecedente &&
+                cellulePrecedente.estOccupee
+            ) {
+                return false;
+            }
+
+            if (
+                celluleSuivante &&
+                celluleSuivante.estOccupee
+            ) {
+                return false;
+            }
+
+            return true;
+        }
+    );
+
+    // -------------------------------------------------
+    // 4. Vérifier qu'une cellule est disponible
+    // -------------------------------------------------
+
+    if (positionsPossibles.length === 0) {
+
+        console.error(
+            "❌ Aucune cellule disponible pour :",
+            filiereCode
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // 5. Choisir la position qui équilibre le mieux
+    //    les charges globales après le placement
+    // -------------------------------------------------
 
     let positionChoisie = null;
     let meilleurEcart = Infinity;
@@ -504,21 +1898,59 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
     let meilleureChargeAvant = Infinity;
 
     positionsPossibles.forEach(function (position) {
-        const chargesSimulees = { ...chargesCreneaux };
+
+        // Simuler le placement sans modifier le planning.
+        const chargesSimulees = {
+            ...chargesCreneaux
+        };
+
         const creneau = position.creneauOrdre;
-        chargesSimulees[creneau] = (chargesSimulees[creneau] || 0) + 1;
 
-        const valeursCharges = Object.values(chargesSimulees);
-        const ecart = Math.max(...valeursCharges) - Math.min(...valeursCharges);
+        chargesSimulees[creneau] =
+            (chargesSimulees[creneau] || 0) + 1;
 
-        const moyenne = valeursCharges.reduce(function (a, b) { return a + b; }, 0) / valeursCharges.length;
-        const dispersion = valeursCharges.reduce(function (somme, c) { return somme + Math.pow(c - moyenne, 2); }, 0);
-        const chargeAvant = chargesCreneaux[creneau] || 0;
+        const valeursCharges =
+            Object.values(chargesSimulees);
 
+        const chargeMin =
+            Math.min(...valeursCharges);
+
+        const chargeMax =
+            Math.max(...valeursCharges);
+
+        const ecart =
+            chargeMax - chargeMin;
+
+        // À écart égal, privilégier la répartition
+        // globale la plus homogène.
+        const moyenne =
+            valeursCharges.reduce(function (somme, charge) {
+                return somme + charge;
+            }, 0) / valeursCharges.length;
+
+        const dispersion =
+            valeursCharges.reduce(function (somme, charge) {
+                return somme + Math.pow(charge - moyenne, 2);
+            }, 0);
+
+        const chargeAvant =
+            chargesCreneaux[creneau] || 0;
+
+        // Priorité 1 : minimiser l'écart maximal.
+        // Priorité 2 : minimiser la dispersion.
+        // Priorité 3 : préférer le créneau le moins chargé
+        // avant placement.
         if (
             ecart < meilleurEcart ||
-            (ecart === meilleurEcart && dispersion < meilleureDispersion) ||
-            (ecart === meilleurEcart && dispersion === meilleureDispersion && chargeAvant < meilleureChargeAvant)
+            (
+                ecart === meilleurEcart &&
+                dispersion < meilleureDispersion
+            ) ||
+            (
+                ecart === meilleurEcart &&
+                dispersion === meilleureDispersion &&
+                chargeAvant < meilleureChargeAvant
+            )
         ) {
             positionChoisie = position;
             meilleurEcart = ecart;
@@ -527,313 +1959,1525 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         }
     });
 
+// -------------------------------------------------
+    // 6. Afficher la position retenue
+    // -------------------------------------------------
+
+    console.log(
+        "✓ Position trouvée :",
+        filiereCode,
+        "|",
+        positionChoisie.dateAffichage,
+        "| Créneau",
+        positionChoisie.creneauOrdre,
+        "|",
+        positionChoisie.heureDebutAffichage,
+        "-",
+        positionChoisie.heureFinAffichage,
+        "| Charge avant placement :",
+        chargesCreneaux[positionChoisie.creneauOrdre] || 0
+    );
+
     return positionChoisie;
 }
+function placerMatieresSpecifiques(planning) {
 
-// =====================================================
-// [P2 - Algorithme] BACKTRACKING LÉGER (LOCAL REPAIR)
-// =====================================================
+    console.log("------------------------------------------");
+    console.log("PLACEMENT DES MATIÈRES SPÉCIFIQUES");
+    console.log("------------------------------------------");
 
-/**
- * Tente de libérer une cellule occupée par une autre matière spécifique
- * de la même filière pour débloquer une matière orpheline.
- */
-function tenterBacktrackingPourMatiere(planning, filiereCode, matiereEchouee) {
-    const filiere = planning.filieres.find(function (f) { return f.filiereCode === filiereCode; });
-    if (!filiere) return false;
-
-    // Obtenir toutes les matières spécifiques déjà placées dans cette filière
-    const cellulesOccupees = filiere.cellules.filter(function (c) {
-        return c.estOccupee && !c.estCommune;
-    });
-
-    for (const celluleConflit of cellulesOccupees) {
-        // Sauvegarde de l'état
-        const backup = {
-            matiereLibelle: celluleConflit.matiereLibelle,
-            regimeCode: celluleConflit.regimeCode,
-            semestreCode: celluleConflit.semestreCode
-        };
-
-        // 1. Libérer temporairement la cellule
-        celluleConflit.estOccupee = false;
-        celluleConflit.matiereLibelle = "";
-
-        // 2. Tester si la matière échouée peut prendre une place (soit celle-ci, soit une autre)
-        const posPourEchouee = trouverPositionPourMatiereSpecifique(planning, filiereCode);
-
-        if (posPourEchouee) {
-            posPourEchouee.estOccupee = true;
-            posPourEchouee.matiereLibelle = matiereEchouee.matiereLibelle;
-            posPourEchouee.regimeCode = matiereEchouee.regimeCode;
-            posPourEchouee.semestreCode = matiereEchouee.semestreCode;
-
-            // 3. Tester si l'ancienne matière déplacée retrouve une place valide
-            const posPourDeplacee = trouverPositionPourMatiereSpecifique(planning, filiereCode);
-
-            if (posPourDeplacee) {
-                posPourDeplacee.estOccupee = true;
-                posPourDeplacee.matiereLibelle = backup.matiereLibelle;
-                posPourDeplacee.regimeCode = backup.regimeCode;
-                posPourDeplacee.semestreCode = backup.semestreCode;
-
-                console.log(`🔁 [Backtracking réussi] : Réarrangement pour ${matiereEchouee.matiereLibelle}`);
-                return true;
-            }
-
-            // Annuler le placement temporaire
-            posPourEchouee.estOccupee = false;
-            posPourEchouee.matiereLibelle = "";
-        }
-
-        // Restaurer la cellule originale
-        celluleConflit.estOccupee = true;
-        celluleConflit.matiereLibelle = backup.matiereLibelle;
-        celluleConflit.regimeCode = backup.regimeCode;
-        celluleConflit.semestreCode = backup.semestreCode;
+    if (!planning) {
+        console.error("❌ Planning introuvable.");
+        return planning;
     }
 
-    return false;
-}
+    const matieresSpecifiques =
+        planning.matieresSpecifiques || [];
 
-// =====================================================
-// PLACEMENT DES MATIÈRES SPÉCIFIQUES
-// =====================================================
+    if (matieresSpecifiques.length === 0) {
+        console.log(
+            "ℹ️ Aucune matière spécifique à placer."
+        );
+        return planning;
+    }
 
-function placerMatieresSpecifiques(planning) {
-    if (!planning || !planning.matieresSpecifiques) return planning;
+    const matieresNonPlacees = [];
 
-    planning.matieresSpecifiques.forEach(function (matiere) {
+    matieresSpecifiques.forEach(function (matiere) {
+
         const filiereCode = matiere.filiereCode;
-        let position = trouverPositionPourMatiereSpecifique(planning, filiereCode);
+
+        console.log(
+            "→ Placement :",
+            matiere.matiereLibelle,
+            "| Filière :",
+            filiereCode
+        );
+
+        const position =
+            trouverPositionPourMatiereSpecifique(
+                planning,
+                filiereCode
+            );
 
         if (!position) {
-            console.warn("⚠️ Impasse gloutonne pour :", matiere.matiereLibelle, "→ Tentative de backtracking...");
-            const backtrackingReussi = tenterBacktrackingPourMatiere(planning, filiereCode, matiere);
-
-            if (!backtrackingReussi) {
-                console.error("❌ Échec définitif de placement pour :", matiere.matiereLibelle);
-                return;
-            }
+            console.warn(
+                "⚠️ Impossible de placer la matière :",
+                matiere.matiereLibelle,
+                "| Filière :",
+                filiereCode
+            );
+            matieresNonPlacees.push(matiere);
             return;
         }
+
+        // -------------------------------------------------
+        // Placer réellement la matière dans la cellule
+        // -------------------------------------------------
 
         position.estOccupee = true;
         position.matiereLibelle = matiere.matiereLibelle;
         position.regimeCode = matiere.regimeCode;
         position.semestreCode = matiere.semestreCode;
+        position.filiereCode = filiereCode;
+
+        console.log(
+            "✓ Matière spécifique placée :",
+            matiere.matiereLibelle
+        );
+
+        console.log(
+            "  Filière :",
+            filiereCode
+        );
+
+        console.log(
+            "  Date :",
+            position.dateAffichage
+        );
+
+        console.log(
+            "  Créneau :",
+            position.creneauOrdre,
+            "(",
+            position.heureDebutAffichage,
+            "-",
+            position.heureFinAffichage,
+            ")"
+        );
     });
+
+    // -------------------------------------------------
+    // Backtracking léger : tenter de permuter avec une
+    // matière spécifique déjà placée de la même filière
+    // si certaines matières n'ont pas trouvé de place.
+    // -------------------------------------------------
+
+    if (matieresNonPlacees.length > 0) {
+        console.log(
+            "------------------------------------------"
+        );
+        console.log(
+            "🔄 TENTATIVE DE BACKTRACKING LÉGER (",
+            matieresNonPlacees.length,
+            "matière(s) non placée(s))"
+        );
+        console.log(
+            "------------------------------------------"
+        );
+
+        matieresNonPlacees.forEach(function (matiereNonPlacee) {
+
+            const filiereCode = matiereNonPlacee.filiereCode;
+            const filiere = planning.filieres.find(
+                function (f) {
+                    return f.filiereCode === filiereCode;
+                }
+            );
+
+            if (!filiere) {
+                return;
+            }
+
+            // Chercher une matière spécifique déjà placée
+            // dans la même filière qui pourrait être déplacée.
+            const cellulesCandidates = filiere.cellules.filter(
+                function (c) {
+                    return (
+                        c.estOccupee &&
+                        !c.estCommune &&
+                        c.matiereLibelle
+                    );
+                }
+            );
+
+            let echangeReussi = false;
+
+            for (let i = 0; i < cellulesCandidates.length && !echangeReussi; i++) {
+
+                const celluleExistante = cellulesCandidates[i];
+                const ancienneMatiere = {
+                    matiereLibelle: celluleExistante.matiereLibelle,
+                    regimeCode: celluleExistante.regimeCode,
+                    semestreCode: celluleExistante.semestreCode,
+                    filiereCode: filiereCode
+                };
+
+                // Libérer temporairement la cellule
+                celluleExistante.estOccupee = false;
+                celluleExistante.matiereLibelle = "";
+                celluleExistante.regimeCode = "";
+                celluleExistante.semestreCode = "";
+                celluleExistante.filiereCode = undefined;
+
+                // Essayer de placer la nouvelle matière
+                const nouvellePosition =
+                    trouverPositionPourMatiereSpecifique(
+                        planning,
+                        filiereCode
+                    );
+
+                if (nouvellePosition) {
+                    // Placer la matière non placée
+                    nouvellePosition.estOccupee = true;
+                    nouvellePosition.matiereLibelle =
+                        matiereNonPlacee.matiereLibelle;
+                    nouvellePosition.regimeCode =
+                        matiereNonPlacee.regimeCode;
+                    nouvellePosition.semestreCode =
+                        matiereNonPlacee.semestreCode;
+                    nouvellePosition.filiereCode = filiereCode;
+
+                    // Essayer de replacer l'ancienne matière
+                    const positionAncienne =
+                        trouverPositionPourMatiereSpecifique(
+                            planning,
+                            filiereCode
+                        );
+
+                    if (positionAncienne) {
+                        positionAncienne.estOccupee = true;
+                        positionAncienne.matiereLibelle =
+                            ancienneMatiere.matiereLibelle;
+                        positionAncienne.regimeCode =
+                            ancienneMatiere.regimeCode;
+                        positionAncienne.semestreCode =
+                            ancienneMatiere.semestreCode;
+                        positionAncienne.filiereCode = filiereCode;
+
+                        console.log(
+                            "✓ Échange réussi :",
+                            matiereNonPlacee.matiereLibelle,
+                            "↔",
+                            ancienneMatiere.matiereLibelle
+                        );
+                        echangeReussi = true;
+                    } else {
+                        // Annuler : remettre l'ancienne et libérer la nouvelle
+                        nouvellePosition.estOccupee = false;
+                        nouvellePosition.matiereLibelle = "";
+                        nouvellePosition.regimeCode = "";
+                        nouvellePosition.semestreCode = "";
+                        nouvellePosition.filiereCode = undefined;
+
+                        celluleExistante.estOccupee = true;
+                        celluleExistante.matiereLibelle =
+                            ancienneMatiere.matiereLibelle;
+                        celluleExistante.regimeCode =
+                            ancienneMatiere.regimeCode;
+                        celluleExistante.semestreCode =
+                            ancienneMatiere.semestreCode;
+                        celluleExistante.filiereCode = filiereCode;
+                    }
+                } else {
+                    // Remettre l'ancienne matière
+                    celluleExistante.estOccupee = true;
+                    celluleExistante.matiereLibelle =
+                        ancienneMatiere.matiereLibelle;
+                    celluleExistante.regimeCode =
+                        ancienneMatiere.regimeCode;
+                    celluleExistante.semestreCode =
+                        ancienneMatiere.semestreCode;
+                    celluleExistante.filiereCode = filiereCode;
+                }
+            }
+
+            if (!echangeReussi) {
+                console.warn(
+                    "⚠️ Backtracking échoué pour :",
+                    matiereNonPlacee.matiereLibelle
+                );
+            }
+        });
+    }
+
+    console.log("------------------------------------------");
+    console.log("✓ MATIÈRES SPÉCIFIQUES PLACÉES");
+    console.log("------------------------------------------");
 
     return planning;
 }
 
+
+
 // =====================================================
-// CONTRÔLE D'ÉQUILIBRE
+// CALCULER LA CHARGE DES CRÉNEAUX DU NIVEAU
 // =====================================================
+
+function calculerChargeDesCreneaux(planning) {
+
+    const charges = {};
+    const examensComptes = new Set();
+
+    // Initialiser tous les créneaux à zéro
+    planning.filieres.forEach(function (filiere) {
+        filiere.cellules.forEach(function (cellule) {
+            const creneau = cellule.creneauOrdre;
+
+            if (charges[creneau] === undefined) {
+                charges[creneau] = 0;
+            }
+        });
+    });
+
+    // Compter les épreuves réellement placées
+    planning.filieres.forEach(function (filiere) {
+
+        filiere.cellules.forEach(function (cellule) {
+
+            if (!cellule.estOccupee) {
+                return;
+            }
+
+            const creneau = cellule.creneauOrdre;
+
+            // Une épreuve commune est comptée une seule fois
+            const cleExamen = cellule.estCommune
+                ? "COMMUNE|" +
+                  cellule.dateAffichage + "|" +
+                  creneau + "|" +
+                  cellule.matiereLibelle
+                : "SPECIFIQUE|" +
+                  filiere.filiereCode + "|" +
+                  cellule.dateAffichage + "|" +
+                  creneau + "|" +
+                  cellule.matiereLibelle;
+
+            if (examensComptes.has(cleExamen)) {
+                return;
+            }
+
+            examensComptes.add(cleExamen);
+            charges[creneau]++;
+        });
+    });
+
+    console.log("------------------------------------------");
+    console.log("CHARGE DES CRÉNEAUX — ÉPREUVES DISTINCTES");
+    console.log("------------------------------------------");
+
+    console.table(charges);
+
+    return charges;
+}
+
 
 function verifierEquilibreGlobalCreneaux(planning) {
-    const charges = calculerChargeDesCreneaux(planning);
-    const valeurs = Object.values(charges);
-    if (!valeurs.length) return null;
 
-    const ecart = Math.max(...valeurs) - Math.min(...valeurs);
+    const charges = calculerChargeDesCreneaux(planning);
+    const valeursCharges = Object.values(charges);
+
+    if (valeursCharges.length === 0) {
+        console.warn(
+            "⚠️ Aucune charge de créneau à vérifier."
+        );
+        return null;
+    }
+
+    const chargeMin = Math.min(...valeursCharges);
+    const chargeMax = Math.max(...valeursCharges);
+    const ecart = chargeMax - chargeMin;
+
     const equilibreAtteint = ecart <= 1;
 
-    console.log("Équilibre global des créneaux :", charges, "| Écart :", ecart);
-    return { equilibreAtteint, ecart, charges };
-}
+    console.log(
+        "Équilibre global des créneaux :",
+        charges,
+        "| Écart :",
+        ecart
+    );
 
-// =====================================================
-// PERSISTANCE FIRESTORE (CHARGEMENT, ENREGISTREMENT, PUBLICATION)
-// =====================================================
+    if (!equilibreAtteint) {
 
-async function chargerCalendrier(niveauCode, semestreCode, regimeCode, sessionCode) {
-    const session = obtenirSession(sessionCode);
-    if (!session) return null;
+        const detail = Object.entries(charges)
+            .sort(function (a, b) {
+                return Number(a[0]) - Number(b[0]);
+            })
+            .map(function ([creneau, charge]) {
+                return "Créneau " + creneau +
+                    " : " + charge + " épreuve(s)";
+            })
+            .join("\n");
 
-    const idCalendrier = `calendrier_${session.anneeUniversitaire}_${niveauCode}_${semestreCode}_${regimeCode}_${sessionCode}`;
-    const ref = doc(db, "calendriers", idCalendrier);
-    const snap = await getDoc(ref);
+        alert(
+            "L'équilibre global des créneaux non atteint.\n\n" +
+            "Écart global : " + ecart + " épreuve(s).\n\n" +
+            detail +
+            "\n\nUne correction manuelle du planning est recommandée."
+        );
 
-    if (!snap.exists()) return null;
-    const donnees = snap.data();
+    } else {
+
+        console.log(
+            "✓ Équilibre global des créneaux atteint."
+        );
+    }
 
     return {
-        ...donnees.planning,
-        anneeUniversitaire: donnees.anneeUniversitaire || session.anneeUniversitaire
+        equilibreAtteint: equilibreAtteint,
+        ecart: ecart,
+        charges: charges
     };
 }
+// =====================================================
+// CONSTRUIRE LA STRUCTURE DU NIVEAU
+// =====================================================
 
-/**
- * [P0 - Propreté] Suppression du bloc de code mort dupliqué
- */
-async function enregistrerCalendrier(planning) {
-    if (!planning || !planning.niveauCode || !planning.sessionCode) {
-        console.error("❌ Données de planning insuffisantes.");
+function construireStructureNiveau(
+    niveauCode
+) {
+
+    const structure = {
+
+        niveauCode:
+            niveauCode,
+
+        filieres: []
+
+    };
+
+
+    const filieres =
+        obtenirFilieresDuNiveau(
+            niveauCode
+        );
+
+
+    filieres.forEach(
+        function (filiereCode) {
+
+            const matieres =
+                obtenirMatieresDeFiliere(
+
+                    niveauCode,
+
+                    filiereCode
+
+                );
+
+
+            structure.filieres.push({
+
+                filiereCode:
+                    filiereCode,
+
+                matieres:
+                    matieres
+
+            });
+
+        }
+    );
+
+
+    return structure;
+
+}
+
+
+// =====================================================
+// CONSTRUIRE TOUTE LA STRUCTURE
+// =====================================================
+
+function construireStructureGeneration() {
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "STRUCTURE DE PLANIFICATION"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    const niveaux =
+        obtenirNiveaux();
+
+
+    console.log(
+        "Niveaux détectés :",
+        niveaux
+    );
+
+
+    const structure = [];
+
+
+    niveaux.forEach(
+        function (niveauCode) {
+
+            const niveau =
+                construireStructureNiveau(
+                    niveauCode
+                );
+
+
+            structure.push(
+                niveau
+            );
+
+
+            console.log(
+                "------------------------------------------"
+            );
+
+
+            console.log(
+                "Niveau :",
+                niveauCode
+            );
+
+
+            console.log(
+                "Filières :",
+                niveau.filieres.map(
+                    function (filiere) {
+
+                        return filiere.filiereCode;
+
+                    }
+                )
+            );
+
+
+            niveau.filieres.forEach(
+                function (filiere) {
+
+                    console.log(
+
+                        "  Filière :",
+
+                        filiere.filiereCode
+
+                    );
+
+
+                    console.log(
+
+                        "  Matières :",
+
+                        filiere.matieres.map(
+                            function (matiere) {
+
+                                return (
+                                    matiere.matiereLibelle
+                                );
+
+                            }
+                        )
+
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    console.log(
+        "------------------------------------------"
+    );
+
+    console.log(
+        "✓ STRUCTURE CONSTRUITE"
+    );
+
+    console.log(
+        "------------------------------------------"
+    );
+
+
+    return structure;
+
+}
+
+
+// =====================================================
+// PRÉPARER LE MOTEUR
+// =====================================================
+
+async function preparerGeneration() {
+
+    console.log("");
+
+    console.log(
+        "=========================================="
+    );
+
+    console.log(
+        "MOTEUR DE GÉNÉRATION DES EXAMENS"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    const chargement =
+        await chargerDonneesGeneration();
+
+
+    if (!chargement) {
+
+        console.error(
+            "❌ Impossible de préparer la génération."
+        );
+
+        return null;
+
+    }
+
+
+    const verification =
+        verifierDonneesGeneration();
+
+
+    if (!verification) {
+
+        console.error(
+            "❌ Les données ne sont pas suffisantes."
+        );
+
+        return null;
+
+    }
+
+
+    const structure =
+        construireStructureGeneration();
+
+
+    console.log("");
+
+    console.log(
+        "✓ MOTEUR PRÊT"
+    );
+
+    console.log(
+        "=========================================="
+    );
+
+
+    return structure;
+
+}
+
+// =====================================================
+// CHARGER UN CALENDRIER DEPUIS FIRESTORE
+// =====================================================
+
+async function chargerCalendrier(
+    niveauCode,
+    semestreCode,
+    regimeCode,
+    sessionCode
+) {
+
+    const session =
+        obtenirSession(sessionCode);
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            sessionCode
+        );
+
         return null;
     }
 
-    const session = obtenirSession(planning.sessionCode);
-    if (!session) return null;
+    const anneeUniversitaire =
+        session.anneeUniversitaire;
 
-    const idCalendrier = `calendrier_${session.anneeUniversitaire}_${planning.niveauCode}_${session.semestreCode}_${session.regimeCode}_${planning.sessionCode}`;
-    const referenceCalendrier = doc(db, "calendriers", idCalendrier);
-    const docExistant = await getDoc(referenceCalendrier);
+    const idCalendrier =
+        "calendrier_" +
+        anneeUniversitaire + "_" +
+        niveauCode + "_" +
+        semestreCode + "_" +
+        regimeCode + "_" +
+        sessionCode;
+
+    console.log(
+        "🔎 Recherche du calendrier dans Firestore :",
+        idCalendrier
+    );
+
+    const referenceCalendrier =
+        doc(
+            db,
+            "calendriers",
+            idCalendrier
+        );
+
+    const documentCalendrier =
+        await getDoc(
+            referenceCalendrier
+        );
+
+    if (!documentCalendrier.exists()) {
+
+        console.log(
+            "ℹ️ Aucun calendrier enregistré pour :",
+            idCalendrier
+        );
+
+        return null;
+    }
+
+    const donnees =
+        documentCalendrier.data();
+
+    console.log(
+        "✓ Calendrier trouvé dans Firestore :",
+        idCalendrier
+    );
+
+   
+return {
+    ...donnees.planning,
+    anneeUniversitaire:
+        donnees.anneeUniversitaire ||
+        anneeUniversitaire
+};
+}
+
+
+// =====================================================
+// ENREGISTRER UN CALENDRIER DANS FIRESTORE
+// =====================================================
+// Un document = un calendrier complet
+//
+// ID dynamique :
+// calendrier_[anneeUniversitaire]_L2_S2_CC_DS_S2
+//
+// Le calendrier est enregistré comme brouillon.
+// =====================================================
+
+async function enregistrerCalendrier(planning) {
+
+    console.log("==========================================");
+    console.log("ENREGISTREMENT DU CALENDRIER");
+    console.log("==========================================");
+
+    // -------------------------------------------------
+    // Vérifier le planning
+    // -------------------------------------------------
+
+    if (!planning) {
+
+        console.error(
+            "❌ Aucun planning à enregistrer."
+        );
+
+        return null;
+    }
+
+    if (!planning.niveauCode) {
+
+        console.error(
+            "❌ Niveau du planning absent."
+        );
+
+        return null;
+    }
+
+    if (!planning.sessionCode) {
+
+        console.error(
+            "❌ Session du planning absente."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer la session
+    // -------------------------------------------------
+
+    const session =
+        obtenirSession(
+            planning.sessionCode
+        );
+
+    if (!session) {
+
+        console.error(
+            "❌ Session introuvable :",
+            planning.sessionCode
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer l'année universitaire
+    // -------------------------------------------------
+
+    const anneeUniversitaire =
+        session.anneeUniversitaire;
+
+    if (!anneeUniversitaire) {
+
+        console.error(
+            "❌ Année universitaire absente de la session."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Récupérer semestre et régime
+    // -------------------------------------------------
+
+    const semestreCode =
+        session.semestreCode;
+
+    const regimeCode =
+        session.regimeCode;
+
+    if (!semestreCode || !regimeCode) {
+
+        console.error(
+            "❌ Semestre ou régime absent de la session."
+        );
+
+        return null;
+    }
+
+    // -------------------------------------------------
+    // Construire l'identifiant du calendrier
+    // -------------------------------------------------
+
+    const idCalendrier =
+        "calendrier_" +
+        anneeUniversitaire +
+        "_" +
+        planning.niveauCode +
+        "_" +
+        semestreCode +
+        "_" +
+        regimeCode +
+        "_" +
+        planning.sessionCode;
+
+    console.log(
+        "ID du calendrier :",
+        idCalendrier
+    );
+
+    // -------------------------------------------------
+    // Référence Firestore
+    // -------------------------------------------------
+
+    const referenceCalendrier =
+        doc(
+            db,
+            "calendriers",
+            idCalendrier
+        );
+    const documentExistant =
+    await getDoc(
+        referenceCalendrier
+    );
+
+if (documentExistant.exists()) {
+
+    console.log(
+        "⚠️ Le calendrier existe déjà dans Firestore :",
+        idCalendrier
+    );
+
+} else {
+
+    console.log(
+        "✓ Aucun calendrier existant. Création du calendrier :",
+        idCalendrier
+    );
+}
+
+
+    // -------------------------------------------------
+    // Construire le document
+    // -------------------------------------------------
+
+    const controleInitial = {
+
+        valide: false,
+        dateControle: null,
+        matieresNonPlacees: [],
+        doublons: [],
+        erreursCommunes: [],
+        erreursCreneauxSuccessifs: [],
+        ecartEquilibrage: null
+
+    };
 
     const documentCalendrier = {
-        anneeUniversitaire: session.anneeUniversitaire,
+
+        anneeUniversitaire: anneeUniversitaire,
+
         niveauCode: planning.niveauCode,
-        semestreCode: session.semestreCode,
-        regimeCode: session.regimeCode,
+
+        semestreCode: semestreCode,
+
+        regimeCode: regimeCode,
+
         sessionCode: planning.sessionCode,
+
         sessionLibelle: session.sessionLibelle || "",
+
+        // Toute modification repasse le calendrier en brouillon
         statut: "brouillon",
-        creeLe: docExistant.exists() ? docExistant.data().creeLe : serverTimestamp(),
+
+        // Conserver la date de création si le document existe
+        creeLe: documentExistant.exists()
+            ? documentExistant.data().creeLe
+            : serverTimestamp(),
+
         modifieLe: serverTimestamp(),
+
+        // Remplacer le planning par sa nouvelle version
         planning: planning,
-        controle: {
-            valide: false,
-            dateControle: null
-        }
+
+        // Invalider l'ancien contrôle
+        controle: controleInitial
+
     };
 
+    // -------------------------------------------------
+    // Enregistrer ou mettre à jour dans Firestore
+    // -------------------------------------------------
+
     try {
-        if (docExistant.exists()) {
-            await updateDoc(referenceCalendrier, documentCalendrier);
-            console.log("✓ Calendrier mis à jour :", idCalendrier);
+
+        if (documentExistant.exists()) {
+
+            // Mise à jour du calendrier individuel existant
+            await updateDoc(
+                referenceCalendrier,
+                documentCalendrier
+            );
+
+            console.log(
+                "✓ Calendrier existant mis à jour :",
+                idCalendrier
+            );
+
         } else {
-            await setDoc(referenceCalendrier, documentCalendrier);
-            console.log("✓ Nouveau calendrier créé :", idCalendrier);
+
+            // Création d'un nouveau calendrier individuel
+            await setDoc(
+                referenceCalendrier,
+                documentCalendrier
+            );
+
+            console.log(
+                "✓ Nouveau calendrier créé :",
+                idCalendrier
+            );
+
         }
 
+        console.log(
+            "✓ Calendrier enregistré dans Firestore."
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Niveau :",
+            planning.niveauCode
+        );
+
+        console.log(
+            "Session :",
+            planning.sessionCode
+        );
+
+        console.log(
+            "Statut : brouillon"
+        );
+
         return {
+
             id: idCalendrier,
-            ...documentCalendrier
+
+            anneeUniversitaire: anneeUniversitaire,
+
+            niveauCode: planning.niveauCode,
+
+            semestreCode: semestreCode,
+
+            regimeCode: regimeCode,
+
+            sessionCode: planning.sessionCode,
+
+            statut: "brouillon"
+
         };
+
     } catch (erreur) {
-        console.error("❌ Erreur lors de l'enregistrement :", erreur);
+
+        console.error(
+            "❌ Erreur lors de l'enregistrement du calendrier :",
+            erreur
+        );
+
         return null;
     }
+
 }
 
+
+// =====================================================
+// PUBLIER UN CALENDRIER DANS FIRESTORE
+// =====================================================
+
 async function publierCalendrier(idCalendrier) {
-    if (!idCalendrier) return false;
+
+    console.log("==========================================");
+    console.log("📢 PUBLICATION DU CALENDRIER");
+    console.log("==========================================");
+
+    if (!idCalendrier) {
+
+        console.error(
+            "❌ Aucun calendrier à publier."
+        );
+
+        return false;
+    }
+
+    console.log(
+        "ID du calendrier à publier :",
+        idCalendrier
+    );
 
     try {
-        const reference = doc(db, "calendriers", idCalendrier);
-        const document = await getDoc(reference);
 
-        if (!document.exists() || document.data().statut !== "brouillon") {
-            console.warn("⚠️ Document inexistant ou déjà publié.");
+        // -------------------------------------------------
+        // Référence du calendrier
+        // -------------------------------------------------
+
+        const referenceCalendrier =
+            doc(
+                db,
+                "calendriers",
+                idCalendrier
+            );
+
+        // -------------------------------------------------
+        // Lire le calendrier existant
+        // -------------------------------------------------
+
+        const documentCalendrier =
+            await getDoc(
+                referenceCalendrier
+            );
+
+        if (!documentCalendrier.exists()) {
+
+            console.error(
+                "❌ Calendrier introuvable :",
+                idCalendrier
+            );
+
             return false;
         }
 
-        await updateDoc(reference, {
-            statut: "publie",
-            modifieLe: serverTimestamp()
-        });
+        const donneesCalendrier =
+            documentCalendrier.data();
 
-        console.log("✅ Calendrier publié :", idCalendrier);
+        console.log(
+            "✓ Calendrier trouvé :",
+            idCalendrier
+        );
+
+        console.log(
+            "Statut actuel :",
+            donneesCalendrier.statut
+        );
+
+        // -------------------------------------------------
+        // Vérifier qu'il s'agit bien d'un brouillon
+        // -------------------------------------------------
+
+        if (
+            donneesCalendrier.statut !==
+            "brouillon"
+        ) {
+
+            console.warn(
+                "⚠️ Le calendrier n'est pas un brouillon."
+            );
+
+            console.warn(
+                "Statut actuel :",
+                donneesCalendrier.statut
+            );
+
+            return false;
+        }
+
+        // -------------------------------------------------
+        // Publier
+        // -------------------------------------------------
+
+        await setDoc(
+            referenceCalendrier,
+            {
+                statut: "publie",
+                modifieLe: serverTimestamp()
+            },
+            {
+                merge: true
+            }
+        );
+
+        console.log(
+            "------------------------------------------"
+        );
+
+        console.log(
+            "✅ CALENDRIER PUBLIÉ DANS FIRESTORE"
+        );
+
+        console.log(
+            "Document :",
+            idCalendrier
+        );
+
+        console.log(
+            "Statut : publie"
+        );
+
+        console.log(
+            "------------------------------------------"
+        );
+
         return true;
-    } catch (e) {
-        console.error("❌ Erreur publication :", e);
+
+    } catch (erreur) {
+
+        console.error(
+            "❌ Erreur lors de la publication :",
+            erreur
+        );
+
         return false;
     }
 }
-
 // =====================================================
-// EXPOSITION API (POUR MODULES ET WINDOW)
+// ACCÈS AUX DONNÉES CHARGÉES POUR LES AUTRES MODULES
 // =====================================================
 
-function definirDernierCalendrierEnregistre(id) {
-    dernierCalendrierEnregistre = id;
+function obtenirDonneesGeneration() {
+
+    return donneesGeneration;
+
+}
+// =====================================================
+// EXPOSER LES FONCTIONS
+// =====================================================
+function definirDernierCalendrierEnregistre(idCalendrier) {
+
+    dernierCalendrierEnregistre =
+        idCalendrier;
+
+    console.log(
+        "✓ Dernier calendrier enregistré défini :",
+        dernierCalendrierEnregistre
+    );
 }
 
-const apiGeneration = {
-    chargerDonnees: chargerDonneesGeneration,
-    verifierDonnees: verifierDonneesGeneration,
-    obtenirDonnees: () => donneesGeneration,
+
+// =====================================================
+// EXPORTS ES MODULES (architecture propre)
+// + exposition window pour compatibilité UI existante
+// =====================================================
+
+export {
+    chargerDonneesGeneration,
+    obtenirDonneesGeneration,
+    verifierDonneesGeneration,
     obtenirNiveaux,
-    obtenirFilieres: obtenirFilieresDuNiveau,
-    obtenirMatieres: obtenirMatieresDeFiliere,
+    obtenirFilieresDuNiveau,
+    obtenirMatieresDeFiliere,
+    identifierMatieresCommunes,
+    preparerMatieresPourPlanification,
+    preparerMatieresPourSession,
     obtenirSession,
     obtenirCreneauxDeSession,
     genererListeDates,
     construireGrilleSession,
     construireMatricePlanning,
     placerMatieresCommunes,
-    placerMatieresSpecifiques,
+    trouverPositionPourMatiereSpecifique,
     calculerChargeDesCreneaux,
-    verifierEquilibreGlobalCreneaux,
+    placerMatieresSpecifiques,
+    construireStructureGeneration,
     chargerCalendrier,
     enregistrerCalendrier,
     publierCalendrier,
+    preparerGeneration,
     definirDernierCalendrierEnregistre
 };
 
-window.generationExamens = apiGeneration;
+// Compatibilité avec l'UI existante (à migrer progressivement)
+if (typeof window !== "undefined") {
+    window.generationExamens = {
+        definirDernierCalendrierEnregistre,
+        chargerDonnees: chargerDonneesGeneration,
+        obtenirDonnees: obtenirDonneesGeneration,
+        verifierDonnees: verifierDonneesGeneration,
+        obtenirNiveaux,
+        obtenirFilieres: obtenirFilieresDuNiveau,
+        obtenirMatieres: obtenirMatieresDeFiliere,
+        identifierMatieresCommunes,
+        preparerMatieresPourPlanification,
+        obtenirSession,
+        obtenirCreneauxDeSession,
+        genererListeDates,
+        construireGrilleSession,
+        construireMatricePlanning,
+        placerMatieresCommunes,
+        preparerMatieresPourSession,
+        trouverPositionPourMatiereSpecifique,
+        calculerChargeDesCreneaux,
+        placerMatieresSpecifiques,
+        construireStructure: construireStructureGeneration,
+        chargerCalendrier,
+        enregistrerCalendrier,
+        publierCalendrier,
+        preparer: preparerGeneration
+    };
+}
+
 
 // =====================================================
-// INITIALISATION & GESTION DES ÉVÉNEMENTS UI
+// INITIALISATION
 // =====================================================
 
-document.addEventListener("DOMContentLoaded", async function () {
-    console.log("✓ generation.js initialisé.");
-    await chargerDonneesGeneration();
+document.addEventListener(
+    "DOMContentLoaded",
+    async function () {
 
-    const boutonGenerer = document.getElementById("btnGenererCalendrier");
-    const boutonPublier = document.getElementById("btnPublierCalendrierAdmin");
+        console.log(
+            "✓ generation.js chargé."
+        );
 
-    if (boutonGenerer) {
-        boutonGenerer.addEventListener("click", async function () {
-            // [P1 - UI/UX Dynamique] Récupération dynamique depuis l'interface avec repli de sécurité
-            const selectNiveau = document.getElementById("selectNiveau") || document.getElementById("filtreNiveau");
-            const selectSession = document.getElementById("selectSession") || document.getElementById("filtreSession");
+        await preparerGeneration();
 
-            const niveauCode = selectNiveau ? selectNiveau.value : "L1";
-            const sessionCode = selectSession ? selectSession.value : "PRINCIPALE_S1";
+        // -------------------------------------------------
+        // BOUTON : GÉNÉRER LE CALENDRIER
+        // -------------------------------------------------
 
-            if (!niveauCode || !sessionCode) {
-                alert("⚠️ Veuillez sélectionner un niveau et une session valides.");
-                return;
-            }
+        const boutonGenerer =
+            document.getElementById(
+                "btnGenererCalendrier"
+            );
 
-            console.log(`🚀 Lancement : Niveau=${niveauCode}, Session=${sessionCode}`);
+        console.log(
+            "🔎 Bouton trouvé :",
+            boutonGenerer
+        );
 
-            const planning = construireMatricePlanning(niveauCode, sessionCode);
-            if (!planning) return;
+        if (!boutonGenerer) {
 
-            placerMatieresCommunes(planning);
-            placerMatieresSpecifiques(planning);
-            verifierEquilibreGlobalCreneaux(planning);
+            console.error(
+                "❌ Bouton btnGenererCalendrier introuvable."
+            );
 
-            // [P1 - Architecture] Contrôle qualité via import ou fallback
-            const serviceControle = moduleControleExamens || window.controleExamens;
-            if (serviceControle && typeof serviceControle.verifierPlanningGlobal === "function") {
-                const resultat = serviceControle.verifierPlanningGlobal(planning);
-                if (!resultat || !resultat.valide) {
-                    console.warn("⚠️ Planning non validé par les contrôles qualité.");
+            return;
+        }
+
+        boutonGenerer.addEventListener(
+            "click",
+            async function () {
+
+                console.log(
+                    "=========================================="
+                );
+
+                console.log(
+                    "🚀 BOUTON GÉNÉRER LE CALENDRIER"
+                );
+
+                console.log(
+                    "=========================================="
+                );
+
+                // =================================================
+                // PARAMÈTRES DE TEST
+                // =================================================
+
+                const niveauCode = "L1";
+
+                const sessionCode = "PRINCIPALE_S1";
+
+                console.log(
+                    "Niveau :",
+                    niveauCode
+                );
+
+                console.log(
+                    "Session :",
+                    sessionCode
+                );
+
+                // =================================================
+                // CONSTRUCTION DE LA MATRICE
+                // =================================================
+
+                const planning =
+                    construireMatricePlanning(
+                        niveauCode,
+                        sessionCode
+                    );
+
+                // =================================================
+                // PLACEMENT DES MATIÈRES COMMUNES
+                // =================================================
+
+                placerMatieresCommunes(
+                    planning
+                );
+
+                console.log(
+                    "✓ Matières communes placées."
+                );
+
+                console.log(
+                    "Planning après placement des matières communes :",
+                    planning
+                );
+
+                // =================================================
+                // PLACEMENT DES MATIÈRES SPÉCIFIQUES
+                // =================================================
+
+               console.log("🔎 AVANT PLACEMENT SPÉCIFIQUE");
+
+placerMatieresSpecifiques(planning);
+
+console.log("🔎 APRÈS PLACEMENT SPÉCIFIQUE");
+
+// Vérification finale de l'équilibre global.
+verifierEquilibreGlobalCreneaux(planning);
+
+console.log("✓ Matières spécifiques placées.");
+
+console.log(
+    "Planning après placement des matières spécifiques :",
+    planning
+);
+
+                // =================================================
+                // CONTRÔLE GLOBAL DU PLANNING
+                // (dépend du module controleExamens s'il est chargé)
+                // =================================================
+
+                let resultatControle = { valide: true };
+
+                if (
+                    typeof window !== "undefined" &&
+                    window.controleExamens &&
+                    typeof window.controleExamens.verifierPlanningGlobal === "function"
+                ) {
+                    resultatControle =
+                        window.controleExamens.verifierPlanningGlobal(
+                            planning
+                        );
+
+                    console.log(
+                        "✓ Résultat du contrôle global :",
+                        resultatControle
+                    );
+                } else {
+                    console.warn(
+                        "⚠️ Module controleExamens non disponible. Contrôle global ignoré."
+                    );
+                }
+
+                // =================================================
+                // VÉRIFIER QUE LE PLANNING EST VALIDE
+                // =================================================
+
+                if (
+                    !resultatControle ||
+                    !resultatControle.valide
+                ) {
+
+                    console.warn(
+                        "⚠️ Le planning n'est pas valide. Enregistrement annulé."
+                    );
+
                     return;
                 }
-            }
 
-            const enregistrement = await enregistrerCalendrier(planning);
-            if (enregistrement) {
-                dernierCalendrierEnregistre = enregistrement.id;
-                if (boutonPublier) boutonPublier.disabled = false;
-                alert("✓ Planning généré et enregistré en brouillon avec succès !");
-            }
-        });
-    }
+                // =================================================
+                // ENREGISTRER LE CALENDRIER
+                // =================================================
 
-    if (boutonPublier) {
-        boutonPublier.addEventListener("click", async function () {
-            if (!dernierCalendrierEnregistre) return;
-            const reussite = await publierCalendrier(dernierCalendrierEnregistre);
-            if (reussite) {
-                boutonPublier.disabled = true;
-                alert("🎉 Le calendrier a été officiellement publié !");
+                const calendrierEnregistre =
+                    await enregistrerCalendrier(
+                        planning
+                    );
+
+                if (calendrierEnregistre) {
+
+                    dernierCalendrierEnregistre =
+                        calendrierEnregistre.id;
+
+                    console.log(
+                        "✅ CALENDRIER ENREGISTRÉ COMME BROUILLON"
+                    );
+
+                    console.log(
+                        "📌 Dernier calendrier enregistré :",
+                        dernierCalendrierEnregistre
+                    );
+
+                    // -------------------------------------------------
+                    // ACTIVER LE BOUTON PUBLIER
+                    // -------------------------------------------------
+
+                    const boutonPublier =
+                        document.getElementById(
+                            "btnPublierCalendrierAdmin"
+                        );
+
+                    if (boutonPublier) {
+
+                        boutonPublier.disabled = false;
+
+                        console.log(
+                            "✓ Bouton Publier activé."
+                        );
+                    }
+
+                } else {
+
+                    console.error(
+                        "❌ Échec de l'enregistrement du calendrier."
+                    );
+                }
+
             }
-        });
+        );
+
+        console.log(
+            "✓ Bouton Générer le calendrier connecté."
+        );
+
+
+        // =================================================
+        // BOUTON : PUBLIER LE CALENDRIER
+        // =================================================
+
+        const boutonPublier =
+            document.getElementById(
+                "btnPublierCalendrierAdmin"
+            );
+
+        console.log(
+            "🔎 Bouton Publier trouvé :",
+            boutonPublier
+        );
+
+        if (boutonPublier) {
+
+            boutonPublier.addEventListener(
+                "click",
+                async function () {
+
+                    console.log(
+                        "=========================================="
+                    );
+
+                    console.log(
+                        "📢 BOUTON PUBLIER LE CALENDRIER"
+                    );
+
+                    console.log(
+                        "=========================================="
+                    );
+
+                    // -------------------------------------------------
+                    // Vérifier qu'un calendrier existe
+                    // -------------------------------------------------
+
+                    if (!dernierCalendrierEnregistre) {
+
+                        console.error(
+                            "❌ Aucun calendrier enregistré à publier."
+                        );
+
+                        return;
+                    }
+
+                    // -------------------------------------------------
+                    // Publier
+                    // -------------------------------------------------
+
+                    const publicationOK =
+                        await publierCalendrier(
+                            dernierCalendrierEnregistre
+                        );
+
+                    if (publicationOK) {
+
+                        console.log(
+                            "🎉 PUBLICATION TERMINÉE AVEC SUCCÈS."
+                        );
+
+                        boutonPublier.disabled = true;
+
+                    } else {
+
+                        console.error(
+                            "❌ La publication a échoué."
+                        );
+                    }
+
+                }
+            );
+
+            console.log(
+                "✓ Bouton Publier connecté."
+            );
+        }
+
     }
-});
+);
+
+
+
