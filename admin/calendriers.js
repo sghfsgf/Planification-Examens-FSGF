@@ -1131,48 +1131,57 @@ boutonRegenerer.addEventListener(
 
                 return;
             }
-            // -----------------------------------------
-            // Contrôle global avant enregistrement
-            // Sauf après un déplacement manuel d'une matière spécifique
-            // -----------------------------------------
-                  if (
-                  !deplacementMatiereSpecifiqueEffectue &&
-                 !affectationAmphiManuelleEffectuee
-                   ) {
 
-                const resultatControle =
-                    controleExamens.verifierPlanningGlobal(
-                        planning
-                    );
+// -----------------------------------------
+// Contrôle global avant enregistrement
+// -----------------------------------------
 
-                console.log(
-                    "Résultat du contrôle avant enregistrement :",
-                    resultatControle
-                );
+const resultatControle =
+    controleExamens.verifierPlanningGlobal(
+        planning
+    );
 
-                // -----------------------------------------
-                // Refuser si le planning n'est pas valide
-                // -----------------------------------------
+console.log(
+    "Résultat du contrôle avant enregistrement :",
+    resultatControle
+);
 
-                if (
-                    !resultatControle ||
-                    !resultatControle.valide
-                ) {
+// -----------------------------------------
+// Afficher les matières placées ou manquantes
+// -----------------------------------------
 
-                    console.warn(
-                        "⚠️ Planning non valide : enregistrement refusé."
-                    );
+afficherEtatMatieresCalendrier(resultatControle);
 
-                    return;
-                }
+// -----------------------------------------
+// Refuser uniquement les anomalies bloquantes
+// Sauf après une modification manuelle
+// -----------------------------------------
 
-              } else {
+if (
+    !deplacementMatiereSpecifiqueEffectue &&
+    !affectationAmphiManuelleEffectuee
+) {
 
-                           console.log(
-                                 "📘 Modification manuelle détectée : contrôle global ignoré."
-                           );
+    if (
+        !resultatControle ||
+        !resultatControle.valide
+    ) {
 
-                     }
+        console.warn(
+            "⚠️ Anomalies bloquantes : enregistrement refusé."
+        );
+
+        return;
+    }
+
+} else {
+
+    console.log(
+        "📘 Modification manuelle détectée : contrôle global ignoré."
+    );
+
+}
+            
 
             // -----------------------------------------
             // Enregistrement Firestore
