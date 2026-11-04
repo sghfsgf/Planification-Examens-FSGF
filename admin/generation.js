@@ -2033,37 +2033,27 @@ function placerMatieresSpecifiques(planning) {
     console.log("------------------------------------------");
 
     if (!planning) {
-
-    console.error(
-        "❌ Planning introuvable."
-    );
-
-    return planning;
-}
-
-    const matieresSpecifiques =
-    planning.matieresSpecifiques || [];
-    const matieresNonPlacees = [];
-    
-    if (matieresSpecifiques.length === 0) {
-
-        console.log(
-            "ℹ️ Aucune matière spécifique à placer."
-        );
-
+        console.error("❌ Planning introuvable.");
         return planning;
     }
+
+    const matieresSpecifiques =
+        planning.matieresSpecifiques || [];
+
+    const matieresNonPlacees = [];
+
+    if (matieresSpecifiques.length === 0) {
+        console.log("ℹ️ Aucune matière spécifique à placer.");
+        return planning;
+    }
+
+    // -------------------------------------------------
+    // 1. PLACEMENT INITIAL
+    // -------------------------------------------------
 
     matieresSpecifiques.forEach(function (matiere) {
 
         const filiereCode = matiere.filiereCode;
-
-        console.log(
-            "→ Placement :",
-            matiere.matiereLibelle,
-            "| Filière :",
-            filiereCode
-        );
 
         const position =
             trouverPositionPourMatiereSpecifique(
@@ -2071,23 +2061,18 @@ function placerMatieresSpecifiques(planning) {
                 filiereCode
             );
 
-      if (!position) {
+        if (!position) {
 
-    console.warn(
-        "⚠️ Impossible de placer la matière :",
-        matiere.matiereLibelle,
-        "| Filière :",
-        filiereCode
-    );
+            console.warn(
+                "⚠️ Matière non placée :",
+                matiere.matiereLibelle,
+                "|",
+                filiereCode
+            );
 
-    matieresNonPlacees.push(matiere);
-
-    return;
-}
-
-        // -------------------------------------------------
-        // Placer réellement la matière dans la cellule
-        // -------------------------------------------------
+            matieresNonPlacees.push(matiere);
+            return;
+        }
 
         position.estOccupee = true;
         position.matiereLibelle = matiere.matiereLibelle;
@@ -2096,51 +2081,212 @@ function placerMatieresSpecifiques(planning) {
         position.filiereCode = filiereCode;
 
         console.log(
-            "✓ Matière spécifique placée :",
-            matiere.matiereLibelle
-        );
-
-        console.log(
-            "  Filière :",
-            filiereCode
-        );
-
-        console.log(
-            "  Date :",
-            position.dateAffichage
-        );
-
-        console.log(
-            "  Créneau :",
-            position.creneauOrdre,
-            "(",
-            position.heureDebutAffichage,
-            "-",
-            position.heureFinAffichage,
-            ")"
+            "✓ Matière placée :",
+            matiere.matiereLibelle,
+            "|",
+            filiereCode,
+            "|",
+            position.dateAffichage,
+            "| Créneau",
+            position.creneauOrdre
         );
     });
 
-    
     // -------------------------------------------------
-    // Backtracking léger : tenter de permuter avec une
-    // matière spécifique déjà placée de la même filière.
-    // Tester directement la cellule libérée.
+    // 2. SAUVEGARDE ET RESTAURATION
     // -------------------------------------------------
 
-    if (matieresNonPlacees.length > 0) {
+    function sauvegarderCellule(cellule) {
 
-        console.log("------------------------------------------");
-        console.log(
-            "🔄 TENTATIVE DE BACKTRACKING LÉGER (",
-            matieresNonPlacees.length,
-            "matière(s) non placée(s))"
+        return {
+            estOccupee: cellule.estOccupee,
+            estCommune: cellule.estCommune,
+            matiereLibelle: cellule.matiereLibelle,
+            regimeCode: cellule.regimeCode,
+            semestreCode: cellule.semestreCode,
+            filiereCode: cellule.filiereCode
+        };
+    }
+
+    function restaurerCellule(cellule, sauvegarde) {
+
+        cellule.estOccupee = sauvegarde.estOccupee;
+        cellule.estCommune = sauvegarde.estCommune;
+        cellule.matiereLibelle = sauvegarde.matiereLibelle;
+        cellule.regimeCode = sauvegarde.regimeCode;
+        cellule.semestreCode = sauvegarde.semestreCode;
+        cellule.filiereCode = sauvegarde.filiereCode;
+    }
+
+    // -------------------------------------------------
+    // 3. VÉRIFIER LES CRÉNEAUX SUCCESSIFS
+    // -------------------------------------------------
+
+    function positionRespecteContraintes(
+        filiere,
+        cellule
+    ) {
+
+        const cellulesMemeJour = filiere.cellules.filter(
+            function (autre) {
+                return autre.dateAffichage ===
+                    cellule.dateAffichage;
+            }
         );
-        console.log("------------------------------------------");
 
-        matieresNonPlacees.forEach(function (matiereNonPlacee) {
+        const precedente = cellulesMemeJour.find(
+            function (autre) {
+                return autre.creneauOrdre ===
+                    cellule.creneauOrdre - 1;
+            }
+        );
 
-            const filiereCode = matiereNonPlacee.filiereCode;
+        const suivante = cellulesMemeJour.find(
+            function (autre) {
+                return autre.creneauOrdre ===
+                    cellule.creneauOrdre + 1;
+            }
+        );
+
+        return !(
+            (precedente && precedente.estOccupee) ||
+            (suivante && suivante.estOccupee)
+        );
+    }
+
+    // -------------------------------------------------
+    // 4. PERMUTATION :
+    //    ANCIENNE MATIÈRE EN CRÉNEAU 1
+    //    NOUVELLE MATIÈRE EN CRÉNEAU 3
+    // -------------------------------------------------
+
+    function tenterPermutation(
+        filiere,
+        celluleExistante,
+        ancienneMatiere,
+        nouvelleMatiere,
+        filiereCode
+    ) {
+
+        if (celluleExistante.creneauOrdre !== 2) {
+            return false;
+        }
+
+        const date = celluleExistante.dateAffichage;
+
+        const cellulesMemeJour = filiere.cellules.filter(
+            function (cellule) {
+                return cellule.dateAffichage === date;
+            }
+        );
+
+        const creneau1 = cellulesMemeJour.find(
+            function (cellule) {
+                return cellule.creneauOrdre === 1;
+            }
+        );
+
+        const creneau3 = cellulesMemeJour.find(
+            function (cellule) {
+                return cellule.creneauOrdre === 3;
+            }
+        );
+
+        if (!creneau1 || !creneau3) {
+            return false;
+        }
+
+        if (
+            creneau1.estOccupee ||
+            creneau3.estOccupee
+        ) {
+            return false;
+        }
+
+        const sauvegarde2 =
+            sauvegarderCellule(celluleExistante);
+
+        const sauvegarde1 =
+            sauvegarderCellule(creneau1);
+
+        const sauvegarde3 =
+            sauvegarderCellule(creneau3);
+
+        // Libérer le créneau 2.
+
+        celluleExistante.estOccupee = false;
+        celluleExistante.matiereLibelle = "";
+        celluleExistante.regimeCode = "";
+        celluleExistante.semestreCode = "";
+        celluleExistante.filiereCode = undefined;
+
+        // Déplacer l'ancienne matière en créneau 1.
+
+        creneau1.estOccupee = true;
+        creneau1.matiereLibelle =
+            ancienneMatiere.matiereLibelle;
+        creneau1.regimeCode =
+            ancienneMatiere.regimeCode;
+        creneau1.semestreCode =
+            ancienneMatiere.semestreCode;
+        creneau1.filiereCode = filiereCode;
+
+        // Placer la nouvelle matière en créneau 3.
+
+        creneau3.estOccupee = true;
+        creneau3.matiereLibelle =
+            nouvelleMatiere.matiereLibelle;
+        creneau3.regimeCode =
+            nouvelleMatiere.regimeCode;
+        creneau3.semestreCode =
+            nouvelleMatiere.semestreCode;
+        creneau3.filiereCode = filiereCode;
+
+        const valide =
+            positionRespecteContraintes(filiere, creneau1) &&
+            positionRespecteContraintes(filiere, creneau3);
+
+        if (!valide) {
+
+            restaurerCellule(celluleExistante, sauvegarde2);
+            restaurerCellule(creneau1, sauvegarde1);
+            restaurerCellule(creneau3, sauvegarde3);
+
+            return false;
+        }
+
+        console.log(
+            "✓ PERMUTATION VALIDÉE :",
+            ancienneMatiere.matiereLibelle,
+            "→ Créneau 1 ;",
+            nouvelleMatiere.matiereLibelle,
+            "→ Créneau 3 ; Date :",
+            date
+        );
+
+        return true;
+    }
+
+    // -------------------------------------------------
+    // 5. BACKTRACKING
+    // -------------------------------------------------
+
+    let matieresRestantes = matieresNonPlacees.slice();
+
+    let progression = true;
+
+    while (
+        matieresRestantes.length > 0 &&
+        progression
+    ) {
+
+        progression = false;
+
+        const prochaineListe = [];
+
+        matieresRestantes.forEach(function (matiere) {
+
+            const filiereCode = matiere.filiereCode;
 
             const filiere = planning.filieres.find(
                 function (f) {
@@ -2149,163 +2295,155 @@ function placerMatieresSpecifiques(planning) {
             );
 
             if (!filiere) {
+                prochaineListe.push(matiere);
                 return;
             }
 
             const cellulesCandidates = filiere.cellules.filter(
-                function (c) {
+                function (cellule) {
                     return (
-                        c.estOccupee &&
-                        !c.estCommune &&
-                        c.matiereLibelle
+                        cellule.estOccupee &&
+                        !cellule.estCommune &&
+                        cellule.matiereLibelle
                     );
                 }
             );
 
-            let echangeReussi = false;
+            let reussite = false;
 
             for (
                 let i = 0;
-                i < cellulesCandidates.length && !echangeReussi;
+                i < cellulesCandidates.length && !reussite;
                 i++
             ) {
 
-                const celluleExistante = cellulesCandidates[i];
+                const cellule = cellulesCandidates[i];
 
                 const ancienneMatiere = {
-                    matiereLibelle: celluleExistante.matiereLibelle,
-                    regimeCode: celluleExistante.regimeCode,
-                    semestreCode: celluleExistante.semestreCode,
+                    matiereLibelle: cellule.matiereLibelle,
+                    regimeCode: cellule.regimeCode,
+                    semestreCode: cellule.semestreCode,
                     filiereCode: filiereCode
                 };
 
-                // Libérer temporairement la cellule.
-                celluleExistante.estOccupee = false;
-                celluleExistante.matiereLibelle = "";
-                celluleExistante.regimeCode = "";
-                celluleExistante.semestreCode = "";
-                celluleExistante.filiereCode = undefined;
+                const sauvegarde =
+                    sauvegarderCellule(cellule);
 
-                // Vérifier directement si cette cellule
-                // peut accueillir la matière non placée.
-                const cellulesMemeJour = filiere.cellules.filter(
-                    function (autre) {
-                        return autre.dateAffichage ===
-                            celluleExistante.dateAffichage;
-                    }
-                );
+                // -------------------------------------
+                // STRATÉGIE 1 : ÉCHANGE SIMPLE
+                // -------------------------------------
 
-                const precedente = cellulesMemeJour.find(
-                    function (autre) {
-                        return autre.creneauOrdre ===
-                            celluleExistante.creneauOrdre - 1;
-                    }
-                );
+                cellule.estOccupee = false;
+                cellule.matiereLibelle = "";
+                cellule.regimeCode = "";
+                cellule.semestreCode = "";
+                cellule.filiereCode = undefined;
 
-                const suivante = cellulesMemeJour.find(
-                    function (autre) {
-                        return autre.creneauOrdre ===
-                            celluleExistante.creneauOrdre + 1;
-                    }
-                );
+                if (
+                    positionRespecteContraintes(
+                        filiere,
+                        cellule
+                    )
+                ) {
 
-                const celluleAdmissible =
-                    !(
-                        (precedente && precedente.estOccupee) ||
-                        (suivante && suivante.estOccupee)
-                    );
+                    cellule.estOccupee = true;
+                    cellule.matiereLibelle =
+                        matiere.matiereLibelle;
+                    cellule.regimeCode =
+                        matiere.regimeCode;
+                    cellule.semestreCode =
+                        matiere.semestreCode;
+                    cellule.filiereCode = filiereCode;
 
-                if (celluleAdmissible) {
-
-                    // Placer la matière non placée
-                    // directement dans la cellule libérée.
-                    celluleExistante.estOccupee = true;
-                    celluleExistante.matiereLibelle =
-                        matiereNonPlacee.matiereLibelle;
-                    celluleExistante.regimeCode =
-                        matiereNonPlacee.regimeCode;
-                    celluleExistante.semestreCode =
-                        matiereNonPlacee.semestreCode;
-                    celluleExistante.filiereCode = filiereCode;
-
-                    // Rechercher une nouvelle position
-                    // pour l'ancienne matière.
-                    const positionAncienne =
+                    const nouvellePosition =
                         trouverPositionPourMatiereSpecifique(
                             planning,
                             filiereCode
                         );
 
-                    if (positionAncienne) {
+                    if (nouvellePosition) {
 
-                        positionAncienne.estOccupee = true;
-                        positionAncienne.matiereLibelle =
+                        nouvellePosition.estOccupee = true;
+                        nouvellePosition.matiereLibelle =
                             ancienneMatiere.matiereLibelle;
-                        positionAncienne.regimeCode =
+                        nouvellePosition.regimeCode =
                             ancienneMatiere.regimeCode;
-                        positionAncienne.semestreCode =
+                        nouvellePosition.semestreCode =
                             ancienneMatiere.semestreCode;
-                        positionAncienne.filiereCode =
+                        nouvellePosition.filiereCode =
                             filiereCode;
 
                         console.log(
-                            "✓ Échange réussi :",
-                            matiereNonPlacee.matiereLibelle,
+                            "✓ ÉCHANGE SIMPLE :",
+                            matiere.matiereLibelle,
                             "↔",
                             ancienneMatiere.matiereLibelle
                         );
 
-                        echangeReussi = true;
-
-                    } else {
-
-                        // Annuler intégralement l'échange.
-                        celluleExistante.estOccupee = false;
-                        celluleExistante.matiereLibelle = "";
-                        celluleExistante.regimeCode = "";
-                        celluleExistante.semestreCode = "";
-                        celluleExistante.filiereCode = undefined;
-
-                        celluleExistante.estOccupee = true;
-                        celluleExistante.matiereLibelle =
-                            ancienneMatiere.matiereLibelle;
-                        celluleExistante.regimeCode =
-                            ancienneMatiere.regimeCode;
-                        celluleExistante.semestreCode =
-                            ancienneMatiere.semestreCode;
-                        celluleExistante.filiereCode = filiereCode;
+                        reussite = true;
                     }
+                }
 
-                } else {
+                if (!reussite) {
 
-                    // La cellule libérée reste incompatible.
-                    // Restaurer l'ancienne matière.
-                    celluleExistante.estOccupee = true;
-                    celluleExistante.matiereLibelle =
-                        ancienneMatiere.matiereLibelle;
-                    celluleExistante.regimeCode =
-                        ancienneMatiere.regimeCode;
-                    celluleExistante.semestreCode =
-                        ancienneMatiere.semestreCode;
-                    celluleExistante.filiereCode = filiereCode;
+                    // Restaurer avant la stratégie 2.
+
+                    restaurerCellule(cellule, sauvegarde);
+
+                    // ---------------------------------
+                    // STRATÉGIE 2 : PERMUTATION 1 → 3
+                    // ---------------------------------
+
+                    reussite = tenterPermutation(
+                        filiere,
+                        cellule,
+                        ancienneMatiere,
+                        matiere,
+                        filiereCode
+                    );
+                }
+
+                if (!reussite) {
+                    restaurerCellule(cellule, sauvegarde);
                 }
             }
 
-            if (!echangeReussi) {
-                console.warn(
-                    "⚠️ Backtracking échoué pour :",
-                    matiereNonPlacee.matiereLibelle
-                );
+            if (reussite) {
+                progression = true;
+            } else {
+                prochaineListe.push(matiere);
             }
         });
+
+        matieresRestantes = prochaineListe;
     }
 
+    // -------------------------------------------------
+    // 6. BILAN FINAL
+    // -------------------------------------------------
+
     console.log("------------------------------------------");
-    console.log("✓ MATIÈRES SPÉCIFIQUES PLACÉES");
+    console.log(
+        "MATIÈRES NON AFFECTÉES :",
+        matieresRestantes.length
+    );
+
+    matieresRestantes.forEach(function (matiere) {
+        console.warn(
+            "❌ Non affectée :",
+            matiere.matiereLibelle,
+            "| Filière :",
+            matiere.filiereCode
+        );
+    });
+
+    console.log("------------------------------------------");
+    console.log("FIN DU PLACEMENT DES MATIÈRES SPÉCIFIQUES");
     console.log("------------------------------------------");
 
     return planning;
 }
+
 
 
 
