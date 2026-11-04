@@ -1825,8 +1825,7 @@ function placerMatieresCommunes(planning) {
 
 function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
 
-    const ECART_MAX_AUTORISE = 1;
-
+    
     // -------------------------------------------------
     // 1. Rechercher la filière
     // -------------------------------------------------
