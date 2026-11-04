@@ -1823,9 +1823,9 @@ function placerMatieresCommunes(planning) {
 // TROUVER UNE POSITION POUR UNE MATIÈRE SPÉCIFIQUE
 // =====================================================
 
+
 function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
 
-    
     // -------------------------------------------------
     // 1. Rechercher la filière
     // -------------------------------------------------
@@ -1895,15 +1895,8 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
 
             // Interdire deux examens successifs le même jour.
             if (
-                cellulePrecedente &&
-                cellulePrecedente.estOccupee
-            ) {
-                return false;
-            }
-
-            if (
-                celluleSuivante &&
-                celluleSuivante.estOccupee
+                (cellulePrecedente && cellulePrecedente.estOccupee) ||
+                (celluleSuivante && celluleSuivante.estOccupee)
             ) {
                 return false;
             }
@@ -1960,8 +1953,7 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         const ecart =
             chargeMax - chargeMin;
 
-        // À écart égal, privilégier la répartition
-        // globale la plus homogène.
+        // Calculer la dispersion globale.
         const moyenne =
             valeursCharges.reduce(function (somme, charge) {
                 return somme + charge;
@@ -1979,6 +1971,7 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         // Priorité 2 : minimiser la dispersion.
         // Priorité 3 : préférer le créneau le moins chargé
         // avant placement.
+
         if (
             ecart < meilleurEcart ||
             (
@@ -1998,7 +1991,7 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         }
     });
 
-// -------------------------------------------------
+    // -------------------------------------------------
     // 6. Afficher la position retenue
     // -------------------------------------------------
 
@@ -2012,13 +2005,27 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         "|",
         positionChoisie.heureDebutAffichage,
         "-",
-        positionChoisie.heureFinAffichage,
-        "| Charge avant placement :",
-        chargesCreneaux[positionChoisie.creneauOrdre] || 0
+        positionChoisie.heureFinAffichage
+    );
+
+    console.log(
+        "📊 Écart global après simulation :",
+        meilleurEcart
+    );
+
+    console.log(
+        "📊 Dispersion après simulation :",
+        meilleureDispersion
+    );
+
+    console.log(
+        "📊 Charge avant placement :",
+        meilleureChargeAvant
     );
 
     return positionChoisie;
 }
+
 function placerMatieresSpecifiques(planning) {
 
     console.log("------------------------------------------");
