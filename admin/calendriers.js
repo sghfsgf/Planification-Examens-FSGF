@@ -971,6 +971,8 @@ actualiserFiltres();
                 return;
             }
 
+        
+
 // =========================================
 // AFFICHAGE
 // =========================================
@@ -1925,4 +1927,25 @@ console.log(
     }
 );
 
+ } catch (erreur) {
+
+                console.error(
+                    "❌ Erreur lors du chargement du calendrier :",
+                    erreur
+                );
+
+                return;
+            }
+
+        
+
+// =========================================
+// AFFICHAGE
+// =========================================
+
+deplacementMatiereSpecifiqueEffectue = false;
+        
+window.planningCalendrierAdmin = planning;
+
+afficherPlanning(planning);
 
