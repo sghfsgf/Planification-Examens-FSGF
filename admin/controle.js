@@ -666,7 +666,7 @@ function verifierEquilibrageCreneaux(planning) {
     const ecart =
         maximum - minimum;
 
-    const seuil = 1;
+    const seuil = 2;
 
     const resultat = {
 
@@ -734,7 +734,9 @@ function verifierPlanningGlobal(planning) {
         console.error("❌ Planning introuvable.");
 
         return {
-            valide: false
+            valide: false,
+            anomaliesBloquantes: [],
+            avertissements: []
         };
     }
 
@@ -774,34 +776,58 @@ function verifierPlanningGlobal(planning) {
         verifierEquilibrageCreneaux(planning);
 
     // -------------------------------------------------
-    // Résultat global
+    // 6. Anomalies bloquantes
     // -------------------------------------------------
 
-    const valide =
-        controleMatieres.valide &&
-        controleDoublons.valide &&
-        controleCommunes.valide &&
-        controleSuccessifs.valide &&
-        controleEquilibrage.valide;
+    const anomaliesBloquantes = [];
+
+    if (!controleDoublons.valide) {
+        anomaliesBloquantes.push("Doublons de matières");
+    }
+
+    if (!controleCommunes.valide) {
+        anomaliesBloquantes.push("Matières communes");
+    }
+
+    if (!controleSuccessifs.valide) {
+        anomaliesBloquantes.push("Créneaux successifs");
+    }
+
+    // -------------------------------------------------
+    // 7. Avertissements
+    // -------------------------------------------------
+
+    const avertissements = [];
+
+    if (!controleMatieres.valide) {
+        avertissements.push("Matières non placées");
+    }
+
+    if (!controleEquilibrage.valide) {
+        avertissements.push("Équilibrage des créneaux");
+    }
+
+    // -------------------------------------------------
+    // 8. Résultat global
+    // -------------------------------------------------
 
     const resultat = {
 
-        valide: valide,
+        valide: anomaliesBloquantes.length === 0,
 
-        matieresPlacees:
-            controleMatieres.valide,
+        anomaliesBloquantes: anomaliesBloquantes,
 
-        doublons:
-            controleDoublons.valide,
+        avertissements: avertissements,
 
-        matieresCommunes:
-            controleCommunes.valide,
+        matieresPlacees: controleMatieres,
 
-        creneauxSuccessifs:
-            controleSuccessifs.valide,
+        doublons: controleDoublons,
 
-        equilibrage:
-            controleEquilibrage.valide
+        matieresCommunes: controleCommunes,
+
+        creneauxSuccessifs: controleSuccessifs,
+
+        equilibrage: controleEquilibrage
     };
 
     console.log("");
@@ -810,49 +836,26 @@ function verifierPlanningGlobal(planning) {
     console.log("------------------------------------------");
 
     console.log(
-        "Matières placées :",
-        resultat.matieresPlacees ? "✅" : "❌"
+        "Anomalies bloquantes :",
+        anomaliesBloquantes
     );
 
     console.log(
-        "Doublons :",
-        resultat.doublons ? "✅" : "❌"
+        "Avertissements :",
+        avertissements
     );
 
     console.log(
-        "Matières communes :",
-        resultat.matieresCommunes ? "✅" : "❌"
+        resultat.valide
+            ? "✅ PLANNING AUTORISÉ"
+            : "❌ PLANNING BLOQUÉ"
     );
-
-    console.log(
-        "Créneaux successifs :",
-        resultat.creneauxSuccessifs ? "✅" : "❌"
-    );
-
-    console.log(
-        "Équilibrage :",
-        resultat.equilibrage ? "✅" : "❌"
-    );
-
-    console.log("------------------------------------------");
-
-    if (resultat.valide) {
-
-        console.log(
-            "✅ PLANNING VALIDE"
-        );
-
-    } else {
-
-        console.warn(
-            "⚠️ PLANNING NON VALIDE"
-        );
-    }
 
     console.log("------------------------------------------");
 
     return resultat;
 }
+
 
 // =====================================================
 // API PUBLIQUE DU CONTRÔLE
