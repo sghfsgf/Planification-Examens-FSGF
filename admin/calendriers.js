@@ -617,12 +617,12 @@ function mettreAJourTitreCalendrier(planning = null) {
                 }
 
                 // Formats JJ-MM-AAAA ou JJ/MM/AAAA
-                else if (
-                    (correspondance =
-                        valeurDate.match(
-                            /^(\d{2})[-/](\d{2})[-/](\d{4})$/
-                        ))
-                ) {
+               else if (
+    (correspondance =
+        valeurDate.match(
+            /^(\d{2})[-\/](\d{2})[-\/](\d{4})$/
+        ))
+) {
                     dates.push(new Date(
                         Number(correspondance[3]),
                         Number(correspondance[2]) - 1,
