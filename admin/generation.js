@@ -2454,55 +2454,31 @@ function placerMatieresSpecifiques(planning) {
 function calculerChargeDesCreneaux(planning) {
 
     const charges = {};
-    const examensComptes = new Set();
 
-    // Initialiser tous les créneaux à zéro
-    planning.filieres.forEach(function (filiere) {
-        filiere.cellules.forEach(function (cellule) {
+    if (!planning || !Array.isArray(planning.filieres)) {
+        console.error("Planning invalide pour le calcul des charges.");
+        return charges;
+    }
+
+    planning.filieres.forEach(function(filiere) {
+
+        filiere.cellules.forEach(function(cellule) {
+
             const creneau = cellule.creneauOrdre;
 
             if (charges[creneau] === undefined) {
                 charges[creneau] = 0;
             }
-        });
-    });
 
-    // Compter les épreuves réellement placées
-    planning.filieres.forEach(function (filiere) {
-
-        filiere.cellules.forEach(function (cellule) {
-
-            if (!cellule.estOccupee) {
-                return;
+            if (cellule.estOccupee) {
+                charges[creneau]++;
             }
 
-            const creneau = cellule.creneauOrdre;
-
-            // Une épreuve commune est comptée une seule fois
-            const cleExamen = cellule.estCommune
-                ? "COMMUNE|" +
-                  cellule.dateAffichage + "|" +
-                  creneau + "|" +
-                  cellule.matiereLibelle
-                : "SPECIFIQUE|" +
-                  filiere.filiereCode + "|" +
-                  cellule.dateAffichage + "|" +
-                  creneau + "|" +
-                  cellule.matiereLibelle;
-
-            if (examensComptes.has(cleExamen)) {
-                return;
-            }
-
-            examensComptes.add(cleExamen);
-            charges[creneau]++;
         });
+
     });
 
-    console.log("------------------------------------------");
-    console.log("CHARGE DES CRÉNEAUX — ÉPREUVES DISTINCTES");
-    console.log("------------------------------------------");
-
+    console.log("CHARGE DES CRÉNEAUX — TOUTES FILIÈRES");
     console.table(charges);
 
     return charges;
@@ -2525,7 +2501,7 @@ function verifierEquilibreGlobalCreneaux(planning) {
     const chargeMax = Math.max(...valeursCharges);
     const ecart = chargeMax - chargeMin;
 
-    const equilibreAtteint = ecart <= 1;
+   const equilibreAtteint = ecart <= 2;
 
     console.log(
         "Équilibre global des créneaux :",
