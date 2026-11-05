@@ -756,13 +756,20 @@ function actualiserFiltres() {
 
     const sessions = donnees.sessions;
 
-// 0. Niveaux depuis les matières Firestore
-const niveaux = window.generationExamens.obtenirNiveaux();
+// 0. NIVEAUX depuis les effectifs Firestore
+const effectifs = donnees.effectifs || [];
+
+const niveaux = valeursDistinctes(
+    effectifs,
+    "niveauCode"
+);
 
 remplirSelect(
     selectNiveau,
     niveaux,
-    niveaux.length ? "Choisir un niveau" : "Aucun niveau disponible"
+    niveaux.length
+        ? "Choisir un niveau"
+        : "Aucun niveau disponible"
 );
     
     // 1. Semestres (valeurs brutes)
