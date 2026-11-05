@@ -756,11 +756,11 @@ function actualiserFiltres() {
 
     const sessions = donnees.sessions;
 
-// 0. NIVEAUX depuis les effectifs Firestore
-const effectifs = donnees.effectifs || [];
+// 0. NIVEAUX depuis la collection matieres Firestore
+const matieres = donnees.matieres || [];
 
 const niveaux = valeursDistinctes(
-    effectifs,
+    matieres,
     "niveauCode"
 );
 
