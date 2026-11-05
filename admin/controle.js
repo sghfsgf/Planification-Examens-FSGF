@@ -854,6 +854,16 @@ function verifierPlanningGlobal(planning) {
     console.log("------------------------------------------");
 
     return resultat;
+console.log("==========================================");
+console.log("RÉSULTAT DU CONTRÔLE GLOBAL");
+console.log("==========================================");
+
+console.log("Anomalies bloquantes :", resultat.anomaliesBloquantes);
+console.log("Avertissements :", resultat.avertissements);
+console.log("Planning autorisé :", resultat.valide);
+
+console.log("Détail complet :", resultat);
+    
 }
 
 
