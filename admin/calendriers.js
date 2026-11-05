@@ -620,8 +620,8 @@ function mettreAJourTitreCalendrier(planning = null) {
                else if (
     (correspondance =
         valeurDate.match(
-            /^(\d{2})[-\/](\d{2})[-\/](\d{4})$/
-        ))
+    /^(\d{2})[-\/](\d{2})[-\/](\d{4})$/
+))
 ) {
                     dates.push(new Date(
                         Number(correspondance[3]),
