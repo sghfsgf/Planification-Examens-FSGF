@@ -3606,6 +3606,13 @@ console.log("Paramètres de génération :", {
                         niveauCode,
                         sessionCode
                     );
+                          if (!planning) {
+                    console.error(
+                      "❌ Impossible de construire la matrice du calendrier."
+                        );
+
+                     return;
+                  }
 
                 // =================================================
                 // PLACEMENT DES MATIÈRES COMMUNES
