@@ -1276,8 +1276,7 @@ if (
     // INITIALISATION
     // =================================================
 
-    mettreAJourSessions();
-    mettreAJourTitreCalendrier();
+  mettreAJourTitreCalendrier();
 }
 
 
