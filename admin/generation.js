@@ -3539,23 +3539,63 @@ document.addEventListener(
                     "=========================================="
                 );
 
-                // =================================================
-                // PARAMÈTRES DE TEST
-                // =================================================
+              // =================================================
+            // PARAMÈTRES DE GÉNÉRATION DEPUIS LES FILTRES ADMIN
+            // =================================================
 
-                const niveauCode = "L1";
+const selectNiveau =
+    document.getElementById("niveauCalendrierAdmin");
 
-                const sessionCode = "PRINCIPALE_S1";
+const selectSemestre =
+    document.getElementById("semestreCalendrierAdmin");
 
-                console.log(
-                    "Niveau :",
-                    niveauCode
-                );
+const selectRegime =
+    document.getElementById("regimeCalendrierAdmin");
 
-                console.log(
-                    "Session :",
-                    sessionCode
-                );
+const selectSession =
+    document.getElementById("sessionCalendrierAdmin");
+
+// Récupération des valeurs sélectionnées
+const niveauCode = selectNiveau?.value;
+const semestreCode = selectSemestre?.value;
+const regimeCode = selectRegime?.value;
+const sessionCode = selectSession?.value;
+
+// Vérification des sélections
+if (
+    !niveauCode ||
+    !semestreCode ||
+    !regimeCode ||
+    !sessionCode
+) {
+    alert(
+        "Veuillez sélectionner le niveau, le semestre, le régime et la session."
+    );
+
+    return;
+}
+
+// Vérification de la cohérence de la session
+const session = obtenirSession(sessionCode);
+
+if (
+    !session ||
+    session.semestreCode !== semestreCode ||
+    session.regimeCode !== regimeCode
+) {
+    alert(
+        "La session sélectionnée ne correspond pas au semestre ou au régime choisi."
+    );
+
+    return;
+}
+
+console.log("Paramètres de génération :", {
+    niveauCode,
+    semestreCode,
+    regimeCode,
+    sessionCode
+});
 
                 // =================================================
                 // CONSTRUCTION DE LA MATRICE
