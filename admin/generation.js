@@ -2431,36 +2431,50 @@ function placerMatieresSpecifiques(planning) {
     // Limite de sécurité pour éviter de bloquer le navigateur.
     const LIMITE_NOEUDS = 50000;
 
+    
     // -------------------------------------------------
-    // 6.1. CALCUL DES CHARGES DE TOUS LES CRÉNEAUX
+    // 6.1. IDENTIFIER ET CALCULER TOUS LES CRÉNEAUX
+    //      RÉELS DU CALENDRIER EN COURS
     // -------------------------------------------------
+
+    function obtenirCleCreneau(cellule) {
+
+        return (
+            String(cellule.date) +
+            "|" +
+            String(cellule.creneauOrdre)
+        );
+    }
 
     function calculerChargesGlobales() {
 
-        const ordresCreneaux = [
-            ...new Set(
-                planning.filieres.flatMap(function (filiere) {
-                    return filiere.cellules.map(function (cellule) {
-                        return cellule.creneauOrdre;
-                    });
-                })
-            )
-        ].sort(function (a, b) {
-            return a - b;
-        });
-
         const charges = {};
 
-        ordresCreneaux.forEach(function (ordre) {
-            charges[ordre] = 0;
+        // Recenser tous les créneaux réels du calendrier.
+
+        planning.filieres.forEach(function (filiere) {
+
+            filiere.cellules.forEach(function (cellule) {
+
+                const cle = obtenirCleCreneau(cellule);
+
+                if (charges[cle] === undefined) {
+                    charges[cle] = 0;
+                }
+            });
         });
+
+        // Compter les matières de toutes les filières.
 
         planning.filieres.forEach(function (filiere) {
 
             filiere.cellules.forEach(function (cellule) {
 
                 if (cellule.estOccupee) {
-                    charges[cellule.creneauOrdre]++;
+
+                    const cle = obtenirCleCreneau(cellule);
+
+                    charges[cle]++;
                 }
             });
         });
