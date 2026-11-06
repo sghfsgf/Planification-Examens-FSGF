@@ -2717,13 +2717,9 @@ function placerMatieresSpecifiques(planning) {
             // ESSAYER CHAQUE POSITION
             // ---------------------------------------------
 
-            const nouvellesMatieres =
-                matieresRestantesRecherche.filter(
-                    function (matiere) {
-                        return matiere !== meilleureMatiere;
-                    }
-                );
-
+           const nouvellesMatieres =
+               matieresRestantesRecherche.slice(1);
+            
             for (
                 let i = 0;
                 i < meilleuresCellules.length;
