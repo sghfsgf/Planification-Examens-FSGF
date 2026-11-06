@@ -2935,14 +2935,17 @@ function calculerChargeDesCreneaux(planning) {
 
         filiere.cellules.forEach(function(cellule) {
 
-            const creneau = cellule.creneauOrdre;
+            // Identifier le créneau par sa date et son ordre.
+            const cle = obtenirCleCreneau(cellule);
 
-            if (charges[creneau] === undefined) {
-                charges[creneau] = 0;
+            // Initialiser chaque créneau réel à zéro.
+            if (charges[cle] === undefined) {
+                charges[cle] = 0;
             }
 
+            // Compter les matières de toutes les filières.
             if (cellule.estOccupee) {
-                charges[creneau]++;
+                charges[cle]++;
             }
 
         });
@@ -2954,7 +2957,6 @@ function calculerChargeDesCreneaux(planning) {
 
     return charges;
 }
-
 
 function verifierEquilibreGlobalCreneaux(planning) {
 
