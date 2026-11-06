@@ -1936,10 +1936,10 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
             ...chargesCreneaux
         };
 
-        const creneau = position.creneauOrdre;
+       const cle = obtenirCleCreneau(position);
 
-        chargesSimulees[creneau] =
-            (chargesSimulees[creneau] || 0) + 1;
+           chargesSimulees[cle] =
+              (chargesSimulees[cle] || 0) + 1;
 
         const valeursCharges =
             Object.values(chargesSimulees);
