@@ -1964,8 +1964,8 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
                 return somme + Math.pow(charge - moyenne, 2);
             }, 0);
 
-        const chargeAvant =
-            chargesCreneaux[creneau] || 0;
+          const chargeAvant =
+                 chargesCreneaux[cle] || 0;
 
         // Priorité 1 : minimiser l'écart maximal.
         // Priorité 2 : minimiser la dispersion.
