@@ -2664,46 +2664,32 @@ function placerMatieresSpecifiques(planning) {
             }
 
             // ---------------------------------------------
-            // CHOIX DE LA MATIÈRE LA PLUS CONTRAINTE (MRV)
+            // CHOIX DE LA PROCHAINE MATIÈRE
             // ---------------------------------------------
 
-            let meilleureMatiere = null;
-            let meilleuresCellules = null;
+            // Les matières spécifiques d'une même filière
+            // ayant les mêmes contraintes, on conserve
+            // un ordre fixe pour éviter les permutations
+            // inutiles de matières.
 
-            matieresRestantesRecherche.forEach(
-                function (matiere) {
+            const meilleureMatiere =
+                matieresRestantesRecherche[0];
 
-                    const candidates = filiere.cellules.filter(
-                        function (cellule) {
+            const meilleuresCellules =
+                filiere.cellules.filter(
+                    function (cellule) {
 
-                            return (
-                                !cellule.estOccupee &&
-                                positionRespecteContraintes(
-                                    filiere,
-                                    cellule
-                                )
-                            );
-                        }
-                    );
-
-                    if (
-                        meilleuresCellules === null ||
-                        candidates.length < meilleuresCellules.length
-                    ) {
-
-                        meilleureMatiere = matiere;
-                        meilleuresCellules = candidates;
+                        return (
+                            !cellule.estOccupee &&
+                            positionRespecteContraintes(
+                                filiere,
+                                cellule
+                            )
+                        );
                     }
-                }
-            );
+                );
 
-            // Aucune cellule disponible pour une matière :
-            // cette branche ne peut pas aboutir.
-
-            if (
-                !meilleuresCellules ||
-                meilleuresCellules.length === 0
-            ) {
+            if (meilleuresCellules.length === 0) {
                 return;
             }
 
@@ -2712,18 +2698,20 @@ function placerMatieresSpecifiques(planning) {
             // PRIVILÉGIER LES CRÉNEAUX LES MOINS CHARGÉS
             // ---------------------------------------------
 
-            const chargesActuelles = calculerChargesGlobales();
+            const chargesActuelles =
+                calculerChargesGlobales();
 
             meilleuresCellules.sort(function (a, b) {
 
                 const chargeA =
-                    chargesActuelles[a.creneauOrdre] || 0;
+                    chargesActuelles[obtenirCleCreneau(a)] || 0;
 
                 const chargeB =
-                    chargesActuelles[b.creneauOrdre] || 0;
+                    chargesActuelles[obtenirCleCreneau(b)] || 0;
 
                 return chargeA - chargeB;
             });
+
 
             // ---------------------------------------------
             // ESSAYER CHAQUE POSITION
