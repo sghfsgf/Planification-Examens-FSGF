@@ -2417,9 +2417,482 @@ function placerMatieresSpecifiques(planning) {
 
         matieresRestantes = prochaineListe;
     }
+    
+    // -------------------------------------------------
+    // 6. STRATÉGIE 3 :
+    //    RÉORGANISATION COMPLÈTE PAR FILIÈRE
+    // -------------------------------------------------
+
+    console.log("");
+    console.log("==========================================");
+    console.log("STRATÉGIE 3 : RÉORGANISATION COMPLÈTE");
+    console.log("==========================================");
+
+    // Limite de sécurité pour éviter de bloquer le navigateur.
+    const LIMITE_NOEUDS = 50000;
 
     // -------------------------------------------------
-    // 6. BILAN FINAL
+    // 6.1. CALCUL DES CHARGES DE TOUS LES CRÉNEAUX
+    // -------------------------------------------------
+
+    function calculerChargesGlobales() {
+
+        const ordresCreneaux = [
+            ...new Set(
+                planning.filieres.flatMap(function (filiere) {
+                    return filiere.cellules.map(function (cellule) {
+                        return cellule.creneauOrdre;
+                    });
+                })
+            )
+        ].sort(function (a, b) {
+            return a - b;
+        });
+
+        const charges = {};
+
+        ordresCreneaux.forEach(function (ordre) {
+            charges[ordre] = 0;
+        });
+
+        planning.filieres.forEach(function (filiere) {
+
+            filiere.cellules.forEach(function (cellule) {
+
+                if (cellule.estOccupee) {
+                    charges[cellule.creneauOrdre]++;
+                }
+            });
+        });
+
+        return charges;
+    }
+
+    // -------------------------------------------------
+    // 6.2. ÉVALUATION DE L'ÉQUILIBRAGE GLOBAL
+    // -------------------------------------------------
+
+    function evaluerEquilibrageGlobal() {
+
+        const charges = calculerChargesGlobales();
+
+        const valeurs = Object.values(charges);
+
+        if (valeurs.length === 0) {
+            return {
+                ecart: 0,
+                dispersion: 0
+            };
+        }
+
+        const maximum = Math.max(...valeurs);
+        const minimum = Math.min(...valeurs);
+
+        const moyenne =
+            valeurs.reduce(function (total, valeur) {
+                return total + valeur;
+            }, 0) / valeurs.length;
+
+        const dispersion =
+            valeurs.reduce(function (total, valeur) {
+
+                return total +
+                    Math.pow(valeur - moyenne, 2);
+
+            }, 0);
+
+        return {
+            ecart: maximum - minimum,
+            dispersion: dispersion
+        };
+    }
+
+    // -------------------------------------------------
+    // 6.3. COMPARER DEUX ORGANISATIONS COMPLÈTES
+    // -------------------------------------------------
+
+    function meilleureOrganisation(score, meilleurScore) {
+
+        if (!meilleurScore) {
+            return true;
+        }
+
+        if (score.ecart < meilleurScore.ecart) {
+            return true;
+        }
+
+        if (
+            score.ecart === meilleurScore.ecart &&
+            score.dispersion < meilleurScore.dispersion
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // -------------------------------------------------
+    // 6.4. IDENTIFIER LES FILIÈRES EN DIFFICULTÉ
+    // -------------------------------------------------
+
+    const filieresAReorganiser = [
+        ...new Set(
+            matieresRestantes.map(function (matiere) {
+                return matiere.filiereCode;
+            })
+        )
+    ];
+
+    filieresAReorganiser.forEach(function (filiereCode) {
+
+        const filiere = planning.filieres.find(
+            function (f) {
+                return f.filiereCode === filiereCode;
+            }
+        );
+
+        if (!filiere) {
+            return;
+        }
+
+        console.log("");
+        console.log(
+            "🔎 Réorganisation de la filière :",
+            filiereCode
+        );
+
+        // Toutes les matières spécifiques de cette filière,
+        // y compris celles déjà placées.
+
+        const matieresFiliere = matieresSpecifiques.filter(
+            function (matiere) {
+                return matiere.filiereCode === filiereCode;
+            }
+        );
+
+        const libellesSpecifiques = new Set(
+            matieresFiliere.map(function (matiere) {
+                return matiere.matiereLibelle;
+            })
+        );
+
+        // -------------------------------------------------
+        // SAUVEGARDE DE L'ÉTAT INITIAL
+        // -------------------------------------------------
+
+        const sauvegardesFiliere =
+            filiere.cellules.map(function (cellule) {
+                return sauvegarderCellule(cellule);
+            });
+
+        // -------------------------------------------------
+        // LIBÉRER UNIQUEMENT LES MATIÈRES SPÉCIFIQUES
+        // -------------------------------------------------
+
+        filiere.cellules.forEach(function (cellule) {
+
+            if (
+                cellule.estOccupee &&
+                !cellule.estCommune &&
+                libellesSpecifiques.has(cellule.matiereLibelle)
+            ) {
+
+                cellule.estOccupee = false;
+                cellule.matiereLibelle = "";
+                cellule.regimeCode = "";
+                cellule.semestreCode = "";
+                cellule.filiereCode = undefined;
+            }
+        });
+
+        // -------------------------------------------------
+        // VARIABLES DE RECHERCHE
+        // -------------------------------------------------
+
+        let noeudsVisites = 0;
+        let rechercheInterrompue = false;
+
+        let meilleureAffectation = null;
+        let meilleurScore = null;
+
+        const affectationCourante = [];
+
+        // -------------------------------------------------
+        // 6.5. RECHERCHE RÉCURSIVE
+        // -------------------------------------------------
+
+        function rechercherOrganisation(matieresRestantesRecherche) {
+
+            if (noeudsVisites >= LIMITE_NOEUDS) {
+                rechercheInterrompue = true;
+                return;
+            }
+
+            noeudsVisites++;
+
+            // Toutes les matières sont placées :
+            // évaluer cette organisation complète.
+
+            if (matieresRestantesRecherche.length === 0) {
+
+                const score = evaluerEquilibrageGlobal();
+
+                if (meilleureOrganisation(score, meilleurScore)) {
+
+                    meilleurScore = score;
+
+                    meilleureAffectation =
+                        affectationCourante.slice();
+
+                }
+
+                return;
+            }
+
+            // ---------------------------------------------
+            // CHOIX DE LA MATIÈRE LA PLUS CONTRAINTE (MRV)
+            // ---------------------------------------------
+
+            let meilleureMatiere = null;
+            let meilleuresCellules = null;
+
+            matieresRestantesRecherche.forEach(
+                function (matiere) {
+
+                    const candidates = filiere.cellules.filter(
+                        function (cellule) {
+
+                            return (
+                                !cellule.estOccupee &&
+                                positionRespecteContraintes(
+                                    filiere,
+                                    cellule
+                                )
+                            );
+                        }
+                    );
+
+                    if (
+                        meilleuresCellules === null ||
+                        candidates.length < meilleuresCellules.length
+                    ) {
+
+                        meilleureMatiere = matiere;
+                        meilleuresCellules = candidates;
+                    }
+                }
+            );
+
+            // Aucune cellule disponible pour une matière :
+            // cette branche ne peut pas aboutir.
+
+            if (
+                !meilleuresCellules ||
+                meilleuresCellules.length === 0
+            ) {
+                return;
+            }
+
+            // ---------------------------------------------
+            // ORDRE DES CANDIDATS :
+            // PRIVILÉGIER LES CRÉNEAUX LES MOINS CHARGÉS
+            // ---------------------------------------------
+
+            const chargesActuelles = calculerChargesGlobales();
+
+            meilleuresCellules.sort(function (a, b) {
+
+                const chargeA =
+                    chargesActuelles[a.creneauOrdre] || 0;
+
+                const chargeB =
+                    chargesActuelles[b.creneauOrdre] || 0;
+
+                return chargeA - chargeB;
+            });
+
+            // ---------------------------------------------
+            // ESSAYER CHAQUE POSITION
+            // ---------------------------------------------
+
+            const nouvellesMatieres =
+                matieresRestantesRecherche.filter(
+                    function (matiere) {
+                        return matiere !== meilleureMatiere;
+                    }
+                );
+
+            for (
+                let i = 0;
+                i < meilleuresCellules.length;
+                i++
+            ) {
+
+                if (rechercheInterrompue) {
+                    break;
+                }
+
+                const cellule = meilleuresCellules[i];
+
+                const sauvegarde =
+                    sauvegarderCellule(cellule);
+
+                // Placer la matière.
+
+                cellule.estOccupee = true;
+                cellule.matiereLibelle =
+                    meilleureMatiere.matiereLibelle;
+                cellule.regimeCode =
+                    meilleureMatiere.regimeCode;
+                cellule.semestreCode =
+                    meilleureMatiere.semestreCode;
+                cellule.filiereCode = filiereCode;
+
+                affectationCourante.push({
+                    cellule: cellule,
+                    matiere: meilleureMatiere
+                });
+
+                // Continuer la recherche.
+
+                rechercherOrganisation(nouvellesMatieres);
+
+                // Retour en arrière :
+                // restaurer exactement la cellule essayée.
+
+                affectationCourante.pop();
+
+                restaurerCellule(cellule, sauvegarde);
+            }
+        }
+
+        // -------------------------------------------------
+        // 6.6. LANCER LA RECHERCHE
+        // -------------------------------------------------
+
+        rechercherOrganisation(matieresFiliere);
+
+        // -------------------------------------------------
+        // 6.7. RESTAURER L'ÉTAT INITIAL
+        // -------------------------------------------------
+
+        filiere.cellules.forEach(function (cellule, index) {
+
+            restaurerCellule(
+                cellule,
+                sauvegardesFiliere[index]
+            );
+        });
+
+        // -------------------------------------------------
+        // 6.8. APPLIQUER LA MEILLEURE SOLUTION
+        // -------------------------------------------------
+
+        if (meilleureAffectation) {
+
+            // Libérer à nouveau les anciennes positions spécifiques.
+
+            filiere.cellules.forEach(function (cellule) {
+
+                if (
+                    cellule.estOccupee &&
+                    !cellule.estCommune &&
+                    libellesSpecifiques.has(cellule.matiereLibelle)
+                ) {
+
+                    cellule.estOccupee = false;
+                    cellule.matiereLibelle = "";
+                    cellule.regimeCode = "";
+                    cellule.semestreCode = "";
+                    cellule.filiereCode = undefined;
+                }
+            });
+
+            // Installer la meilleure organisation trouvée.
+
+            meilleureAffectation.forEach(function (affectation) {
+
+                const cellule = affectation.cellule;
+                const matiere = affectation.matiere;
+
+                cellule.estOccupee = true;
+                cellule.matiereLibelle =
+                    matiere.matiereLibelle;
+                cellule.regimeCode =
+                    matiere.regimeCode;
+                cellule.semestreCode =
+                    matiere.semestreCode;
+                cellule.filiereCode = filiereCode;
+            });
+
+            // Toutes les matières spécifiques de cette filière
+            // sont désormais placées.
+
+            matieresRestantes = matieresRestantes.filter(
+                function (matiere) {
+                    return matiere.filiereCode !== filiereCode;
+                }
+            );
+
+            console.log(
+                "✓ RÉORGANISATION RÉUSSIE :",
+                filiereCode
+            );
+
+            console.log(
+                "Nombre de matières placées :",
+                meilleureAffectation.length
+            );
+
+            console.log(
+                "Meilleur écart global :",
+                meilleurScore.ecart
+            );
+
+            console.log(
+                "Dispersion globale :",
+                meilleurScore.dispersion
+            );
+
+        } else {
+
+            console.warn(
+                "⚠️ Aucune organisation complète trouvée pour :",
+                filiereCode
+            );
+
+            if (rechercheInterrompue) {
+
+                console.warn(
+                    "Recherche interrompue par la limite de calcul.",
+                    "L'impossibilité n'est pas démontrée."
+                );
+
+            } else {
+
+                console.warn(
+                    "Recherche exhaustive : aucune organisation complète valide."
+                );
+            }
+        }
+
+        console.log(
+            "Nœuds de recherche visités :",
+            noeudsVisites
+        );
+
+        if (rechercheInterrompue && meilleureAffectation) {
+
+            console.warn(
+                "⚠️ Une solution complète a été trouvée,",
+                "mais l'optimisation globale n'est pas exhaustive."
+            );
+        }
+    });
+
+
+    // -------------------------------------------------
+    // 7. BILAN FINAL
     // -------------------------------------------------
 
     console.log("------------------------------------------");
