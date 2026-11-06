@@ -2985,16 +2985,22 @@ function verifierEquilibreGlobalCreneaux(planning) {
 
     if (!equilibreAtteint) {
 
-        const detail = Object.entries(charges)
-            .sort(function (a, b) {
-                return Number(a[0]) - Number(b[0]);
-            })
-            .map(function ([creneau, charge]) {
-                return "Créneau " + creneau +
-                    " : " + charge + " épreuve(s)";
-            })
-            .join("\n");
+       const detail = Object.entries(charges)
+    .sort(function (a, b) {
+        return a[0].localeCompare(b[0]);
+    })
+    .map(function ([cle, charge]) {
 
+        const elements = cle.split("|");
+        const date = elements[0];
+        const ordre = elements[1];
+
+        return "Date " + date +
+            " — Créneau " + ordre +
+            " : " + charge + " épreuve(s)";
+    })
+    .join("\n");
+        
         alert(
             "L'équilibre global des créneaux non atteint.\n\n" +
             "Écart global : " + ecart + " épreuve(s).\n\n" +
