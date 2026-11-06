@@ -3660,10 +3660,10 @@ console.log(
                         planning
                     );
 
-                console.log(
-                    "✓ Résultat du contrôle global :",
-                    resultatControle
-                );
+             console.log(
+                "✓ Résultat du contrôle global :\n",
+                JSON.stringify(resultatControle, null, 2)
+                   );
 
                 // =================================================
                 // VÉRIFIER QUE LE PLANNING EST VALIDE
