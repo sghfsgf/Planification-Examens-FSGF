@@ -2431,71 +2431,7 @@ function placerMatieresSpecifiques(planning) {
         matieresRestantes = prochaineListe;
     }
 
-    // =====================================================
-// TEST TEMPORAIRE DE LA STRATÉGIE 3
-// =====================================================
-
-const FILIERE_TEST = "MR CH_ORG 1";
-
-const matiereTest = matieresSpecifiques.find(
-    function (matiere) {
-        return matiere.filiereCode === FILIERE_TEST;
-    }
-);
-
-if (matiereTest) {
-
-    const filiereTest = planning.filieres.find(
-        function (filiere) {
-            return filiere.filiereCode === FILIERE_TEST;
-        }
-    );
-
-    const celluleTest = filiereTest.cellules.find(
-        function (cellule) {
-            return (
-                cellule.estOccupee &&
-                !cellule.estCommune &&
-                cellule.matiereLibelle === matiereTest.matiereLibelle
-            );
-        }
-    );
-
-    if (celluleTest) {
-
-        celluleTest.estOccupee = false;
-        celluleTest.matiereLibelle = "";
-        celluleTest.regimeCode = "";
-        celluleTest.semestreCode = "";
-        celluleTest.filiereCode = undefined;
-
-        if (
-            !matieresRestantes.some(
-                function (matiere) {
-                    return (
-                        matiere.filiereCode === FILIERE_TEST &&
-                        matiere.matiereLibelle === matiereTest.matiereLibelle
-                    );
-                }
-            )
-        ) {
-            matieresRestantes.push(matiereTest);
-        }
-
-        console.log(
-            "TEST STRATÉGIE 3 : matière temporairement libérée :",
-            matiereTest.matiereLibelle
-        );
-
-    } else {
-
-        console.warn(
-            "TEST NON EFFECTUÉ : aucune matière déjà placée trouvée pour",
-            FILIERE_TEST
-        );
-    }
-}
-    
+   
     // -------------------------------------------------
     // 6. STRATÉGIE 3 :
     //    RÉORGANISATION COMPLÈTE PAR FILIÈRE
