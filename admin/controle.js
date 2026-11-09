@@ -286,24 +286,45 @@ function verifierDoublonsMatieres(planning) {
 // CONVERSION DES DATES POUR LE CONTRÔLE
 // =====================================================
 
+
 function convertirDateControle(date) {
+
+    let dateConvertie;
 
     // Timestamp Firestore
     if (
         date &&
         typeof date.toDate === "function"
     ) {
-        return date.toDate();
+        dateConvertie = date.toDate();
     }
 
     // Date JavaScript
-    if (date instanceof Date) {
-        return date;
+    else if (date instanceof Date) {
+        dateConvertie = date;
     }
 
-    // Autre format
-    return new Date(date);
+    // Chaîne ou autre format accepté par JavaScript
+    else {
+        dateConvertie = new Date(date);
+    }
+
+    // Vérifier la validité
+    if (
+        !(dateConvertie instanceof Date) ||
+        Number.isNaN(dateConvertie.getTime())
+    ) {
+        return null;
+    }
+
+    // Retourner uniquement le jour civil
+    return (
+        dateConvertie.getFullYear() + "-" +
+        String(dateConvertie.getMonth() + 1).padStart(2, "0") + "-" +
+        String(dateConvertie.getDate()).padStart(2, "0")
+    );
 }
+
 
 function verifierMatieresCommunes(planning) {
 
