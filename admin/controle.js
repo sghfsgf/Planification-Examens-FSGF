@@ -326,6 +326,7 @@ function convertirDateControle(date) {
 }
 
 
+
 function verifierMatieresCommunes(planning) {
 
     console.log("------------------------------------------");
@@ -344,10 +345,6 @@ function verifierMatieresCommunes(planning) {
 
     const erreurs = [];
 
-    // -------------------------------------------------
-    // Parcourir les matières communes prévues
-    // -------------------------------------------------
-
     (planning.matieresCommunes || []).forEach(function (matiereCommune) {
 
         const matiereLibelle =
@@ -358,15 +355,11 @@ function verifierMatieresCommunes(planning) {
 
         const placements = [];
 
-        // -------------------------------------------------
-        // Chercher le placement de cette matière
-        // dans chaque filière concernée
-        // -------------------------------------------------
-
+        // Vérifier chaque filière concernée
         filieres.forEach(function (filiereCode) {
 
             const filiere =
-                planning.filieres.find(function (f) {
+                (planning.filieres || []).find(function (f) {
 
                     return f.filiereCode === filiereCode;
 
@@ -383,8 +376,8 @@ function verifierMatieresCommunes(planning) {
                 return;
             }
 
-            const cellule =
-                filiere.cellules.find(function (cellule) {
+            const cellules =
+                (filiere.cellules || []).filter(function (cellule) {
 
                     return (
                         cellule.estOccupee === true &&
@@ -393,7 +386,7 @@ function verifierMatieresCommunes(planning) {
 
                 });
 
-            if (!cellule) {
+            if (cellules.length === 0) {
 
                 erreurs.push({
                     matiereLibelle: matiereLibelle,
@@ -404,61 +397,75 @@ function verifierMatieresCommunes(planning) {
                 return;
             }
 
+            if (cellules.length > 1) {
+
+                erreurs.push({
+                    matiereLibelle: matiereLibelle,
+                    filiereCode: filiereCode,
+                    erreur: "Matière commune présente plusieurs fois"
+                });
+
+                return;
+            }
+
+            const cellule = cellules[0];
+
+            const dateNormalisee =
+                convertirDateControle(cellule.date);
+
+            const creneau =
+                Number(cellule.creneauOrdre);
+
+            if (
+                dateNormalisee === null ||
+                !Number.isInteger(creneau)
+            ) {
+
+                erreurs.push({
+                    matiereLibelle: matiereLibelle,
+                    filiereCode: filiereCode,
+                    erreur: "Date ou créneau invalide"
+                });
+
+                return;
+            }
+
             placements.push({
 
                 filiereCode: filiereCode,
 
-                date: cellule.date,
+                date: dateNormalisee,
 
-                dateAffichage:
-                    cellule.dateAffichage,
+                creneauOrdre: creneau,
 
-                creneauOrdre:
-                    cellule.creneauOrdre
+                dateAffichage: cellule.dateAffichage
 
             });
 
         });
 
-        // -------------------------------------------------
-        // Vérifier que toutes les filières ont été trouvées
-        // -------------------------------------------------
-
+        // Ne comparer que si tous les placements sont disponibles
         if (placements.length !== filieres.length) {
-
             return;
-
         }
 
-        // -------------------------------------------------
-        // Vérifier que tous les placements sont identiques
-        // -------------------------------------------------
-
-        const premierPlacement =
-            placements[0];
+        const premierPlacement = placements[0];
 
         placements.forEach(function (placement) {
 
-          if (
-    convertirDateControle(
-        placement.date
-    ).getTime() !==
-    convertirDateControle(
-        premierPlacement.date
-    ).getTime() ||
-    Number(placement.creneauOrdre) !==
-    Number(premierPlacement.creneauOrdre)
-) {
+            if (
+                placement.date !== premierPlacement.date ||
+                placement.creneauOrdre !== premierPlacement.creneauOrdre
+            ) {
+
                 erreurs.push({
 
-                    matiereLibelle:
-                        matiereLibelle,
+                    matiereLibelle: matiereLibelle,
 
-                    filiereCode:
-                        placement.filiereCode,
+                    filiereCode: placement.filiereCode,
 
                     erreur:
-                        "La matière commune n'est pas placée au même date/créneau",
+                        "La matière commune n'est pas placée au même jour/créneau",
 
                     dateAttendue:
                         premierPlacement.dateAffichage,
@@ -480,10 +487,6 @@ function verifierMatieresCommunes(planning) {
 
     });
 
-    // -------------------------------------------------
-    // Résultat
-    // -------------------------------------------------
-
     const resultat = {
 
         valide: erreurs.length === 0,
@@ -492,15 +495,12 @@ function verifierMatieresCommunes(planning) {
 
     };
 
-    console.log(
-        "Erreurs détectées :",
-        erreurs.length
-    );
+    console.log("Erreurs détectées :", erreurs.length);
 
     if (resultat.valide) {
 
         console.log(
-            "✓ Toutes les matières communes sont placées au même date/créneau."
+            "✓ Toutes les matières communes sont placées au même jour/créneau."
         );
 
     } else {
@@ -514,6 +514,7 @@ function verifierMatieresCommunes(planning) {
 
     return resultat;
 }
+
 
 // =====================================================
 // 4. Vérifier les créneaux successifs pour une filière
