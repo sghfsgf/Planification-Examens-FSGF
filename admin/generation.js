@@ -26,6 +26,19 @@
 //   est inférieur ou égal à 1
 // =====================================================
 
+// =====================================================
+// FONCTION UTILITAIRE : IDENTIFICATION D'UN CRÉNEAU
+// =====================================================
+
+function obtenirCleCreneau(cellule) {
+
+    return (
+        String(cellule.date) +
+        "|" +
+        String(cellule.creneauOrdre)
+    );
+}
+
 import { app } from "../firebase-config.js";
 
 
@@ -2437,14 +2450,7 @@ function placerMatieresSpecifiques(planning) {
     //      RÉELS DU CALENDRIER EN COURS
     // -------------------------------------------------
 
-    function obtenirCleCreneau(cellule) {
-
-        return (
-            String(cellule.date) +
-            "|" +
-            String(cellule.creneauOrdre)
-        );
-    }
+   
 
     function calculerChargesGlobales() {
 
