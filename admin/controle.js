@@ -520,6 +520,7 @@ function verifierMatieresCommunes(planning) {
 // 4. Vérifier les créneaux successifs pour une filière
 // =====================================================
 
+
 function verifierCreneauxSuccessifs(planning) {
 
     console.log("------------------------------------------");
@@ -542,31 +543,60 @@ function verifierCreneauxSuccessifs(planning) {
     // Parcourir toutes les filières
     // -------------------------------------------------
 
-    planning.filieres.forEach(function (filiere) {
-
-        // -------------------------------------------------
-        // Regrouper les cellules par date
-        // -------------------------------------------------
+    (planning.filieres || []).forEach(function (filiere) {
 
         const cellulesParDate = {};
 
-        filiere.cellules.forEach(function (cellule) {
+        // -------------------------------------------------
+        // Regrouper les examens par jour civil
+        // -------------------------------------------------
 
-            if (!cellule.estOccupee) {
+        (filiere.cellules || []).forEach(function (cellule) {
+
+            if (
+                cellule.estOccupee !== true ||
+                !cellule.matiereLibelle
+            ) {
                 return;
             }
 
-            if (!cellule.matiereLibelle) {
+            const date =
+                convertirDateControle(cellule.date);
+
+            const creneau =
+                Number(cellule.creneauOrdre);
+
+            if (
+                date === null ||
+                !Number.isInteger(creneau)
+            ) {
+
+                erreurs.push({
+
+                    filiereCode: filiere.filiereCode,
+
+                    matiereLibelle: cellule.matiereLibelle,
+
+                    erreur: "Date ou créneau invalide"
+
+                });
+
                 return;
             }
-
-            const date = cellule.date;
 
             if (!cellulesParDate[date]) {
                 cellulesParDate[date] = [];
             }
 
-            cellulesParDate[date].push(cellule);
+            cellulesParDate[date].push({
+
+                matiereLibelle: cellule.matiereLibelle,
+
+                creneauOrdre: creneau,
+
+                dateAffichage: cellule.dateAffichage
+
+            });
 
         });
 
@@ -576,8 +606,7 @@ function verifierCreneauxSuccessifs(planning) {
 
         Object.keys(cellulesParDate).forEach(function (date) {
 
-            const cellules =
-                cellulesParDate[date];
+            const cellules = cellulesParDate[date];
 
             cellules.forEach(function (cellule) {
 
@@ -595,23 +624,17 @@ function verifierCreneauxSuccessifs(planning) {
 
                     erreurs.push({
 
-                        filiereCode:
-                            filiere.filiereCode,
+                        filiereCode: filiere.filiereCode,
 
-                        date:
-                            cellule.dateAffichage,
+                        date: cellule.dateAffichage,
 
-                        matiere1:
-                            cellule.matiereLibelle,
+                        matiere1: cellule.matiereLibelle,
 
-                        creneau1:
-                            cellule.creneauOrdre,
+                        creneau1: cellule.creneauOrdre,
 
-                        matiere2:
-                            creneauSuivant.matiereLibelle,
+                        matiere2: creneauSuivant.matiereLibelle,
 
-                        creneau2:
-                            creneauSuivant.creneauOrdre,
+                        creneau2: creneauSuivant.creneauOrdre,
 
                         erreur:
                             "Deux examens sont placés dans des créneaux successifs le même jour."
@@ -632,18 +655,13 @@ function verifierCreneauxSuccessifs(planning) {
 
     const resultat = {
 
-        valide:
-            erreurs.length === 0,
+        valide: erreurs.length === 0,
 
-        erreurs:
-            erreurs
+        erreurs: erreurs
 
     };
 
-    console.log(
-        "Erreurs détectées :",
-        erreurs.length
-    );
+    console.log("Erreurs détectées :", erreurs.length);
 
     if (resultat.valide) {
 
@@ -654,14 +672,14 @@ function verifierCreneauxSuccessifs(planning) {
     } else {
 
         console.warn(
-            "⚠️ Créneaux successifs détectés :",
-            erreurs
+            "⚠️ Créneaux successifs détectés :", erreurs
         );
 
     }
 
     return resultat;
 }
+
 // =====================================================
 // 5. Vérifier l'équilibrage des charges des créneaux
 // =====================================================
