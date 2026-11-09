@@ -7,6 +7,7 @@
 // 1. Vérifier que toutes les matières prévues sont placées
 // =====================================================
 
+
 function verifierMatieresPlacees(planning) {
 
     console.log("------------------------------------------");
@@ -21,12 +22,13 @@ function verifierMatieresPlacees(planning) {
             valide: false,
             totalPrevu: 0,
             totalPlace: 0,
-            matieresManquantes: []
+            matieresManquantes: [],
+            matieresNonPrevues: []
         };
     }
 
     // -------------------------------------------------
-    // Construire la liste des matières prévues
+    // 1. Construire la liste des matières prévues
     // -------------------------------------------------
 
     const matieresPrevues = [];
@@ -34,11 +36,9 @@ function verifierMatieresPlacees(planning) {
     // Matières communes
     (planning.matieresCommunes || []).forEach(function (matiere) {
 
-        matiere.filieres.forEach(function (filiereCode) {
+        (matiere.filieres || []).forEach(function (filiereCode) {
 
             matieresPrevues.push({
-
-                
                 filiereCode: filiereCode,
                 matiereLibelle: matiere.matiereLibelle
             });
@@ -58,20 +58,19 @@ function verifierMatieresPlacees(planning) {
     });
 
     // -------------------------------------------------
-    // Construire la liste des matières effectivement placées
+    // 2. Construire la liste des matières placées
     // -------------------------------------------------
 
     const matieresPlacees = [];
 
-    planning.filieres.forEach(function (filiere) {
+    (planning.filieres || []).forEach(function (filiere) {
 
-        filiere.cellules.forEach(function (cellule) {
+        (filiere.cellules || []).forEach(function (cellule) {
 
-            if (!cellule.estOccupee) {
-                return;
-            }
-
-            if (!cellule.matiereLibelle) {
+            if (
+                cellule.estOccupee !== true ||
+                !cellule.matiereLibelle
+            ) {
                 return;
             }
 
@@ -85,7 +84,7 @@ function verifierMatieresPlacees(planning) {
     });
 
     // -------------------------------------------------
-    // Rechercher les matières manquantes
+    // 3. Rechercher les matières manquantes
     // -------------------------------------------------
 
     const matieresManquantes = [];
@@ -102,43 +101,73 @@ function verifierMatieresPlacees(planning) {
         });
 
         if (!trouvee) {
-
             matieresManquantes.push(matierePrevue);
-
         }
 
     });
 
     // -------------------------------------------------
-    // Résultat
+    // 4. Rechercher les matières non prévues
+    // -------------------------------------------------
+
+    const matieresNonPrevues = [];
+
+    matieresPlacees.forEach(function (matierePlacee) {
+
+        const trouvee = matieresPrevues.some(function (matierePrevue) {
+
+            return (
+                matierePrevue.filiereCode === matierePlacee.filiereCode &&
+                matierePrevue.matiereLibelle === matierePlacee.matiereLibelle
+            );
+
+        });
+
+        if (!trouvee) {
+            matieresNonPrevues.push(matierePlacee);
+        }
+
+    });
+
+    // -------------------------------------------------
+    // 5. Résultat
     // -------------------------------------------------
 
     const resultat = {
-        valide: matieresManquantes.length === 0,
+
+        valide:
+            matieresManquantes.length === 0 &&
+            matieresNonPrevues.length === 0,
+
         totalPrevu: matieresPrevues.length,
+
         totalPlace: matieresPlacees.length,
-        matieresManquantes: matieresManquantes
+
+        matieresManquantes: matieresManquantes,
+
+        matieresNonPrevues: matieresNonPrevues
+
     };
 
     console.log("Matières prévues :", resultat.totalPrevu);
     console.log("Matières placées :", resultat.totalPlace);
-    console.log("Matières manquantes :", resultat.matieresManquantes.length);
+    console.log("Matières manquantes :", matieresManquantes.length);
+    console.log("Matières non prévues :", matieresNonPrevues.length);
 
     if (resultat.valide) {
 
-        console.log("✓ Toutes les matières sont placées.");
+        console.log("✓ Correspondance entre matières prévues et placées.");
 
     } else {
 
-        console.warn(
-            "⚠️ Matières manquantes :",
-            resultat.matieresManquantes
-        );
+        console.warn("⚠️ Matières manquantes :", matieresManquantes);
+        console.warn("⚠️ Matières non prévues :", matieresNonPrevues);
 
     }
 
     return resultat;
 }
+
 // =====================================================
 // 2. Vérifier les doublons de matières par filière
 // =====================================================
