@@ -2739,6 +2739,7 @@ function placerMatieresSpecifiques(planning) {
                 // Placer la matière.
 
                 cellule.estOccupee = true;
+                cellule.estCommune = false;
                 cellule.matiereLibelle =
                     meilleureMatiere.matiereLibelle;
                 cellule.regimeCode =
@@ -2815,6 +2816,7 @@ function placerMatieresSpecifiques(planning) {
                 const matiere = affectation.matiere;
 
                 cellule.estOccupee = true;
+                cellule.estCommune = false;
                 cellule.matiereLibelle =
                     matiere.matiereLibelle;
                 cellule.regimeCode =
