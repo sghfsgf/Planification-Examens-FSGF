@@ -2563,6 +2563,16 @@ function placerMatieresSpecifiques(planning) {
         )
     ];
 
+    console.log(
+    "Matières restantes avant stratégie 3 :",
+    matieresRestantes.length
+);
+
+console.log(
+    "Filières à réorganiser :",
+    filieresAReorganiser
+);
+
     filieresAReorganiser.forEach(function (filiereCode) {
 
         const filiere = planning.filieres.find(
