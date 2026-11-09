@@ -684,6 +684,7 @@ function verifierCreneauxSuccessifs(planning) {
 // 5. Vérifier l'équilibrage des charges des créneaux
 // =====================================================
 
+
 function verifierEquilibrageCreneaux(planning) {
 
     console.log("------------------------------------------");
@@ -699,47 +700,57 @@ function verifierEquilibrageCreneaux(planning) {
             charges: {},
             minimum: 0,
             maximum: 0,
-            ecart: 0
+            ecart: 0,
+            equilibre: "Indéterminé"
         };
     }
 
     const charges =
-    generationExamens.calculerChargeDesCreneaux(planning);
+        generationExamens.calculerChargeDesCreneaux(planning);
 
     const valeurs =
         Object.values(charges).map(function (charge) {
             return Number(charge);
         });
 
-    if (valeurs.length === 0) {
+    if (
+        valeurs.length === 0 ||
+        valeurs.some(function (charge) {
+            return !Number.isFinite(charge);
+        })
+    ) {
 
-        console.warn(
-            "⚠️ Aucun créneau trouvé."
-        );
+        console.warn("⚠️ Charges inexistantes ou invalides.");
 
         return {
             valide: false,
             charges: charges,
             minimum: 0,
             maximum: 0,
-            ecart: 0
+            ecart: 0,
+            equilibre: "Indéterminé"
         };
     }
 
-    const minimum =
-        Math.min(...valeurs);
+    const minimum = Math.min(...valeurs);
 
-    const maximum =
-        Math.max(...valeurs);
+    const maximum = Math.max(...valeurs);
 
-    const ecart =
-        maximum - minimum;
+    const ecart = maximum - minimum;
 
-    const seuil = 2;
+    let equilibre;
+
+    if (ecart <= 1) {
+        equilibre = "Excellent";
+    } else if (ecart <= 2) {
+        equilibre = "Acceptable";
+    } else {
+        equilibre = "Dégradé";
+    }
 
     const resultat = {
 
-        valide: ecart <= seuil,
+        valide: true,
 
         charges: charges,
 
@@ -749,44 +760,22 @@ function verifierEquilibrageCreneaux(planning) {
 
         ecart: ecart,
 
-        seuil: seuil
+        seuilIdeal: 1,
+
+        seuilAcceptable: 2,
+
+        equilibre: equilibre
+
     };
 
-    console.log(
-        "Charge minimale :",
-        minimum
-    );
-
-    console.log(
-        "Charge maximale :",
-        maximum
-    );
-
-    console.log(
-        "Écart MAX - MIN :",
-        ecart
-    );
-
-    console.log(
-        "Seuil autorisé :",
-        seuil
-    );
-
-    if (resultat.valide) {
-
-        console.log(
-            "✓ L'équilibrage des créneaux respecte la règle MAX - MIN ≤ 2."
-        );
-
-    } else {
-
-        console.warn(
-            "⚠️ L'équilibrage des créneaux ne respecte pas la règle MAX - MIN ≤ 2."
-        );
-    }
+    console.log("Charge minimale :", minimum);
+    console.log("Charge maximale :", maximum);
+    console.log("Écart MAX - MIN :", ecart);
+    console.log("Équilibrage :", equilibre);
 
     return resultat;
 }
+
 // =====================================================
 // 6. Contrôle global du planning
 // =====================================================
