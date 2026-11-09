@@ -2676,18 +2676,19 @@ function placerMatieresSpecifiques(planning) {
                 matieresRestantesRecherche[0];
 
             const meilleuresCellules =
-                filiere.cellules.filter(
-                    function (cellule) {
+    filiere.cellules.filter(
+        function (cellule) {
 
-                        return (
-                            !cellule.estOccupee &&
-                            positionRespecteContraintes(
-                                filiere,
-                                cellule
-                            )
-                        );
-                    }
-                );
+            return (
+                !cellule.estOccupee &&
+                !cellule.estCommune &&
+                positionRespecteContraintes(
+                    filiere,
+                    cellule
+                )
+            );
+        }
+    );
 
             if (meilleuresCellules.length === 0) {
                 return;
@@ -2914,8 +2915,6 @@ function placerMatieresSpecifiques(planning) {
 
     return planning;
 }
-
-
 
 
 // =====================================================
