@@ -2155,24 +2155,35 @@ for (
 
     function sauvegarderCellule(cellule) {
 
-        return {
-            estOccupee: cellule.estOccupee,
-            estCommune: cellule.estCommune,
-            matiereLibelle: cellule.matiereLibelle,
-            regimeCode: cellule.regimeCode,
-            semestreCode: cellule.semestreCode,
-            filiereCode: cellule.filiereCode
-        };
+        const sauvegarde = {};
+        const proprietes = [
+            "estOccupee", "estCommune", "matiereLibelle",
+            "regimeCode", "semestreCode", "filiereCode"
+        ];
+
+        proprietes.forEach(function (propriete) {
+            if (Object.prototype.hasOwnProperty.call(cellule, propriete)) {
+                sauvegarde[propriete] = cellule[propriete];
+            }
+        });
+
+        return sauvegarde;
     }
 
     function restaurerCellule(cellule, sauvegarde) {
 
-        cellule.estOccupee = sauvegarde.estOccupee;
-        cellule.estCommune = sauvegarde.estCommune;
-        cellule.matiereLibelle = sauvegarde.matiereLibelle;
-        cellule.regimeCode = sauvegarde.regimeCode;
-        cellule.semestreCode = sauvegarde.semestreCode;
-        cellule.filiereCode = sauvegarde.filiereCode;
+        const proprietes = [
+            "estOccupee", "estCommune", "matiereLibelle",
+            "regimeCode", "semestreCode", "filiereCode"
+        ];
+
+        proprietes.forEach(function (propriete) {
+            if (Object.prototype.hasOwnProperty.call(sauvegarde, propriete)) {
+                cellule[propriete] = sauvegarde[propriete];
+            } else {
+                delete cellule[propriete];
+            }
+        });
     }
 
     // -------------------------------------------------
@@ -2275,7 +2286,7 @@ for (
         celluleExistante.matiereLibelle = "";
         celluleExistante.regimeCode = "";
         celluleExistante.semestreCode = "";
-        celluleExistante.filiereCode = undefined;
+        celluleExistante.filiereCode = "";
 
         // Déplacer l'ancienne matière en créneau 1.
 
@@ -2536,7 +2547,7 @@ console.log(
                 cellule.matiereLibelle = "";
                 cellule.regimeCode = "";
                 cellule.semestreCode = "";
-                cellule.filiereCode = undefined;
+                cellule.filiereCode = "";
             }
         });
 
@@ -2725,7 +2736,7 @@ console.log(
                     cellule.matiereLibelle = "";
                     cellule.regimeCode = "";
                     cellule.semestreCode = "";
-                    cellule.filiereCode = undefined;
+                    cellule.filiereCode = "";
                 }
             });
 
