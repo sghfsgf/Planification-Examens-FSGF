@@ -31,7 +31,11 @@
 // =====================================================
 
 function obtenirCleCreneau(cellule) {
-    return String(cellule.date) + "|" + String(cellule.creneauOrdre);
+    return (
+        String(cellule.date) +
+        "|" +
+        String(cellule.creneauOrdre)
+    );
 }
 
 import { app } from "../firebase-config.js";
