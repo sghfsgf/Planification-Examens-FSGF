@@ -1932,10 +1932,9 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         return null;
     }
 
-    // -------------------------------------------------
-    // 5. Choisir la position qui équilibre le mieux
-    //    les charges globales après le placement
-    // -------------------------------------------------
+   // Priorité 1 : choisir le créneau le moins chargé avant placement.
+   // Priorité 2 : minimiser l'écart global après placement.
+   // Priorité 3 : minimiser la dispersion globale.
 
     let positionChoisie = null;
     let meilleurEcart = Infinity;
