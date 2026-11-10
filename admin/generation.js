@@ -1727,10 +1727,14 @@ function placerMatieresCommunes(planning) {
                                 }
                             );
 
-                        return (
-                            cellule &&
-                            cellule.estOccupee === false
-                        );
+                       if (!cellule || cellule.estOccupee !== false) {
+    return false;
+}
+
+return !aUnExamenAdjacent(
+    filiere,
+    cellule
+);
 
                     }
                 );
@@ -4066,16 +4070,25 @@ console.log(
                 // =================================================
 
                 if (
-                    !resultatControle ||
-                    !resultatControle.valide
-                ) {
+    !resultatControle ||
+    resultatControle.valide !== true ||
+    resultatControle.matieresPlacees?.valide !== true
+) {
+    console.warn(
+        "Enregistrement annulé : planning invalide ou incomplet.",
+        resultatControle
+    );
 
-                    console.warn(
-                        "⚠️ Le planning n'est pas valide. Enregistrement annulé."
-                    );
+    alert(
+        "Le calendrier ne peut pas être enregistré : " +
+        "des matières sont manquantes, non prévues " +
+        "ou d'autres contraintes ne sont pas respectées. " +
+        "Consultez le résultat du contrôle."
+    );
 
-                    return;
-                }
+    return;
+}
+
 
                 // =================================================
                 // ENREGISTRER LE CALENDRIER
