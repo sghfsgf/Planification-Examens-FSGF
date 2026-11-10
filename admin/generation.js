@@ -49,7 +49,8 @@ import {
     doc,
     setDoc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 // =====================================================
@@ -3657,139 +3658,106 @@ if (documentExistant.exists()) {
 // =====================================================
 
 async function publierCalendrier(idCalendrier) {
-
-    console.log("==========================================");
-    console.log("📢 PUBLICATION DU CALENDRIER");
-    console.log("==========================================");
-
     if (!idCalendrier) {
-
-        console.error(
-            "❌ Aucun calendrier à publier."
-        );
-
+        console.error("Aucun calendrier à publier.");
         return false;
     }
 
-    console.log(
-        "ID du calendrier à publier :",
-        idCalendrier
-    );
+    const validateur =
+        window.controleExamens?.verifierPlanningGlobal;
+
+    if (typeof validateur !== "function") {
+        console.error(
+            "Le module de contrôle n'est pas disponible."
+        );
+        return false;
+    }
+
+    const referenceCalendrier =
+        doc(db, "calendriers", idCalendrier);
 
     try {
+        await runTransaction(db, async function (transaction) {
+            const documentCalendrier =
+                await transaction.get(referenceCalendrier);
 
-        // -------------------------------------------------
-        // Référence du calendrier
-        // -------------------------------------------------
+            if (!documentCalendrier.exists()) {
+                throw new Error("Calendrier introuvable.");
+            }
 
-        const referenceCalendrier =
-            doc(
-                db,
-                "calendriers",
-                idCalendrier
-            );
+            const donneesCalendrier =
+                documentCalendrier.data();
 
-        // -------------------------------------------------
-        // Lire le calendrier existant
-        // -------------------------------------------------
+            if (donneesCalendrier.statut !== "brouillon") {
+                throw new Error(
+                    "Seul un calendrier en brouillon peut être publié."
+                );
+            }
 
-        const documentCalendrier =
-            await getDoc(
-                referenceCalendrier
-            );
+            const planning = donneesCalendrier.planning;
 
-        if (!documentCalendrier.exists()) {
+            // Refuser un planning absent ou sans filières.
+            if (
+                !planning ||
+                !Array.isArray(planning.filieres) ||
+                planning.filieres.length === 0 ||
+                !Array.isArray(planning.matieresCommunes) ||
+                !Array.isArray(planning.matieresSpecifiques)
+            ) {
+                throw new Error(
+                    "Le planning enregistré est absent ou mal structuré."
+                );
+            }
 
-            console.error(
-                "❌ Calendrier introuvable :",
-                idCalendrier
-            );
+            const nombreMatieresPrevues =
+                planning.matieresCommunes.length +
+                planning.matieresSpecifiques.length;
 
-            return false;
-        }
+            if (nombreMatieresPrevues === 0) {
+                throw new Error(
+                    "Le planning ne contient aucune matière prévue."
+                );
+            }
 
-        const donneesCalendrier =
-            documentCalendrier.data();
+            const resultatControle = validateur(planning);
 
-        console.log(
-            "✓ Calendrier trouvé :",
-            idCalendrier
-        );
+            if (
+                !resultatControle ||
+                resultatControle.valide !== true ||
+                resultatControle.matieresPlacees?.valide !== true
+            ) {
+                throw new Error(
+                    "Le planning enregistré est invalide ou incomplet."
+                );
+            }
 
-        console.log(
-            "Statut actuel :",
-            donneesCalendrier.statut
-        );
-
-        // -------------------------------------------------
-        // Vérifier qu'il s'agit bien d'un brouillon
-        // -------------------------------------------------
-
-        if (
-            donneesCalendrier.statut !==
-            "brouillon"
-        ) {
-
-            console.warn(
-                "⚠️ Le calendrier n'est pas un brouillon."
-            );
-
-            console.warn(
-                "Statut actuel :",
-                donneesCalendrier.statut
-            );
-
-            return false;
-        }
-
-        // -------------------------------------------------
-        // Publier
-        // -------------------------------------------------
-
-        await setDoc(
-            referenceCalendrier,
-            {
+            transaction.update(referenceCalendrier, {
                 statut: "publie",
                 modifieLe: serverTimestamp()
-            },
-            {
-                merge: true
-            }
-        );
+            });
+        });
 
         console.log(
-            "------------------------------------------"
-        );
-
-        console.log(
-            "✅ CALENDRIER PUBLIÉ DANS FIRESTORE"
-        );
-
-        console.log(
-            "Document :",
+            "Calendrier contrôlé et publié :",
             idCalendrier
-        );
-
-        console.log(
-            "Statut : publie"
-        );
-
-        console.log(
-            "------------------------------------------"
         );
 
         return true;
-
     } catch (erreur) {
-
         console.error(
-            "❌ Erreur lors de la publication :",
+            "Publication refusée ou échouée :",
             erreur
+        );
+
+        alert(
+            "Le calendrier n'a pas été publié. " +
+            "Consultez la console pour connaître la cause."
         );
 
         return false;
     }
 }
+
 // =====================================================
 // ACCÈS AUX DONNÉES CHARGÉES POUR LES AUTRES MODULES
 // =====================================================
