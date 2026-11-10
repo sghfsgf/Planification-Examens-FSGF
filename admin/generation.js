@@ -3781,7 +3781,7 @@ function definirDernierCalendrierEnregistre(idCalendrier) {
     );
 }
 
-onsole.log("EXPORT GENERATION.JS ATTEINT");
+console.log("EXPORT GENERATION.JS ATTEINT");
 window.generationExamens = {
 
     definirDernierCalendrierEnregistre:
