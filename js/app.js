@@ -9,7 +9,7 @@
 // 1. ATTENDRE LE CHARGEMENT DE LA PAGE
 // =========================================================
 
-document.addEventListener("DOMContentLoaded", () => {
+function initialiserApplicationPublique() {
 
     // -----------------------------------------------------
     // Éléments principaux
@@ -184,128 +184,8 @@ const selectSession = document.getElementById(
     "selectSession"
 );
 
-    // -----------------------------------------------------
-    // Sessions disponibles selon semestre + régime
-    //
-    // CC  -> DS uniquement
-    // MX  -> Principale + Rattrapage
-    // -----------------------------------------------------
-
-    function mettreAJourSessions() {
-
-        if (!selectSemestre || !selectRegime || !selectSession) {
-            return;
-        }
-
-
-        const semestre = selectSemestre.value;
-        const regime = selectRegime.value;
-
-
-        // Conserver la sélection actuelle si possible
-        const ancienneValeur = selectSession.value;
-
-
-        // Vider la liste
-        selectSession.innerHTML = "";
-
-
-        // -------------------------------------------------
-        // Régime CC
-        // -------------------------------------------------
-
-        if (regime === "CC") {
-
-            const optionDS = document.createElement(
-                "option"
-            );
-
-            optionDS.value = `DS_${semestre}`;
-
-            optionDS.textContent =
-                `DS ${semestre.replace("S", "S")}`;
-
-            selectSession.appendChild(optionDS);
-
-        }
-
-
-        // -------------------------------------------------
-        // Régime MX
-        // -------------------------------------------------
-
-        else if (regime === "MX") {
-
-            const optionPrincipale =
-                document.createElement("option");
-
-            optionPrincipale.value =
-                `PRINCIPALE_${semestre}`;
-
-            optionPrincipale.textContent =
-                `Session principale ${semestre}`;
-
-            selectSession.appendChild(
-                optionPrincipale
-            );
-
-
-            const optionRattrapage =
-                document.createElement("option");
-
-            optionRattrapage.value =
-                `RATTRAPAGE_${semestre}`;
-
-            optionRattrapage.textContent =
-                `Rattrapage ${semestre}`;
-
-            selectSession.appendChild(
-                optionRattrapage
-            );
-
-        }
-
-
-        // -------------------------------------------------
-        // Restaurer l'ancienne sélection si elle existe
-        // -------------------------------------------------
-
-        const optionExiste = Array.from(
-            selectSession.options
-        ).some(
-            option => option.value === ancienneValeur
-        );
-
-
-        if (optionExiste) {
-            selectSession.value = ancienneValeur;
-        }
-
-    }
-
-
-    if (selectSemestre) {
-
-        selectSemestre.addEventListener(
-            "change",
-            mettreAJourSessions
-        );
-
-    }
-
-
-    if (selectRegime) {
-
-        selectRegime.addEventListener(
-            "change",
-            mettreAJourSessions
-        );
-
-    }
-
-
-    // Initialisation des sessions
-    mettreAJourSessions();
+    // Les options régime/session sont exclusivement gérées par calendriers.js.
+    // Ne pas reconstruire ici une liste de codes CC/MX prédéfinis.
 // =====================================================
 // 7. BOUTON AFFICHER LE CALENDRIER
 // =====================================================
@@ -558,4 +438,10 @@ console.log(
     "Planification des examens : application initialisée."
 );
 
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialiserApplicationPublique, { once: true });
+} else {
+    initialiserApplicationPublique();
+}
