@@ -1985,18 +1985,18 @@ function trouverPositionPourMatiereSpecifique(planning, filiereCode) {
         // Priorité 3 : préférer le créneau le moins chargé
         // avant placement.
 
-        if (
-            ecart < meilleurEcart ||
-            (
-                ecart === meilleurEcart &&
-                dispersion < meilleureDispersion
-            ) ||
-            (
-                ecart === meilleurEcart &&
-                dispersion === meilleureDispersion &&
-                chargeAvant < meilleureChargeAvant
-            )
-        ) {
+      if (
+    chargeAvant < meilleureChargeAvant ||
+    (
+        chargeAvant === meilleureChargeAvant &&
+        ecart < meilleurEcart
+    ) ||
+    (
+        chargeAvant === meilleureChargeAvant &&
+        ecart === meilleurEcart &&
+        dispersion < meilleureDispersion
+    )
+) {
             positionChoisie = position;
             meilleurEcart = ecart;
             meilleureDispersion = dispersion;
