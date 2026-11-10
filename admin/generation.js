@@ -2060,17 +2060,64 @@ function placerMatieresSpecifiques(planning) {
         return planning;
     }
 
-   // -------------------------------------------------
-// 5. PRÉPARATION DE LA RECHERCHE RÉCURSIVE
+// -------------------------------------------------
+// 1. PLACEMENT INITIAL
+//    ARRÊT AU PREMIER BLOCAGE
 // -------------------------------------------------
 
-let matieresRestantes =
-    matieresNonPlacees.slice();
+for (
+    let i = 0;
+    i < matieresSpecifiques.length;
+    i++
+) {
 
-console.log(
-    "Matières transmises à la stratégie 3 :",
-    matieresRestantes.length
-);
+    const matiere = matieresSpecifiques[i];
+
+    const filiereCode = matiere.filiereCode;
+
+    const position =
+        trouverPositionPourMatiereSpecifique(
+            planning,
+            filiereCode
+        );
+
+    if (!position) {
+
+        console.warn(
+            "⚠️ Premier blocage détecté :",
+            matiere.matiereLibelle,
+            "|",
+            filiereCode
+        );
+
+        matieresNonPlacees.push(
+            ...matieresSpecifiques.slice(i)
+        );
+
+        break;
+    }
+
+    position.estOccupee = true;
+    position.matiereLibelle =
+        matiere.matiereLibelle;
+    position.regimeCode =
+        matiere.regimeCode;
+    position.semestreCode =
+        matiere.semestreCode;
+    position.filiereCode =
+        filiereCode;
+
+    console.log(
+        "✓ Matière placée :",
+        matiere.matiereLibelle,
+        "|",
+        filiereCode,
+        "|",
+        position.dateAffichage,
+        "| Créneau",
+        position.creneauOrdre
+    );
+}
 
     // -------------------------------------------------
     // 2. SAUVEGARDE ET RESTAURATION
@@ -2247,157 +2294,17 @@ console.log(
         return true;
     }
 
-    // -------------------------------------------------
-    // 5. BACKTRACKING
-    // -------------------------------------------------
+   // -------------------------------------------------
+// 5. PRÉPARATION DE LA RECHERCHE RÉCURSIVE
+// -------------------------------------------------
 
-    let matieresRestantes = matieresNonPlacees.slice();
+let matieresRestantes =
+    matieresNonPlacees.slice();
 
-    let progression = true;
-
-    while (
-        matieresRestantes.length > 0 &&
-        progression
-    ) {
-
-        progression = false;
-
-        const prochaineListe = [];
-
-        matieresRestantes.forEach(function (matiere) {
-
-            const filiereCode = matiere.filiereCode;
-
-            const filiere = planning.filieres.find(
-                function (f) {
-                    return f.filiereCode === filiereCode;
-                }
-            );
-
-            if (!filiere) {
-                prochaineListe.push(matiere);
-                return;
-            }
-
-            const cellulesCandidates = filiere.cellules.filter(
-                function (cellule) {
-                    return (
-                        cellule.estOccupee &&
-                        !cellule.estCommune &&
-                        cellule.matiereLibelle
-                    );
-                }
-            );
-
-            let reussite = false;
-
-            for (
-                let i = 0;
-                i < cellulesCandidates.length && !reussite;
-                i++
-            ) {
-
-                const cellule = cellulesCandidates[i];
-
-                const ancienneMatiere = {
-                    matiereLibelle: cellule.matiereLibelle,
-                    regimeCode: cellule.regimeCode,
-                    semestreCode: cellule.semestreCode,
-                    filiereCode: filiereCode
-                };
-
-                const sauvegarde =
-                    sauvegarderCellule(cellule);
-
-                // -------------------------------------
-                // STRATÉGIE 1 : ÉCHANGE SIMPLE
-                // -------------------------------------
-
-                cellule.estOccupee = false;
-                cellule.matiereLibelle = "";
-                cellule.regimeCode = "";
-                cellule.semestreCode = "";
-                cellule.filiereCode = undefined;
-
-                if (
-                    positionRespecteContraintes(
-                        filiere,
-                        cellule
-                    )
-                ) {
-
-                    cellule.estOccupee = true;
-                    cellule.matiereLibelle =
-                        matiere.matiereLibelle;
-                    cellule.regimeCode =
-                        matiere.regimeCode;
-                    cellule.semestreCode =
-                        matiere.semestreCode;
-                    cellule.filiereCode = filiereCode;
-
-                    const nouvellePosition =
-                        trouverPositionPourMatiereSpecifique(
-                            planning,
-                            filiereCode
-                        );
-
-                    if (nouvellePosition) {
-
-                        nouvellePosition.estOccupee = true;
-                        nouvellePosition.matiereLibelle =
-                            ancienneMatiere.matiereLibelle;
-                        nouvellePosition.regimeCode =
-                            ancienneMatiere.regimeCode;
-                        nouvellePosition.semestreCode =
-                            ancienneMatiere.semestreCode;
-                        nouvellePosition.filiereCode =
-                            filiereCode;
-
-                        console.log(
-                            "✓ ÉCHANGE SIMPLE :",
-                            matiere.matiereLibelle,
-                            "↔",
-                            ancienneMatiere.matiereLibelle
-                        );
-
-                        reussite = true;
-                    }
-                }
-
-                if (!reussite) {
-
-                    // Restaurer avant la stratégie 2.
-
-                    restaurerCellule(cellule, sauvegarde);
-
-                    // ---------------------------------
-                    // STRATÉGIE 2 : PERMUTATION 1 → 3
-                    // ---------------------------------
-
-                    reussite = tenterPermutation(
-                        filiere,
-                        cellule,
-                        ancienneMatiere,
-                        matiere,
-                        filiereCode
-                    );
-                }
-
-                if (!reussite) {
-                    restaurerCellule(cellule, sauvegarde);
-                }
-            }
-
-            if (reussite) {
-                progression = true;
-            } else {
-                prochaineListe.push(matiere);
-            }
-        });
-
-        matieresRestantes = prochaineListe;
-    }
-
+console.log(
+    "Matières transmises à la stratégie 3 :",
+    matieresRestantes.length
+);
    
     // -------------------------------------------------
     // 6. STRATÉGIE 3 :
