@@ -1,3 +1,7 @@
+// Provenance : code fourni par l’utilisateur dans /mnt/attachments/large_prompt-1.txt
+// (extraction de travail /root/calendriers-input.js). Source :
+// https://sghfsgf.github.io/Planification-Examens-FSGF/admin/calendriers.js
+// Adaptation locale aux API courantes ; aucun appel Firebase ajouté.
 // =====================================================
 // CALENDRIERS ADMIN
 // Affichage du planning généré
@@ -59,6 +63,7 @@ function afficherPlanning(planning) {
     // -------------------------------------------------
 
     zoneCalendrier.appendChild(tableau);
+    actualiserActionsCalendrier();
 
     console.log(
        "✓ Calendrier inséré dans la page."
@@ -505,8 +510,107 @@ function construireTableauCalendrier(planning) {
 // FILTRES DU CALENDRIER ADMIN
 // =====================================================
 
-function initialiserFiltresCalendrierAdmin() {
+// État unique : toute modification invalide la preuve d'enregistrement.
+const etatCalendrier = { busy: false, dirty: false, savedId: null, published: false, selection: null, revision: 0, fingerprint: null };
+let calendrierUI = null;
+// Date se copie ; Timestamp Firestore est immuable et garde son prototype/toDate.
+function clonerPlanning(valeur) {
+    if (valeur === null || typeof valeur !== 'object') return valeur;
+    if (valeur instanceof Date) return new Date(valeur.getTime());
+    if (typeof valeur.toDate === 'function') return valeur;
+    if (Array.isArray(valeur)) return valeur.map(clonerPlanning);
+    return Object.fromEntries(Object.entries(valeur).map(([cle, v]) => [cle, clonerPlanning(v)]));
+}
+function empreintePlanning() { return JSON.stringify(window.planningCalendrierAdmin || null); }
+function retourCalendrier(message) {
+    let zone = document.getElementById('etatCalendrierAdmin');
+    if (!zone) {
+        zone = document.createElement('p'); zone.id = 'etatCalendrierAdmin';
+        zone.setAttribute('role', 'status'); zone.setAttribute('aria-live', 'polite');
+        const parent = document.querySelector('.bloc-calendrier')?.parentNode || document.body;
+        parent?.appendChild(zone);
+    }
+    zone.textContent = message;
+}
+function afficherEtatMatieresCalendrier(resultat) {
+    const blocages = resultat?.anomaliesBloquantes || [];
+    const avertissements = resultat?.avertissements || [];
+    retourCalendrier((resultat?.valide === true ? 'Contrôle global réussi.' : 'Contrôle global refusé.') +
+        (resultat?.matieresPlacees?.valide === true ? ' Toutes les matières sont placées.' : ' Matières manquantes ou contrôle incomplet.') +
+        (blocages.length ? ' Blocages : ' + blocages.join(', ') + '.' : '') +
+        (avertissements.length ? ' Avertissements : ' + avertissements.join(', ') + '.' : ''));
+}
+function invaliderCalendrier() {
+    etatCalendrier.revision++; etatCalendrier.dirty = !!window.planningCalendrierAdmin;
+    etatCalendrier.savedId = null; etatCalendrier.fingerprint = null; etatCalendrier.published = false;
+    if (typeof premiereCelluleSelectionnee !== 'undefined' && premiereCelluleSelectionnee) {
+        premiereCelluleSelectionnee.style.outline = ''; premiereCelluleSelectionnee = null;
+    }
+    actualiserActionsCalendrier();
+}
+function actualiserActionsCalendrier() {
+    if (!calendrierUI) return;
+    if (etatCalendrier.savedId && etatCalendrier.fingerprint !== empreintePlanning()) {
+        etatCalendrier.savedId = null; etatCalendrier.dirty = true; etatCalendrier.published = false;
+    }
+    const selection = calendrierUI.selection();
+    const valide = selection.every(Boolean) && calendrierUI.sessionValide(selection);
+    const correspond = valide && etatCalendrier.selection === JSON.stringify(selection);
+    calendrierUI.afficher.disabled = etatCalendrier.busy || !valide;
+    calendrierUI.regenerer.disabled = etatCalendrier.busy || !valide;
+    calendrierUI.enregistrer.disabled = etatCalendrier.busy || !correspond || !window.planningCalendrierAdmin || !etatCalendrier.dirty;
+    calendrierUI.publier.disabled = etatCalendrier.busy || !correspond || !etatCalendrier.savedId || etatCalendrier.dirty || etatCalendrier.published;
+    calendrierUI.selects.forEach(s => { s.disabled = etatCalendrier.busy || s.options.length <= 1; });
+}
+async function operationCalendrier(type) {
+    actualiserActionsCalendrier();
+    if (!calendrierUI || calendrierUI[type].disabled || etatCalendrier.busy) return;
+    const api = window.generationExamens;
+    const selection = calendrierUI.selection(); const cle = JSON.stringify(selection);
+    const revision = etatCalendrier.revision;
+    const courant = () => revision === etatCalendrier.revision && cle === JSON.stringify(calendrierUI.selection());
+    etatCalendrier.busy = true; actualiserActionsCalendrier();
+    try {
+        if (type === 'afficher' || type === 'regenerer') {
+            let planning = type === 'afficher' ? await api.chargerCalendrier(...selection) : null;
+            if (!courant()) return;
+            if (!planning) {
+                planning = await api.construireMatricePlanning(selection[0], selection[3]);
+                if (!planning) throw new Error('Construction du planning impossible.');
+                await api.placerMatieresCommunes(planning); await api.placerMatieresSpecifiques(planning);
+            }
+            if (!courant()) return;
+            if (!Array.isArray(planning.filieres) || !planning.filieres.length) throw new Error('Planning vide ou mal structuré.');
+            window.planningCalendrierAdmin = planning; etatCalendrier.selection = cle;
+            invaliderCalendrier(); afficherPlanning(planning); calendrierUI.titre(planning);
+            retourCalendrier('Calendrier affiché. Contrôlez puis enregistrez avant de publier.');
+        } else if (type === 'enregistrer') {
+            const planning = window.planningCalendrierAdmin;
+            if (String(planning.niveauCode).trim() !== selection[0] || String(planning.sessionCode).trim() !== selection[3]) throw new Error('Le planning ne correspond pas aux filtres.');
+            const controle = window.controleExamens?.verifierPlanningGlobal;
+            if (typeof controle !== 'function') throw new Error('Module de contrôle indisponible.');
+            if (!Array.isArray(planning.matieresCommunes) || !Array.isArray(planning.matieresSpecifiques) || planning.matieresCommunes.length + planning.matieresSpecifiques.length === 0) throw new Error('Aucune matière prévue ou planning incomplet.');
+            const resultat = controle(planning); afficherEtatMatieresCalendrier(resultat);
+            if (resultat?.valide !== true || resultat?.matieresPlacees?.valide !== true) return;
+            const fingerprint = empreintePlanning();
+            const resultatSauvegarde = await api.enregistrerCalendrier(clonerPlanning(planning));
+            if (!courant() || fingerprint !== empreintePlanning()) { invaliderCalendrier(); retourCalendrier('Le planning a changé pendant la sauvegarde : enregistrez à nouveau.'); return; }
+            if (!resultatSauvegarde?.id) throw new Error('Enregistrement échoué : aucun identifiant retourné.');
+            etatCalendrier.savedId = resultatSauvegarde.id; etatCalendrier.fingerprint = fingerprint;
+            etatCalendrier.dirty = false; etatCalendrier.published = false;
+            retourCalendrier('Calendrier enregistré en brouillon. Publication disponible.');
+        } else {
+            const id = etatCalendrier.savedId; const fingerprint = empreintePlanning();
+            const publie = await api.publierCalendrier(id);
+            if (!courant() || fingerprint !== empreintePlanning()) { invaliderCalendrier(); retourCalendrier('Le planning a changé pendant la publication. Vérifiez le statut distant avant de poursuivre.'); return; }
+            if (publie !== true) throw new Error('Publication refusée ou échouée. Consultez aussi la console du moteur.');
+            etatCalendrier.published = true; retourCalendrier('Calendrier publié.');
+        }
+    } catch (erreur) { retourCalendrier('Erreur : ' + (erreur?.message || String(erreur))); console.error(erreur); }
+    finally { etatCalendrier.busy = false; actualiserActionsCalendrier(); }
+}
 
+function initialiserFiltresCalendrierAdmin() {
     const selectNiveau =
         document.getElementById("niveauCalendrierAdmin");
 
@@ -526,10 +630,6 @@ function initialiserFiltresCalendrierAdmin() {
     const boutonRegenerer =
     document.getElementById("btnRegenererCalendrierAdmin");
 
-
-   // =================================================
-// ACTUALISER LE TITRE DU CALENDRIER
-// =================================================
 
 function mettreAJourTitreCalendrier(planning = null) {
 
@@ -839,541 +939,29 @@ remplirSelect(
     selectSession.disabled = codesSessions.length === 0;
 }
 
-// =================================================
-// ÉVÉNEMENTS
-// =================================================
-selectSemestre.addEventListener("change", actualiserFiltres);
-selectRegime.addEventListener("change", actualiserFiltres);
-
-// =================================================
-// INITIALISATION
-// =================================================
-actualiserFiltres();
-
-    // =================================================
-    // MISE À JOUR DU TITRE DU CALENDRIER
-    // =================================================
-
-    [
-        selectNiveau,
-        selectSemestre,
-        selectRegime,
-        selectSession
-    ].forEach(function (select) {
-        select.addEventListener("change", function () {
-            mettreAJourTitreCalendrier();
-        });
+    const boutonPublier = document.getElementById('btnPublierCalendrierAdmin');
+    if (!boutonRegenerer || !boutonPublier || calendrierUI) return;
+    calendrierUI = {
+        selects: [selectNiveau, selectSemestre, selectRegime, selectSession],
+        selection: () => [selectNiveau.value, selectSemestre.value, selectRegime.value, selectSession.value].map(valeurTexte),
+        sessionValide: v => (window.generationExamens.obtenirDonnees()?.sessions || []).some(s => valeurTexte(s.sessionCode) === v[3] && valeurTexte(s.semestreCode) === v[1] && valeurTexte(s.regimeCode) === v[2]),
+        afficher: bouton, regenerer: boutonRegenerer, enregistrer: boutonEnregistrer, publier: boutonPublier, titre: mettreAJourTitreCalendrier
+    };
+    actualiserFiltres(); mettreAJourTitreCalendrier(); actualiserActionsCalendrier();
+    calendrierUI.selects.forEach(select => select.addEventListener('change', () => {
+        actualiserFiltres(); etatCalendrier.selection = null; invaliderCalendrier(); mettreAJourTitreCalendrier();
+        retourCalendrier('Filtres modifiés : affichez ou régénérez le calendrier.');
+    }));
+    ['afficher', 'regenerer', 'enregistrer', 'publier'].forEach(type => {
+        // Capture sur Publier : neutralise le gestionnaire historique de generation.js
+        // qui utilise son dernier identifiant privé, sans modifier ce module.
+        calendrierUI[type].addEventListener('click', evenement => {
+            if (type === 'publier') { evenement.preventDefault(); evenement.stopImmediatePropagation(); }
+            void operationCalendrier(type);
+        }, type === 'publier');
     });
 
-    // =================================================
-    // AFFICHER LE CALENDRIER
-    // =================================================
-
-    bouton.addEventListener(
-    "click",
-    async function () {
-
-            const niveau =
-                selectNiveau.value;
-
-            const sessionCode =
-                selectSession.value;
-
-
-            if (!niveau || !sessionCode) {
-
-                console.error(
-                    "❌ Niveau ou session invalide."
-                );
-
-                return;
-            }
-
-
-            console.log("------------------------------------------");
-            console.log("AFFICHAGE CALENDRIER ADMIN");
-            console.log("------------------------------------------");
-
-            console.log("Niveau :", niveau);
-            console.log(
-                "Semestre :",
-                selectSemestre.value
-            );
-            console.log(
-                "Régime :",
-                selectRegime.value
-            );
-            console.log(
-                "Session :",
-                sessionCode
-            );
-
-
-                      // =========================================
-            // CHARGER OU CONSTRUIRE LE PLANNING
-            // =========================================
-
-            let planning = null;
-
-            try {
-
-                // -----------------------------------------
-                // 1. Chercher un calendrier déjà enregistré
-                // -----------------------------------------
-
-                planning =
-                    await generationExamens.chargerCalendrier(
-                        niveau,
-                        selectSemestre.value,
-                        selectRegime.value,
-                        sessionCode
-                    );
-
-                // -----------------------------------------
-                // 2. Aucun calendrier enregistré
-                // -----------------------------------------
-
-                if (!planning) {
-
-                    console.log(
-                        "ℹ️ Aucun calendrier enregistré."
-                    );
-
-                    console.log(
-                        "🚀 Construction d'un nouveau planning."
-                    );
-
-                    planning =
-                        generationExamens.construireMatricePlanning(
-                            niveau,
-                            sessionCode
-                        );
-
-                    if (!planning) {
-
-                        console.error(
-                            "❌ Impossible de construire le planning."
-                        );
-
-                        return;
-                    }
-
-                    generationExamens.placerMatieresCommunes(
-                        planning
-                    );
-
-                    generationExamens.placerMatieresSpecifiques(
-                        planning
-                    );
-
-                    console.log(
-                        "✓ Nouveau planning construit."
-                    );
-
-                } else {
-
-                    console.log(
-                        "✓ Planning chargé depuis Firestore."
-                    );
-                }
-
-            } catch (erreur) {
-
-                console.error(
-                    "❌ Erreur lors du chargement du calendrier :",
-                    erreur
-                );
-
-                return;
-            }
-
-        
-
-// =========================================
-// AFFICHAGE
-// =========================================
-
-deplacementMatiereSpecifiqueEffectue = false;
-        
-window.planningCalendrierAdmin = planning;
-
-afficherPlanning(planning);
-
-mettreAJourTitreCalendrier(planning);
-
-boutonEnregistrer.disabled = false;  
-
-console.log(
-    "✓ Calendrier affiché."
-);
-
-        }
-    );
-// =================================================
-// RÉGÉNÉRER LE CALENDRIER
-// =================================================
-
-boutonRegenerer.addEventListener(
-    "click",
-    async function () {
-
-        const niveau =
-            selectNiveau.value;
-
-        const sessionCode =
-            selectSession.value;
-
-        if (!niveau || !sessionCode) {
-
-            console.error(
-                "❌ Niveau ou session invalide."
-            );
-
-            return;
-        }
-
-        
-        // Réinitialiser l'indicateur pour le nouveau calendrier
-        deplacementMatiereSpecifiqueEffectue = false;
-
-        console.log("------------------------------------------");
-        console.log("RÉGÉNÉRATION DU CALENDRIER ADMIN");
-        console.log("------------------------------------------");
-
-        console.log("Niveau :", niveau);
-        console.log(
-            "Semestre :",
-            selectSemestre.value
-        );
-        console.log(
-            "Régime :",
-            selectRegime.value
-        );
-        console.log(
-            "Session :",
-            sessionCode
-        );
-
-        try {
-
-            // -----------------------------------------
-            // CONSTRUIRE UN NOUVEAU PLANNING
-            // -----------------------------------------
-
-            let planning =
-                generationExamens.construireMatricePlanning(
-                    niveau,
-                    sessionCode
-                );
-
-            if (!planning) {
-
-                console.error(
-                    "❌ Impossible de construire le planning."
-                );
-
-                return;
-            }
-
-            // -----------------------------------------
-            // PLACER LES MATIÈRES COMMUNES
-            // -----------------------------------------
-
-            generationExamens.placerMatieresCommunes(
-                planning
-            );
-
-            // -----------------------------------------
-            // PLACER LES MATIÈRES SPÉCIFIQUES
-            // -----------------------------------------
-
-            generationExamens.placerMatieresSpecifiques(
-                planning
-            );
-
-            console.log(
-                "✓ Nouveau planning construit."
-            );
-
-            // -----------------------------------------
-            // REMPLACER LE PLANNING ACTUEL
-            // -----------------------------------------
-
-            window.planningCalendrierAdmin =
-                planning;
-
-            afficherPlanning(planning);
-            mettreAJourTitreCalendrier(planning);
-            boutonEnregistrer.disabled = false;
-
-            console.log(
-                "✓ Nouveau calendrier affiché."
-            );
-
-        } catch (erreur) {
-
-            console.error(
-                "❌ Erreur lors de la régénération :",
-                erreur
-            );
-
-        }
-
-    }
-);
-    
-     // =================================================
-    // ENREGISTRER LE CALENDRIER
-    // =================================================
-
-    boutonEnregistrer.addEventListener(
-        "click",
-        async function () {
-
-            console.log("------------------------------------------");
-            console.log("💾 ENREGISTREMENT DU CALENDRIER");
-            console.log("------------------------------------------");
-
-            const planning =
-                window.planningCalendrierAdmin;
-
-            // -----------------------------------------
-            // Vérifier qu'un planning existe
-            // -----------------------------------------
-
-            if (!planning) {
-
-                console.error(
-                    "❌ Aucun planning à enregistrer."
-                );
-
-                return;
-            }
-
-// -----------------------------------------
-// Contrôle global avant enregistrement
-// -----------------------------------------
-
-const resultatControle =
-    controleExamens.verifierPlanningGlobal(
-        planning
-    );
-
-console.log(
-    "Résultat du contrôle avant enregistrement :",
-    resultatControle
-);
-
-// -----------------------------------------
-// Afficher les matières placées ou manquantes
-// -----------------------------------------
-
-afficherEtatMatieresCalendrier(resultatControle);
-
-// -----------------------------------------
-// Refuser uniquement les anomalies bloquantes
-// Sauf après une modification manuelle
-// -----------------------------------------
-
-if (
-    !deplacementMatiereSpecifiqueEffectue &&
-    !affectationAmphiManuelleEffectuee
-) {
-
-    if (
-        !resultatControle ||
-        !resultatControle.valide
-    ) {
-
-        console.warn(
-            "⚠️ Anomalies bloquantes : enregistrement refusé."
-        );
-
-        return;
-    }
-
-} else {
-
-    console.log(
-        "📘 Modification manuelle détectée : contrôle global ignoré."
-    );
-
 }
-            
-
-            // -----------------------------------------
-            // Enregistrement Firestore
-            // -----------------------------------------
-
-            try {
-
-                const resultat =
-                    await generationExamens.enregistrerCalendrier(
-                        planning
-                    );
-
-               if (resultat) {
-
-    console.log(
-        "✓ Calendrier enregistré dans Firestore."
-    );
-                   
-      affectationAmphiManuelleEffectuee = false;
-
-                   
-        // Mémoriser le calendrier pour la publication
-    if (
-        resultat.id &&
-        window.generationExamens &&
-        typeof window.generationExamens.definirDernierCalendrierEnregistre === "function"
-    ) {
-
-        window.generationExamens.definirDernierCalendrierEnregistre(
-            resultat.id
-        );
-
-    }               
-
-    // -----------------------------------------
-    // Activer le bouton Publier
-    // -----------------------------------------
-
-    const boutonPublier =
-        document.getElementById(
-            "btnPublierCalendrierAdmin"
-        );
-
-    if (boutonPublier) {
-
-        boutonPublier.disabled = false;
-
-        console.log(
-            "✓ Bouton Publier activé."
-        );
-
-    }
-
-} else {
-
-                    console.error(
-                        "❌ Échec de l'enregistrement du calendrier."
-                    );
-
-                }
-
-            } catch (erreur) {
-
-                console.error(
-                    "❌ Erreur lors de l'enregistrement :",
-                    erreur
-                );
-
-            }
-
-        }
-    );   
-    // =================================================
-    // INITIALISATION
-    // =================================================
-
-  mettreAJourTitreCalendrier();
-}
-
-
-// =====================================================
-// ATTENDRE LE CHARGEMENT DU MOTEUR DE GÉNÉRATION
-// =====================================================
-
-async function initialiserCalendriersApresFirestore() {
-
-    console.log(
-        "⏳ Attente du moteur de génération..."
-    );
-
-    const maximumTentatives = 150;
-
-    for (
-        let tentative = 0;
-        tentative < maximumTentatives;
-        tentative++
-    ) {
-
-        // -------------------------------------------------
-        // Vérifier que generationExamens existe
-        // -------------------------------------------------
-
-        if (
-            typeof window.generationExamens ===
-            "undefined"
-        ) {
-
-            await new Promise(
-                function (resolve) {
-                    setTimeout(
-                        resolve,
-                        100
-                    );
-                }
-            );
-
-            continue;
-        }
-
-        // -------------------------------------------------
-        // Récupérer les données du moteur
-        // -------------------------------------------------
-
-        const donneesGeneration =
-            window.generationExamens.obtenirDonnees();
-
-        // -------------------------------------------------
-        // Vérifier les sessions
-        // -------------------------------------------------
-
-        if (
-            donneesGeneration &&
-            Array.isArray(
-                donneesGeneration.sessions
-            ) &&
-            donneesGeneration.sessions.length > 0
-        ) {
-
-            console.log(
-                "✓ Sessions du moteur disponibles :",
-                donneesGeneration.sessions.length
-            );
-
-            // -------------------------------------------------
-            // Initialiser les filtres
-            // -------------------------------------------------
-
-            initialiserFiltresCalendrierAdmin();
-
-            console.log(
-                "✓ Filtres du calendrier initialisés."
-            );
-
-            return;
-        }
-
-        await new Promise(
-            function (resolve) {
-                setTimeout(
-                    resolve,
-                    100
-                );
-            }
-        );
-    }
-
-    console.error(
-        "❌ Le moteur de génération n'est pas disponible."
-    );
-
-}
-    
-initialiserCalendriersApresFirestore();
-
 // =====================================================
 // MODIFICATION MANUELLE DU CALENDRIER
 // Échange / déplacement de deux cellules par clic
@@ -1388,6 +976,7 @@ document.addEventListener("click", function (evenement) {
     // AFFECTATION MANUELLE D'UN LOCAL
     // =================================================
 
+    if (etatCalendrier.busy || !etatCalendrier.selection) return;
     const celluleAmphis = evenement.target.closest(
         "td.cellule-amphis-vide"
     );
@@ -1457,6 +1046,7 @@ document.addEventListener("click", function (evenement) {
 
     liste.addEventListener("change", function () {
 
+        if (etatCalendrier.busy || planning !== window.planningCalendrierAdmin || !celluleAmphis.isConnected) return;
         const codeLocal = liste.value;
 
         if (!codeLocal) {
@@ -1486,6 +1076,7 @@ document.addEventListener("click", function (evenement) {
 
         window.planningCalendrierAdmin = planning;
         affectationAmphiManuelleEffectuee = true;
+        invaliderCalendrier();
 
         console.log(
             "✅ Local affecté manuellement :",
@@ -1501,6 +1092,7 @@ document.addEventListener(
     "click",
     function (evenement) {
 
+        if (etatCalendrier.busy || !etatCalendrier.selection) return;
         const cellule =
             evenement.target.closest(
                 ".cellule-calendrier-modifiable"
@@ -1587,7 +1179,9 @@ document.addEventListener(
         // =================================================
 
         const planningAvantModification =
-            structuredClone(planning);
+            clonerPlanning(planning);
+
+        try {
 
         // =================================================
         // IDENTIFIER LES DEUX FILIÈRES
@@ -1764,9 +1358,12 @@ document.addEventListener(
 
           
                      if (!cibleLibrePourToutes) {
+                         premiereCelluleSelectionnee.style.outline = "";
+                         premiereCelluleSelectionnee = null;
                          alert(
                            "Déplacement impossible : le créneau cible est déjà occupé dans une filière concernée."
                            );
+                         return;
                                    }
 
 
@@ -1827,9 +1424,13 @@ document.addEventListener(
 
         else {
 
-            console.log(
-                "📘 Matière spécifique : échange des cellules."
-            );
+            if (filiere1 !== filiere2) {
+                premiereCelluleSelectionnee.style.outline = '';
+                premiereCelluleSelectionnee = null;
+                retourCalendrier('Échange refusé : les matières spécifiques doivent rester dans leur filière.');
+                return;
+            }
+            console.log("📘 Matière spécifique : échange des cellules.");
 
             const matiereLibelle1 =
                 cellule1.matiereLibelle;
@@ -1867,7 +1468,7 @@ document.addEventListener(
             );
 
             const resultat =
-                controleExamens.verifierPlanningGlobal(
+                window.controleExamens.verifierPlanningGlobal(
                     planning
                 );
 
@@ -1887,7 +1488,7 @@ document.addEventListener(
                 );
 
                 window.planningCalendrierAdmin =
-                    structuredClone(
+                    clonerPlanning(
                         planningAvantModification
                     );
 
@@ -1917,6 +1518,7 @@ document.addEventListener(
 
       window.planningCalendrierAdmin =
     planning;
+invaliderCalendrier();
 
 console.log(
     "✅ Modification acceptée : planning mis à jour."
@@ -1939,6 +1541,36 @@ console.log(
         console.log(
             "✓ Calendrier mis à jour après modification."
         );
+        } catch (erreur) {
+            window.planningCalendrierAdmin = planningAvantModification;
+            if (premiereCelluleSelectionnee) {
+                premiereCelluleSelectionnee.style.outline = "";
+            }
+            premiereCelluleSelectionnee = null;
+            invaliderCalendrier();
+            try { afficherPlanning(window.planningCalendrierAdmin); }
+            catch (erreurAffichage) { console.error(erreurAffichage); }
+            retourCalendrier("Modification annulée : " + (erreur?.message || String(erreur)));
+            console.error(erreur);
+        }
     }
 );
 
+async function initialiserCalendriersApresFirestore() {
+    ['btnAfficherCalendrierAdmin', 'btnRegenererCalendrierAdmin', 'btnEnregistrerCalendrierAdmin', 'btnPublierCalendrierAdmin'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+    retourCalendrier('Chargement des données du calendrier…');
+    for (let tentative = 0; tentative < 100; tentative++) {
+        try {
+            const api = window.generationExamens;
+            const donnees = api?.obtenirDonnees?.();
+            if (donnees && Array.isArray(donnees.sessions) && donnees.sessions.length && Array.isArray(donnees.matieres) && donnees.matieres.length) {
+                initialiserFiltresCalendrierAdmin();
+                retourCalendrier(calendrierUI ? 'Sélectionnez les filtres du calendrier.' : 'Interface du calendrier incomplète.'); return;
+            }
+        } catch (erreur) { retourCalendrier('Erreur de chargement : ' + erreur.message); return; }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    retourCalendrier('Données absentes, vides ou moteur indisponible après 10 secondes. Rechargez la page après correction.');
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialiserCalendriersApresFirestore, { once: true });
+else void initialiserCalendriersApresFirestore();
