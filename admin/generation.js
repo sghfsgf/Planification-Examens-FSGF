@@ -33,7 +33,7 @@
 function obtenirCleCreneau(cellule) {
 
     return (
-        String(cellule.date) +
+        String(cellule.date) +construireGrilleSession
         "|" +
         String(cellule.creneauOrdre)
     );
@@ -2060,50 +2060,17 @@ function placerMatieresSpecifiques(planning) {
         return planning;
     }
 
-    // -------------------------------------------------
-    // 1. PLACEMENT INITIAL
-    // -------------------------------------------------
+   // -------------------------------------------------
+// 5. PRÉPARATION DE LA RECHERCHE RÉCURSIVE
+// -------------------------------------------------
 
-    matieresSpecifiques.forEach(function (matiere) {
+let matieresRestantes =
+    matieresNonPlacees.slice();
 
-        const filiereCode = matiere.filiereCode;
-
-        const position =
-            trouverPositionPourMatiereSpecifique(
-                planning,
-                filiereCode
-            );
-
-        if (!position) {
-
-            console.warn(
-                "⚠️ Matière non placée :",
-                matiere.matiereLibelle,
-                "|",
-                filiereCode
-            );
-
-            matieresNonPlacees.push(matiere);
-            return;
-        }
-
-        position.estOccupee = true;
-        position.matiereLibelle = matiere.matiereLibelle;
-        position.regimeCode = matiere.regimeCode;
-        position.semestreCode = matiere.semestreCode;
-        position.filiereCode = filiereCode;
-
-        console.log(
-            "✓ Matière placée :",
-            matiere.matiereLibelle,
-            "|",
-            filiereCode,
-            "|",
-            position.dateAffichage,
-            "| Créneau",
-            position.creneauOrdre
-        );
-    });
+console.log(
+    "Matières transmises à la stratégie 3 :",
+    matieresRestantes.length
+);
 
     // -------------------------------------------------
     // 2. SAUVEGARDE ET RESTAURATION
