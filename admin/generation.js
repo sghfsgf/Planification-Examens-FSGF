@@ -1577,6 +1577,48 @@ function construireMatricePlanning(niveauCode, sessionCode) {
 
     return planning;
 }
+
+function aUnExamenAdjacent(filiere, celluleCandidate) {
+    const ordreCandidate =
+        Number(celluleCandidate.creneauOrdre);
+
+    // Une valeur de créneau incorrecte ne doit pas être acceptée.
+    if (!Number.isFinite(ordreCandidate)) {
+        throw new Error(
+            "Ordre de créneau invalide : " +
+            celluleCandidate.creneauOrdre
+        );
+    }
+
+    return filiere.cellules.some(function (autreCellule) {
+        if (autreCellule.estOccupee !== true) {
+            return false;
+        }
+
+        if (
+            autreCellule.dateAffichage !==
+            celluleCandidate.dateAffichage
+        ) {
+            return false;
+        }
+
+        const autreOrdre =
+            Number(autreCellule.creneauOrdre);
+
+        if (!Number.isFinite(autreOrdre)) {
+            throw new Error(
+                "Ordre de créneau invalide : " +
+                autreCellule.creneauOrdre
+            );
+        }
+
+        return Math.abs(
+            autreOrdre - ordreCandidate
+        ) === 1;
+    });
+}
+
+
 function placerMatieresCommunes(planning) {
 
     if (!planning) {
