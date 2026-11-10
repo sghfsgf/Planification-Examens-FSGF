@@ -5,7 +5,10 @@
 import {
     getFirestore,
     collection,
-    onSnapshot
+    onSnapshot,
+    getDocs,
+    query,
+    where
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 import { app } from
     "../firebase-config.js";
@@ -23,13 +26,14 @@ async function chargerCalendrierFirestore(
     sessionCode
 ) {
     try {
-        const { collection, getDocs } =
-            await import(
-                "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js"
-            );
-
         const snapshot = await getDocs(
-            collection(db, "calendriers")
+            query(collection(db, "calendriers"),
+                where("statut", "==", "publie"),
+                where("anneeUniversitaire", "==", anneeUniversitaire),
+                where("niveauCode", "==", niveauCode),
+                where("semestreCode", "==", semestreCode),
+                where("regimeCode", "==", regimeCode),
+                where("sessionCode", "==", sessionCode))
         );
 
         const calendriers = [];
@@ -86,11 +90,11 @@ async function chargerCalendrierFirestore(
             "❌ Erreur lecture Firestore :",
             erreur
         );
-        return null;
+        throw erreur; // Une lecture refusée n'est pas un résultat vide.
     }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+function initialiserCalendriersPublics() {
     const tableau =
         document.getElementById("tableauCalendrier");
     const niveauCalendrier =
@@ -101,78 +105,76 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("selectRegime");
     const selectSession =
         document.getElementById("selectSession");
-// =====================================================
-// RÉGIMES : SYNCHRONISATION AVEC FIRESTORE
-// =====================================================
-let regimesFirestoreCharges = false;
-let sessionsLocalesChargees = false;
-let sessionsFirestore = [];
+    const selectAnnee = document.getElementById("anneeUniversitaire");
+    const selectNiveau = document.getElementById("selectNiveau");
+    if (!tableau || !selectSemestre || !selectRegime || !selectSession) return;
 
-onSnapshot(
-    collection(db, "sessions"),
+    let sessionsFirestore = [];
+    let sessionsPretes = false;
+    let erreurSessions = false;
+    let numeroRendu = 0;
 
-    function (snapshot) {
-        sessionsFirestore = snapshot.docs.map(function (doc) {
-            return doc.data();
-        });
-
-        const regimeSelectionne = selectRegime.value;
-
-        const regimesDisponibles = [
-            ...new Set(
-                sessionsFirestore
-                    .map(function (session) {
-                        return session.regimeCode;
-                    })
-                    .filter(function (code) {
-                        return typeof code === "string" &&
-                               code.trim() !== "";
-                    })
-                    .map(function (code) {
-                        return code.trim();
-                    })
-            )
-        ].sort();
-
-        selectRegime.innerHTML = "";
-
-        regimesDisponibles.forEach(function (regimeCode) {
-            const option = document.createElement("option");
-            option.value = regimeCode;
-            option.textContent = regimeCode;
-            selectRegime.appendChild(option);
-        });
-
-        regimesFirestoreCharges = true;
-        selectRegime.disabled = regimesDisponibles.length === 0;
-
-        if (regimesDisponibles.includes(regimeSelectionne)) {
-            selectRegime.value = regimeSelectionne;
-        }
-
-        if (regimesDisponibles.length === 0) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "Aucun régime disponible";
-            selectRegime.appendChild(option);
-        }
-
-        if (sessionsLocalesChargees) {
-            mettreAJourSessions();
-        }
-    },
-
-    function (erreur) {
-        console.error(
-            "Erreur de lecture des régimes Firestore :",
-            erreur
-        );
-        selectRegime.disabled = true;
-        selectRegime.innerHTML =
-            '<option value="">Erreur de chargement</option>';
+    // Clé composite : un même code peut exister sur plusieurs années.
+    function cleSession(session) {
+        return JSON.stringify([session.anneeUniversitaire, session.semestreCode,
+            session.regimeCode, session.sessionCode]);
     }
-);
-    
+    function sessionsDuFiltre() {
+        return sessionsFirestore.filter(session =>
+            session.semestreCode === selectSemestre.value &&
+            session.regimeCode === selectRegime.value &&
+            (!selectAnnee || session.anneeUniversitaire === selectAnnee.value));
+    }
+    function afficherMessage(message) {
+        tableau.innerHTML = "";
+        const tbody = document.createElement("tbody");
+        const ligne = document.createElement("tr");
+        const cellule = document.createElement("td");
+        cellule.colSpan = 2;
+        cellule.textContent = message;
+        ligne.appendChild(cellule);
+        tbody.appendChild(ligne);
+        tableau.appendChild(tbody);
+    }
+    function mettreAJourRegimes() {
+        const ancienneValeur = selectRegime.value;
+        const regimes = [...new Set(sessionsFirestore
+            .filter(s => !selectAnnee || s.anneeUniversitaire === selectAnnee.value)
+            .map(s => s.regimeCode))].sort();
+        selectRegime.innerHTML = "";
+        regimes.forEach(code => {
+            const option = document.createElement("option");
+            option.value = code;
+            option.textContent = code;
+            selectRegime.appendChild(option);
+        });
+        selectRegime.disabled = regimes.length === 0;
+        if (regimes.includes(ancienneValeur)) selectRegime.value = ancienneValeur;
+        mettreAJourSessions();
+    }
+
+    selectSession.disabled = true;
+    afficherMessage("Chargement des sessions depuis Firestore…");
+    onSnapshot(collection(db, "sessions"), snapshot => {
+        // Refuser les métadonnées incomplètes, sans inventer ni normaliser des codes.
+        sessionsFirestore = snapshot.docs.map(doc => doc.data()).filter(session =>
+            ["anneeUniversitaire", "semestreCode", "regimeCode", "sessionCode"]
+                .every(champ => typeof session[champ] === "string" && session[champ].trim() !== ""));
+        sessionsPretes = true;
+        erreurSessions = false;
+        mettreAJourRegimes();
+    }, erreur => {
+        console.error("Erreur de lecture des sessions Firestore :", erreur);
+        sessionsPretes = false;
+        erreurSessions = true;
+        sessionsFirestore = [];
+        ++numeroRendu; // invalider toute lecture de calendrier en cours
+        selectRegime.disabled = true;
+        selectSession.disabled = true;
+        selectRegime.innerHTML = '<option value="">Erreur de chargement</option>';
+        selectSession.innerHTML = '<option value="">Erreur de chargement</option>';
+        afficherMessage("Impossible de lire les sessions Firestore. Vérifiez la connexion et les autorisations.");
+    });
 
     // =================================================
     // Récupère le code niveau pur (L1, L2, L3, MP, MR)
@@ -180,6 +182,7 @@ onSnapshot(
     // =================================================
     function getNiveauCode() {
         if (!niveauCalendrier) return "";
+        if (selectNiveau) return selectNiveau.value;
         // On prend uniquement la partie avant le premier " — "
         return niveauCalendrier.textContent
             .trim()
@@ -205,23 +208,16 @@ onSnapshot(
             return;
         }
 
-        // -------------------------------------------------
-        // Nettoyage du tableau (création thead/tbody si absents)
-        // -------------------------------------------------
-        let thead = tableau.querySelector("thead");
-        let tbody = tableau.querySelector("tbody");
-
-        if (!thead) {
-            thead = document.createElement("thead");
-            tableau.appendChild(thead);
+        const rendu = ++numeroRendu;
+        if (!sessionsPretes) {
+            afficherMessage(erreurSessions
+                ? "Impossible de lire les sessions Firestore. Vérifiez la connexion et les autorisations."
+                : "Chargement des sessions depuis Firestore…");
+            return;
         }
-        if (!tbody) {
-            tbody = document.createElement("tbody");
-            tableau.appendChild(tbody);
-        }
-
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
+        // Préparer hors DOM ; seule la dernière requête peut publier son rendu.
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
 
         // -------------------------------------------------
         // Récupération des paramètres sélectionnés
@@ -235,30 +231,9 @@ onSnapshot(
             selectRegime
                 ? selectRegime.value
                 : "";
-        const sessionCode =
-            selectSession
-                ? selectSession.value
-                : "";
-
-        // -------------------------------------------------
-        // Récupération des informations de la session
-        // -------------------------------------------------
-        const sessions =
-            (typeof donneesExamens !== "undefined" &&
-             donneesExamens &&
-             Array.isArray(donneesExamens.sessions))
-                ? donneesExamens.sessions
-                : [];
-
-        const sessionSelectionnee =
-            sessions.find(
-                function (session) {
-                    return (
-                        session.sessionCode ===
-                        sessionCode
-                    );
-                }
-            );
+        const sessionSelectionnee = sessionsDuFiltre().find(
+            session => cleSession(session) === selectSession.value);
+        const sessionCode = sessionSelectionnee?.sessionCode || "";
 
         const intituleSession =
             sessionSelectionnee
@@ -298,25 +273,33 @@ onSnapshot(
             !niveau ||
             !semestre ||
             !regime ||
-            !sessionCode
+            !sessionCode ||
+            !anneeUniversitaire
         ) {
             console.warn(
                 "⚠️ Tous les filtres ne sont pas sélectionnés."
             );
+            afficherMessage("Aucune session disponible pour ces filtres, ou sélection incomplète.");
             return;
         }
 
+        afficherMessage("Chargement du calendrier publié…");
         // -------------------------------------------------
         // LECTURE DU CALENDRIER PUBLIÉ DANS FIRESTORE
         // -------------------------------------------------
-        const calendrierFirestore =
-            await chargerCalendrierFirestore(
-                anneeUniversitaire,
-                niveau,
-                semestre,
-                regime,
-                sessionCode
-            );
+        let calendrierFirestore;
+        try {
+            calendrierFirestore = await chargerCalendrierFirestore(
+                anneeUniversitaire, niveau, semestre, regime, sessionCode);
+        } catch (erreur) {
+            if (rendu !== numeroRendu) return;
+            afficherMessage("Impossible de lire le calendrier Firestore. Vérifiez la connexion, les autorisations et les index.");
+            return;
+        }
+        if (rendu !== numeroRendu) return;
+        tableau.innerHTML = "";
+        tableau.appendChild(thead);
+        tableau.appendChild(tbody);
 
         console.log(
             "📦 Calendrier Firestore :",
@@ -350,9 +333,8 @@ onSnapshot(
             !planning ||
             !Array.isArray(planning.filieres)
         ) {
-            console.error(
-                "❌ Le calendrier Firestore ne contient pas de planning exploitable."
-            );
+            console.error("Le calendrier publié contient un planning inexploitable.");
+            afficherMessage("Le calendrier publié contient un planning inexploitable.");
             return;
         }
 
@@ -766,69 +748,22 @@ onSnapshot(
     // MISE À JOUR DES SESSIONS
     // =====================================================
     function mettreAJourSessions() {
-        if (
-            !selectSemestre ||
-            !selectRegime ||
-            !selectSession
-        ) {
-            return;
-        }
-
-        if (
-            typeof donneesExamens === "undefined" ||
-            !donneesExamens
-        ) {
-            return;
-        }
-
-        const semestre =
-            selectSemestre.value;
-        const regime =
-            selectRegime.value;
-
-    const sessions = sessionsFirestore;
-        // -------------------------------------------------
-        // Sessions correspondant au semestre + régime
-        // -------------------------------------------------
-        const sessionsDisponibles =
-            sessions.filter(
-                function (session) {
-                    return (
-                        session.semestreCode ===
-                        semestre &&
-                        session.regimeCode ===
-                        regime
-                    );
-                }
-            );
-
-        console.log(
-            "Sessions disponibles :",
-            sessionsDisponibles
-        );
-
-        // -------------------------------------------------
-        // Reconstruction de la liste
-        // -------------------------------------------------
+        if (!sessionsPretes) return;
+        const ancienneValeur = selectSession.value;
+        const sessionsDisponibles = sessionsDuFiltre();
+        const uniques = [...new Map(sessionsDisponibles.map(s => [cleSession(s), s])).values()];
         selectSession.innerHTML = "";
-
-        sessionsDisponibles.forEach(
-            function (session) {
-                const option =
-                    document.createElement("option");
-                option.value =
-                    session.sessionCode;
-                option.textContent =
-                    session.sessionLibelle;
-                selectSession.appendChild(
-                    option
-                );
-            }
-        );
-
-        // -------------------------------------------------
-        // Reconstruction du calendrier
-        // -------------------------------------------------
+        uniques.forEach(session => {
+            const option = document.createElement("option");
+            option.value = cleSession(session);
+            option.textContent = (session.sessionLibelle || session.sessionCode) +
+                " — " + session.anneeUniversitaire;
+            selectSession.appendChild(option);
+        });
+        selectSession.disabled = uniques.length === 0;
+        if (uniques.some(s => cleSession(s) === ancienneValeur)) {
+            selectSession.value = ancienneValeur;
+        }
         construireCalendrier();
     }
 
@@ -862,25 +797,9 @@ onSnapshot(
         );
     }
 
-    // =====================================================
-    // ATTENDRE LE CHARGEMENT DES DONNÉES
-    // =====================================================
-   if (
-    typeof donneesChargees !== "undefined" &&
-    donneesChargees
-) {
-    donneesChargees.then(function () {
-        console.log("Calendriers : données reçues.");
-
-        sessionsLocalesChargees = true;
-
-        if (regimesFirestoreCharges) {
-            mettreAJourSessions();
-        }
-    });
-} else {
-    console.warn("Calendriers : donneesChargees introuvable.");
-}
+    if (selectAnnee) selectAnnee.addEventListener("change", mettreAJourRegimes);
+    if (selectNiveau) selectNiveau.addEventListener("change", construireCalendrier);
+    // Aucun prérequis Excel pour consulter un planning déjà publié.
 
     // =====================================================
     // EXPORT EXCEL DU CALENDRIER
@@ -1173,10 +1092,11 @@ onSnapshot(
                     selectRegime
                         ? selectRegime.value
                         : "Regime";
-                const session =
-                    selectSession
-                        ? selectSession.value
-                        : "Session";
+                const sessionSelectionneeExport = sessionsDuFiltre().find(
+                    session => cleSession(session) === selectSession.value);
+                const session = sessionSelectionneeExport
+                    ? sessionSelectionneeExport.sessionCode
+                    : "Session";
 
                 const nomFichier =
                     "Calendrier_" +
@@ -1272,4 +1192,10 @@ if (btnExporterPDFCalendrier) {
     // =====================================================
     window.construireCalendrier =
         construireCalendrier;
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialiserCalendriersPublics, { once: true });
+} else {
+    initialiserCalendriersPublics();
+}
