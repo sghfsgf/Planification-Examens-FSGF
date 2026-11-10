@@ -135,22 +135,7 @@ async function chargerDonneesGeneration() {
         // Attendre que data.js ait terminé le chargement
         // -------------------------------------------------
 
-        if (!window.donneesChargees) {
-
-            throw new Error(
-                "Les données de data.js ne sont pas disponibles."
-            );
-        }
-
-        const chargementOK =
-            await window.donneesChargees;
-
-        if (!chargementOK) {
-
-            throw new Error(
-                "Le chargement des données Excel a échoué."
-            );
-        }
+       
 
         // -------------------------------------------------
         // Récupérer les données déjà chargées par data.js
