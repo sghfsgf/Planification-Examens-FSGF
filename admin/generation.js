@@ -3976,6 +3976,25 @@ console.log("Paramètres de génération :", {
     sessionCode
 });
 
+// =================================================
+// ACTUALISER LES DONNÉES AVANT LA GÉNÉRATION
+// =================================================
+
+const moteurPret = await preparerGeneration();
+
+if (!moteurPret) {
+
+    console.error(
+        "❌ Impossible d'actualiser les données avant la génération."
+    );
+
+    alert(
+        "Impossible de récupérer les données actualisées depuis Firestore."
+    );
+
+    return;
+}
+                
                 // =================================================
                 // CONSTRUCTION DE LA MATRICE
                 // =================================================
