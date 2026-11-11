@@ -1576,6 +1576,14 @@ function construireMatricePlanning(niveauCode, sessionCode) {
 
     });
 
+    console.log(
+    "DIAGNOSTIC FINAL DES FILIÈRES DU PLANNING :",
+    planning.filieres.map(f => ({
+        filiereCode: f.filiereCode,
+        longueur: f.filiereCode.length
+    }))
+);
+
     return planning;
 }
 
