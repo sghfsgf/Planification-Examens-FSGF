@@ -3954,6 +3954,35 @@ if (
     return;
 }
 
+  // =================================================
+// ACTUALISER LES DONNÉES AVANT LA GÉNÉRATION
+// =================================================
+
+const moteurPret = await preparerGeneration();
+
+if (!moteurPret) {
+
+    console.error(
+        "❌ Impossible d'actualiser les données avant la génération."
+    );
+
+    alert(
+        "Impossible de récupérer les données actualisées depuis Firestore."
+    );
+
+    return;
+}              
+const donnees = obtenirDonneesGeneration();
+
+console.log(
+    "Filières présentes dans les données actualisées :",
+    [...new Set(
+        donnees.matieres
+            .filter(m => m.niveauCode === niveauCode)
+            .map(m => m.filiereCode)
+    )]
+);
+                
 // Vérification de la cohérence de la session
 const session = obtenirSession(sessionCode);
 
@@ -3976,24 +4005,7 @@ console.log("Paramètres de génération :", {
     sessionCode
 });
 
-// =================================================
-// ACTUALISER LES DONNÉES AVANT LA GÉNÉRATION
-// =================================================
 
-const moteurPret = await preparerGeneration();
-
-if (!moteurPret) {
-
-    console.error(
-        "❌ Impossible d'actualiser les données avant la génération."
-    );
-
-    alert(
-        "Impossible de récupérer les données actualisées depuis Firestore."
-    );
-
-    return;
-}
                 
                 // =================================================
                 // CONSTRUCTION DE LA MATRICE
