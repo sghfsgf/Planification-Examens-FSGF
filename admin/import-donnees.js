@@ -7,23 +7,10 @@
 
 
 // =====================================================
-// 1. FIREBASE / FIRESTORE
+// 1. IMPORT EXCEL — MODE LOCAL
 // =====================================================
 
-import { app } from "../firebase-config.js";
-
-import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDocs,
-    collection,
-    writeBatch
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
-
-const db =
-    getFirestore(app);
+// Aucune connexion Firestore nécessaire dans ce fichier.
 
 
 // =====================================================
