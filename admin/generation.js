@@ -3265,12 +3265,40 @@ async function preparerGeneration() {
     );
 
 
-    // -------------------------------------------------
-    // 1. VÉRIFICATION DES DONNÉES DÉJÀ CHARGÉES
-    // -------------------------------------------------
+   // -------------------------------------------------
+// 1. CHARGEMENT DES DONNÉES DEPUIS FIRESTORE
+// -------------------------------------------------
 
-    const verification =
-        verifierDonneesGeneration();
+const donneesChargees =
+    await chargerDonneesGeneration();
+
+if (!donneesChargees) {
+
+    console.error(
+        "❌ Impossible de charger les données depuis Firestore."
+    );
+
+    return null;
+}
+
+
+// -------------------------------------------------
+// 2. VÉRIFICATION DES DONNÉES CHARGÉES
+// -------------------------------------------------
+
+const verification =
+    verifierDonneesGeneration();
+
+
+if (!verification) {
+
+    console.error(
+        "❌ Les données chargées sont absentes ou insuffisantes."
+    );
+
+    return null;
+
+}
 
 
     if (!verification) {
