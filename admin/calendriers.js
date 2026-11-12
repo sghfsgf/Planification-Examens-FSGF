@@ -571,20 +571,63 @@ async function operationCalendrier(type) {
     const courant = () => revision === etatCalendrier.revision && cle === JSON.stringify(calendrierUI.selection());
     etatCalendrier.busy = true; actualiserActionsCalendrier();
     try {
-        if (type === 'afficher' || type === 'regenerer') {
-            let planning = type === 'afficher' ? await api.chargerCalendrier(...selection) : null;
-            if (!courant()) return;
-            if (!planning) {
-                planning = await api.construireMatricePlanning(selection[0], selection[3]);
-                if (!planning) throw new Error('Construction du planning impossible.');
-                await api.placerMatieresCommunes(planning); await api.placerMatieresSpecifiques(planning);
-            }
-            if (!courant()) return;
-            if (!Array.isArray(planning.filieres) || !planning.filieres.length) throw new Error('Planning vide ou mal structuré.');
-            window.planningCalendrierAdmin = planning; etatCalendrier.selection = cle;
-            invaliderCalendrier(); afficherPlanning(planning); calendrierUI.titre(planning);
-            retourCalendrier('Calendrier affiché. Contrôlez puis enregistrez avant de publier.');
-        } else if (type === 'enregistrer') {
+    if (type === 'afficher' || type === 'regenerer') {
+
+    console.log("ÉTAPE 1 - Début chargement", selection);
+
+    let planning = type === 'afficher'
+        ? await api.chargerCalendrier(...selection)
+        : null;
+
+    console.log("ÉTAPE 2 - Planning chargé :", planning);
+    console.log("ÉTAPE 3 - Courant :", courant());
+
+    if (!courant()) return;
+
+    if (!planning) {
+
+        console.log("ÉTAPE 4 - Début de construction du planning");
+
+        planning = await api.construireMatricePlanning(
+            selection[0],
+            selection[3]
+        );
+
+        if (!planning) {
+            throw new Error('Construction du planning impossible.');
+        }
+
+        console.log("ÉTAPE 5 - Placement des matières communes");
+
+        await api.placerMatieresCommunes(planning);
+
+        console.log("ÉTAPE 6 - Placement des matières spécifiques");
+
+        await api.placerMatieresSpecifiques(planning);
+    }
+
+    console.log("ÉTAPE 7 - Vérification du planning :", planning);
+
+    if (!courant()) return;
+
+    if (!Array.isArray(planning.filieres) || !planning.filieres.length) {
+        throw new Error('Planning vide ou mal structuré.');
+    }
+
+    window.planningCalendrierAdmin = planning;
+    etatCalendrier.selection = cle;
+
+    console.log("ÉTAPE 8 - Appel de l'affichage");
+
+    invaliderCalendrier();
+    afficherPlanning(planning);
+    calendrierUI.titre(planning);
+
+    retourCalendrier('Calendrier affiché. Contrôlez puis enregistrez avant de publier.');
+
+}
+        
+        else if (type === 'enregistrer') {
             const planning = window.planningCalendrierAdmin;
             if (String(planning.niveauCode).trim() !== selection[0] || String(planning.sessionCode).trim() !== selection[3]) throw new Error('Le planning ne correspond pas aux filtres.');
             const controle = window.controleExamens?.verifierPlanningGlobal;
