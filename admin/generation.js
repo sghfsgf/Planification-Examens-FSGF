@@ -3971,11 +3971,13 @@ document.addEventListener(
     "DOMContentLoaded",
     async function () {
 
-        console.log(
-            "✓ generation.js chargé."
-        );
+       console.log(
+    "✓ generation.js chargé."
+);
 
-        await preparerGeneration();
+console.log(
+    "En attente de l'import des fichiers Excel."
+);
 
         // -------------------------------------------------
         // BOUTON : GÉNÉRER LE CALENDRIER
@@ -4065,8 +4067,9 @@ if (!moteurPret) {
     );
 
     alert(
-        "Impossible de récupérer les données actualisées depuis Firestore."
-    );
+    "Impossible de préparer le moteur. " +
+    "Vérifiez que les deux fichiers Excel ont été importés correctement."
+);
 
     return;
 }              
