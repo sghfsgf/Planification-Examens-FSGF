@@ -3560,6 +3560,67 @@ function obtenirDonneesGeneration() {
     return donneesGeneration;
 
 }
+
+
+
+// =====================================================
+// PUBLICATION DU CALENDRIER
+// =====================================================
+
+function publierCalendrier(idCalendrier) {
+
+    console.log("==========================================");
+    console.log("PUBLICATION DU CALENDRIER");
+    console.log("==========================================");
+
+    if (!idCalendrier) {
+
+        console.error("❌ Identifiant du calendrier absent.");
+
+        return false;
+    }
+
+    const calendrier =
+        calendriersLocaux[idCalendrier];
+
+    if (!calendrier) {
+
+        console.error(
+            "❌ Calendrier introuvable :",
+            idCalendrier
+        );
+
+        return false;
+    }
+
+    // Changer le statut
+    const ancienStatut = calendrier.statut;
+
+    calendrier.statut = "publie";
+
+    calendrier.modifieLe =
+        new Date().toISOString();
+
+    // Sauvegarder localement
+    if (!sauvegarderCalendriersLocaux()) {
+
+        calendrier.statut = ancienStatut;
+
+        console.error(
+            "❌ Échec de la sauvegarde de la publication."
+        );
+
+        return false;
+    }
+
+    console.log(
+        "✓ Calendrier publié localement :",
+        idCalendrier
+    );
+
+    return true;
+}
+
 // =====================================================
 // EXPOSER LES FONCTIONS
 // =====================================================
