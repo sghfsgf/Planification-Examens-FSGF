@@ -3191,6 +3191,7 @@ function construireStructureGeneration() {
 // PRÉPARER LE MOTEUR
 // =====================================================
 
+
 async function preparerGeneration() {
 
     console.log("");
@@ -3200,7 +3201,7 @@ async function preparerGeneration() {
     );
 
     console.log(
-        "MOTEUR DE GÉNÉRATION DES EXAMENS"
+        "MOTEUR DE GÉNÉRATION DES EXAMENS — MODE LOCAL"
     );
 
     console.log(
@@ -3208,20 +3209,9 @@ async function preparerGeneration() {
     );
 
 
-    const chargement =
-        await chargerDonneesGeneration();
-
-
-    if (!chargement) {
-
-        console.error(
-            "❌ Impossible de préparer la génération."
-        );
-
-        return null;
-
-    }
-
+    // -------------------------------------------------
+    // 1. VÉRIFICATION DES DONNÉES DÉJÀ CHARGÉES
+    // -------------------------------------------------
 
     const verification =
         verifierDonneesGeneration();
@@ -3230,7 +3220,7 @@ async function preparerGeneration() {
     if (!verification) {
 
         console.error(
-            "❌ Les données ne sont pas suffisantes."
+            "❌ Les données locales sont absentes ou insuffisantes."
         );
 
         return null;
@@ -3238,14 +3228,29 @@ async function preparerGeneration() {
     }
 
 
+    // -------------------------------------------------
+    // 2. CONSTRUCTION DE LA STRUCTURE
+    // -------------------------------------------------
+
     const structure =
         construireStructureGeneration();
+
+
+    if (!structure) {
+
+        console.error(
+            "❌ Impossible de construire la structure de génération."
+        );
+
+        return null;
+
+    }
 
 
     console.log("");
 
     console.log(
-        "✓ MOTEUR PRÊT"
+        "✓ MOTEUR PRÊT — DONNÉES LOCALES"
     );
 
     console.log(
@@ -3256,6 +3261,7 @@ async function preparerGeneration() {
     return structure;
 
 }
+
 
 // =====================================================
 // CHARGER UN CALENDRIER DEPUIS FIRESTORE
