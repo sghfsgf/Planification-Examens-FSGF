@@ -91,6 +91,56 @@ let generationChargee = false;
 
 let dernierCalendrierEnregistre = null;
 
+
+// =====================================================
+// STOCKAGE LOCAL DES CALENDRIERS
+// =====================================================
+
+let calendriersLocaux = (() => {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem("calendriersFSGF") || "{}"
+        );
+
+    } catch (erreur) {
+
+        console.error(
+            "Erreur de lecture des calendriers locaux :",
+            erreur
+        );
+
+        return {};
+
+    }
+
+})();
+
+function sauvegarderCalendriersLocaux() {
+
+    try {
+
+        localStorage.setItem(
+            "calendriersFSGF",
+            JSON.stringify(calendriersLocaux)
+        );
+
+        return true;
+
+    } catch (erreur) {
+
+        console.error(
+            "Erreur de sauvegarde locale :",
+            erreur
+        );
+
+        return false;
+
+    }
+
+}
+
 // =====================================================
 // STOCKAGE LOCAL DES CALENDRIERS
 // =====================================================
@@ -3280,8 +3330,7 @@ async function chargerCalendrier(
     sessionCode
 ) {
 
-    const session =
-        obtenirSession(sessionCode);
+    const session = obtenirSession(sessionCode);
 
     if (!session) {
 
@@ -3304,48 +3353,34 @@ async function chargerCalendrier(
         regimeCode + "_" +
         sessionCode;
 
-    console.log(
-        "🔎 Recherche du calendrier dans Firestore :",
-        idCalendrier
-    );
-
-    const referenceCalendrier =
-        doc(
-            db,
-            "calendriers",
-            idCalendrier
-        );
-
     const documentCalendrier =
-        await getDoc(
-            referenceCalendrier
-        );
+        calendriersLocaux[idCalendrier];
 
-    if (!documentCalendrier.exists()) {
+    if (!documentCalendrier) {
 
         console.log(
-            "ℹ️ Aucun calendrier enregistré pour :",
+            "ℹ️ Aucun calendrier local enregistré :",
             idCalendrier
         );
 
         return null;
     }
 
-    const donnees =
-        documentCalendrier.data();
-
     console.log(
-        "✓ Calendrier trouvé dans Firestore :",
+        "✓ Calendrier local trouvé :",
         idCalendrier
     );
 
-   
-return {
-    ...donnees.planning,
-    anneeUniversitaire:
-        donnees.anneeUniversitaire ||
-        anneeUniversitaire
-};
+    return {
+
+        ...documentCalendrier.planning,
+
+        anneeUniversitaire:
+            documentCalendrier.anneeUniversitaire ||
+            anneeUniversitaire
+
+    };
+
 }
 
 
@@ -3360,51 +3395,24 @@ return {
 // Le calendrier est enregistré comme brouillon.
 // =====================================================
 
+
 async function enregistrerCalendrier(planning) {
 
     console.log("==========================================");
-    console.log("ENREGISTREMENT DU CALENDRIER");
+    console.log("ENREGISTREMENT LOCAL DU CALENDRIER");
     console.log("==========================================");
 
-    // -------------------------------------------------
-    // Vérifier le planning
-    // -------------------------------------------------
-
-    if (!planning) {
+    if (!planning || !planning.niveauCode || !planning.sessionCode) {
 
         console.error(
-            "❌ Aucun planning à enregistrer."
+            "❌ Planning absent, niveau ou session manquant."
         );
 
         return null;
     }
-
-    if (!planning.niveauCode) {
-
-        console.error(
-            "❌ Niveau du planning absent."
-        );
-
-        return null;
-    }
-
-    if (!planning.sessionCode) {
-
-        console.error(
-            "❌ Session du planning absente."
-        );
-
-        return null;
-    }
-
-    // -------------------------------------------------
-    // Récupérer la session
-    // -------------------------------------------------
 
     const session =
-        obtenirSession(
-            planning.sessionCode
-        );
+        obtenirSession(planning.sessionCode);
 
     if (!session) {
 
@@ -3416,25 +3424,8 @@ async function enregistrerCalendrier(planning) {
         return null;
     }
 
-    // -------------------------------------------------
-    // Récupérer l'année universitaire
-    // -------------------------------------------------
-
     const anneeUniversitaire =
         session.anneeUniversitaire;
-
-    if (!anneeUniversitaire) {
-
-        console.error(
-            "❌ Année universitaire absente de la session."
-        );
-
-        return null;
-    }
-
-    // -------------------------------------------------
-    // Récupérer semestre et régime
-    // -------------------------------------------------
 
     const semestreCode =
         session.semestreCode;
@@ -3442,70 +3433,29 @@ async function enregistrerCalendrier(planning) {
     const regimeCode =
         session.regimeCode;
 
-    if (!semestreCode || !regimeCode) {
+    if (
+        !anneeUniversitaire ||
+        !semestreCode ||
+        !regimeCode
+    ) {
 
         console.error(
-            "❌ Semestre ou régime absent de la session."
+            "❌ Informations de session incomplètes."
         );
 
         return null;
     }
 
-    // -------------------------------------------------
-    // Construire l'identifiant du calendrier
-    // -------------------------------------------------
-
     const idCalendrier =
         "calendrier_" +
-        anneeUniversitaire +
-        "_" +
-        planning.niveauCode +
-        "_" +
-        semestreCode +
-        "_" +
-        regimeCode +
-        "_" +
+        anneeUniversitaire + "_" +
+        planning.niveauCode + "_" +
+        semestreCode + "_" +
+        regimeCode + "_" +
         planning.sessionCode;
 
-    console.log(
-        "ID du calendrier :",
-        idCalendrier
-    );
-
-    // -------------------------------------------------
-    // Référence Firestore
-    // -------------------------------------------------
-
-    const referenceCalendrier =
-        doc(
-            db,
-            "calendriers",
-            idCalendrier
-        );
     const documentExistant =
-    await getDoc(
-        referenceCalendrier
-    );
-
-if (documentExistant.exists()) {
-
-    console.log(
-        "⚠️ Le calendrier existe déjà dans Firestore :",
-        idCalendrier
-    );
-
-} else {
-
-    console.log(
-        "✓ Aucun calendrier existant. Création du calendrier :",
-        idCalendrier
-    );
-}
-
-
-    // -------------------------------------------------
-    // Construire le document
-    // -------------------------------------------------
+        calendriersLocaux[idCalendrier];
 
     const controleInitial = {
 
@@ -3519,6 +3469,9 @@ if (documentExistant.exists()) {
 
     };
 
+    const maintenant =
+        new Date().toISOString();
+
     const documentCalendrier = {
 
         anneeUniversitaire: anneeUniversitaire,
@@ -3531,310 +3484,72 @@ if (documentExistant.exists()) {
 
         sessionCode: planning.sessionCode,
 
-        sessionLibelle: session.sessionLibelle || "",
+        sessionLibelle:
+            session.sessionLibelle || "",
 
-        // Toute modification repasse le calendrier en brouillon
         statut: "brouillon",
 
-        // Conserver la date de création si le document existe
-        creeLe: documentExistant.exists()
-            ? documentExistant.data().creeLe
-            : serverTimestamp(),
+        creeLe:
+            documentExistant
+                ? documentExistant.creeLe
+                : maintenant,
 
-        modifieLe: serverTimestamp(),
+        modifieLe: maintenant,
 
-        // Remplacer le planning par sa nouvelle version
         planning: planning,
 
-        // Invalider l'ancien contrôle
         controle: controleInitial
 
     };
 
-    // -------------------------------------------------
-    // Enregistrer ou mettre à jour dans Firestore
-    // -------------------------------------------------
+    // Conserver le calendrier en mémoire
+    calendriersLocaux[idCalendrier] =
+        documentCalendrier;
 
-    try {
+    // Sauvegarder dans le navigateur
+    if (!sauvegarderCalendriersLocaux()) {
 
-        if (documentExistant.exists()) {
+        // Annuler la modification en mémoire si la
+        // sauvegarde persistante échoue.
+        if (documentExistant) {
 
-            // Mise à jour du calendrier individuel existant
-            await updateDoc(
-                referenceCalendrier,
-                documentCalendrier
-            );
-
-            console.log(
-                "✓ Calendrier existant mis à jour :",
-                idCalendrier
-            );
+            calendriersLocaux[idCalendrier] =
+                documentExistant;
 
         } else {
 
-            // Création d'un nouveau calendrier individuel
-            await setDoc(
-                referenceCalendrier,
-                documentCalendrier
-            );
-
-            console.log(
-                "✓ Nouveau calendrier créé :",
-                idCalendrier
-            );
+            delete calendriersLocaux[idCalendrier];
 
         }
 
-        console.log(
-            "✓ Calendrier enregistré dans Firestore."
-        );
-
-        console.log(
-            "Document :",
-            idCalendrier
-        );
-
-        console.log(
-            "Niveau :",
-            planning.niveauCode
-        );
-
-        console.log(
-            "Session :",
-            planning.sessionCode
-        );
-
-        console.log(
-            "Statut : brouillon"
-        );
-
-        return {
-
-            id: idCalendrier,
-
-            anneeUniversitaire: anneeUniversitaire,
-
-            niveauCode: planning.niveauCode,
-
-            semestreCode: semestreCode,
-
-            regimeCode: regimeCode,
-
-            sessionCode: planning.sessionCode,
-
-            statut: "brouillon"
-
-        };
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Erreur lors de l'enregistrement du calendrier :",
-            erreur
-        );
-
         return null;
     }
 
-    // -------------------------------------------------
-    // Enregistrer dans Firestore
-    // -------------------------------------------------
+    console.log(
+        "✓ Calendrier enregistré localement :",
+        idCalendrier
+    );
 
-    try {
+    return {
 
-        await setDoc(
-            referenceCalendrier,
-            documentCalendrier
-        );
+        id: idCalendrier,
 
-        console.log("------------------------------------------");
+        anneeUniversitaire: anneeUniversitaire,
 
-        console.log(
-            "✓ CALENDRIER ENREGISTRÉ DANS FIRESTORE"
-        );
+        niveauCode: planning.niveauCode,
 
-        console.log(
-            "Collection : calendriers"
-        );
+        semestreCode: semestreCode,
 
-        console.log(
-            "Document :",
-            idCalendrier
-        );
+        regimeCode: regimeCode,
 
-        console.log(
-            "Année universitaire :",
-            anneeUniversitaire
-        );
+        sessionCode: planning.sessionCode,
 
-        console.log(
-            "Niveau :",
-            planning.niveauCode
-        );
+        statut: "brouillon"
 
-        console.log(
-            "Semestre :",
-            semestreCode
-        );
-
-        console.log(
-            "Régime :",
-            regimeCode
-        );
-
-        console.log(
-            "Session :",
-            planning.sessionCode
-        );
-
-        console.log(
-            "Statut : brouillon"
-        );
-
-        console.log("------------------------------------------");
-
-        return {
-
-            id:
-                idCalendrier,
-
-            anneeUniversitaire:
-                anneeUniversitaire,
-
-            niveauCode:
-                planning.niveauCode,
-
-            semestreCode:
-                semestreCode,
-
-            regimeCode:
-                regimeCode,
-
-            sessionCode:
-                planning.sessionCode,
-
-            statut:
-                "brouillon"
-
-        };
-
-    } catch (erreur) {
-
-        console.error(
-            "❌ Erreur lors de l'enregistrement du calendrier :",
-            erreur
-        );
-
-        return null;
-    }
+    };
 
 }
 
-
-// =====================================================
-// PUBLIER UN CALENDRIER DANS FIRESTORE
-// =====================================================
-
-async function publierCalendrier(idCalendrier) {
-    if (!idCalendrier) {
-        console.error("Aucun calendrier à publier.");
-        return false;
-    }
-
-    const validateur =
-        window.controleExamens?.verifierPlanningGlobal;
-
-    if (typeof validateur !== "function") {
-        console.error(
-            "Le module de contrôle n'est pas disponible."
-        );
-        return false;
-    }
-
-    const referenceCalendrier =
-        doc(db, "calendriers", idCalendrier);
-
-    try {
-        await runTransaction(db, async function (transaction) {
-            const documentCalendrier =
-                await transaction.get(referenceCalendrier);
-
-            if (!documentCalendrier.exists()) {
-                throw new Error("Calendrier introuvable.");
-            }
-
-            const donneesCalendrier =
-                documentCalendrier.data();
-
-            if (donneesCalendrier.statut !== "brouillon") {
-                throw new Error(
-                    "Seul un calendrier en brouillon peut être publié."
-                );
-            }
-
-            const planning = donneesCalendrier.planning;
-
-            // Refuser un planning absent ou sans filières.
-            if (
-                !planning ||
-                !Array.isArray(planning.filieres) ||
-                planning.filieres.length === 0 ||
-                !Array.isArray(planning.matieresCommunes) ||
-                !Array.isArray(planning.matieresSpecifiques)
-            ) {
-                throw new Error(
-                    "Le planning enregistré est absent ou mal structuré."
-                );
-            }
-
-            const nombreMatieresPrevues =
-                planning.matieresCommunes.length +
-                planning.matieresSpecifiques.length;
-
-            if (nombreMatieresPrevues === 0) {
-                throw new Error(
-                    "Le planning ne contient aucune matière prévue."
-                );
-            }
-
-            const resultatControle = validateur(planning);
-
-            if (
-                !resultatControle ||
-                resultatControle.valide !== true ||
-                resultatControle.matieresPlacees?.valide !== true
-            ) {
-                throw new Error(
-                    "Le planning enregistré est invalide ou incomplet."
-                );
-            }
-
-            transaction.update(referenceCalendrier, {
-                statut: "publie",
-                modifieLe: serverTimestamp()
-            });
-        });
-
-        console.log(
-            "Calendrier contrôlé et publié :",
-            idCalendrier
-        );
-
-        return true;
-    } catch (erreur) {
-        console.error(
-            "Publication refusée ou échouée :",
-            erreur
-        );
-
-        alert(
-            "Le calendrier n'a pas été publié. " +
-            "Consultez la console pour connaître la cause."
-        );
-
-        return false;
-    }
-}
 
 // =====================================================
 // ACCÈS AUX DONNÉES CHARGÉES POUR LES AUTRES MODULES
