@@ -1557,20 +1557,93 @@ console.log(
 );
 
 async function initialiserCalendriersApresFirestore() {
-    ['btnAfficherCalendrierAdmin', 'btnRegenererCalendrierAdmin', 'btnEnregistrerCalendrierAdmin', 'btnPublierCalendrierAdmin'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+
+    [
+        'btnAfficherCalendrierAdmin',
+        'btnRegenererCalendrierAdmin',
+        'btnEnregistrerCalendrierAdmin',
+        'btnPublierCalendrierAdmin'
+    ].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = true;
+    });
+
     retourCalendrier('Chargement des données du calendrier…');
+
+    // Attendre que le moteur de génération soit disponible
     for (let tentative = 0; tentative < 100; tentative++) {
+
         try {
+
             const api = window.generationExamens;
-            const donnees = api?.obtenirDonnees?.();
-            if (donnees && Array.isArray(donnees.sessions) && donnees.sessions.length && Array.isArray(donnees.matieres) && donnees.matieres.length) {
-                initialiserFiltresCalendrierAdmin();
-                retourCalendrier(calendrierUI ? 'Sélectionnez les filtres du calendrier.' : 'Interface du calendrier incomplète.'); return;
+
+            if (!api) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                continue;
             }
-        } catch (erreur) { retourCalendrier('Erreur de chargement : ' + erreur.message); return; }
-        await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Charger les données depuis Firestore
+            const chargementReussi =
+                await api.chargerDonnees();
+
+            if (!chargementReussi) {
+
+                retourCalendrier(
+                    'Erreur : impossible de charger les données depuis Firestore.'
+                );
+
+                return;
+            }
+
+            // Vérifier les données après leur chargement
+            const donnees = api.obtenirDonnees();
+
+            if (
+                donnees &&
+                Array.isArray(donnees.sessions) &&
+                donnees.sessions.length &&
+                Array.isArray(donnees.matieres) &&
+                donnees.matieres.length
+            ) {
+
+                initialiserFiltresCalendrierAdmin();
+
+                retourCalendrier(
+                    calendrierUI
+                        ? 'Sélectionnez les filtres du calendrier.'
+                        : 'Interface du calendrier incomplète.'
+                );
+
+                return;
+            }
+
+            retourCalendrier(
+                'Les données Firestore sont chargées, mais certaines collections sont vides.'
+            );
+
+            return;
+
+        } catch (erreur) {
+
+            console.error(
+                'Erreur d’initialisation des calendriers :',
+                erreur
+            );
+
+            retourCalendrier(
+                'Erreur de chargement : ' + erreur.message
+            );
+
+            return;
+        }
+
     }
-    retourCalendrier('Données absentes, vides ou moteur indisponible après 10 secondes. Rechargez la page après correction.');
+
+    retourCalendrier(
+        'Moteur de génération indisponible après 10 secondes. Rechargez la page.'
+    );
 }
+
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialiserCalendriersApresFirestore, { once: true });
 else void initialiserCalendriersApresFirestore();
