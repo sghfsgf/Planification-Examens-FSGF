@@ -3852,6 +3852,31 @@ window.generationExamens = {
 
 definirDonneesLocales: function (donnees) {
 
+    if (Array.isArray(donnees.matieres)) {
+        donneesGeneration.matieres = donnees.matieres;
+    }
+
+    if (Array.isArray(donnees.sessions)) {
+        donneesGeneration.sessions = donnees.sessions;
+    }
+
+    if (Array.isArray(donnees.creneaux)) {
+        donneesGeneration.creneaux = donnees.creneaux;
+    }
+
+    if (Array.isArray(donnees.sallesAmphis)) {
+        donneesGeneration.sallesAmphis = donnees.sallesAmphis;
+    }
+
+    if (Array.isArray(donnees.effectifs)) {
+        donneesGeneration.effectifs = donnees.effectifs;
+    }
+
+    console.log("✓ Données locales transmises au moteur.");
+},
+    
+definirDonneesLocales: function (donnees) {
+
     donneesGeneration.matieres = donnees.matieres;
     donneesGeneration.sessions = donnees.sessions;
     donneesGeneration.creneaux = donnees.creneaux;
