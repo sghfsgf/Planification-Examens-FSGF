@@ -321,6 +321,7 @@ async function importerParametrage() {
 // 4. IMPORT DES SALLES / AMPHIS
 // =====================================================
 
+
 async function importerSallesAmphis() {
 
     const statut =
@@ -328,301 +329,146 @@ async function importerSallesAmphis() {
             "statutImportSallesAmphis"
         );
 
-
     try {
 
         // -------------------------------------------------
-        // Récupération du fichier choisi par l'Admin
+        // 1. RÉCUPÉRATION DU FICHIER EXCEL
         // -------------------------------------------------
 
-const fichier =
-    document.getElementById(
-        "fichierSallesAmphis"
-    ).files[0];
+        const fichier =
+            document.getElementById(
+                "fichierSallesAmphis"
+            ).files[0];
 
+        if (!fichier) {
 
-// -------------------------------------------------
-// Vérification du fichier
-// -------------------------------------------------
+            throw new Error(
+                "Veuillez sélectionner le fichier salles_amphis.xlsx."
+            );
 
-if (!fichier) {
-
-    throw new Error(
-        "Veuillez sélectionner le fichier salles_amphis.xlsx."
-    );
-
-}
-
-
-// -------------------------------------------------
-// Affichage du fichier sélectionné
-// -------------------------------------------------
-
-console.log(
-    "Fichier salles / amphis sélectionné :",
-    fichier.name
-);
-
-
-// -------------------------------------------------
-// Lecture du fichier Excel sélectionné
-// -------------------------------------------------
-
-const tableau =
-    await fichier.arrayBuffer();
-
-
-const classeur =
-    XLSX.read(
-
-        tableau,
-
-        {
-            type: "array"
         }
 
-    );
-
-
-// -------------------------------------------------
-// Lecture de la feuille salles_amphis
-// -------------------------------------------------
-
-const sallesAmphis =
-    lireFeuille(
-
-        classeur,
-
-        "salles_amphis"
-
-    );
-// -------------------------------------------------
-// Lecture de la feuille effectifs
-// -------------------------------------------------
-
-const effectifs =
-    lireFeuille(
-
-        classeur,
-
-        "effectifs"
-
-    );
-
         console.log(
-            "Début de la synchronisation des salles / amphis..."
+            "Fichier salles / amphis sélectionné :",
+            fichier.name
         );
 
 
+        // -------------------------------------------------
+        // 2. LECTURE DU FICHIER EXCEL
+        // -------------------------------------------------
+
+        const tableau =
+            await fichier.arrayBuffer();
+
+        const classeur =
+            XLSX.read(
+                tableau,
+                {
+                    type: "array"
+                }
+            );
+
+
+        // -------------------------------------------------
+        // 3. LECTURE DES DEUX FEUILLES
+        // -------------------------------------------------
+
+        const sallesAmphis =
+            lireFeuille(
+                classeur,
+                "salles_amphis"
+            );
+
+        const effectifs =
+            lireFeuille(
+                classeur,
+                "effectifs"
+            );
+
+
+        // -------------------------------------------------
+        // 4. VÉRIFICATION DES DONNÉES
+        // -------------------------------------------------
+
+        if (
+            sallesAmphis.length === 0 ||
+            effectifs.length === 0
+        ) {
+
+            throw new Error(
+                "La feuille salles_amphis ou effectifs est vide."
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // 5. TRANSMISSION AU MOTEUR LOCAL
+        // -------------------------------------------------
+
+        if (
+            !window.generationExamens ||
+            typeof window.generationExamens.definirDonneesLocales !== "function"
+        ) {
+
+            throw new Error(
+                "Le moteur de génération locale n'est pas disponible."
+            );
+
+        }
+
+        window.generationExamens.definirDonneesLocales({
+
+            sallesAmphis: sallesAmphis,
+
+            effectifs: effectifs
+
+        });
+
+
+        // -------------------------------------------------
+        // 6. CONFIRMATION
+        // -------------------------------------------------
+
         console.log(
-            "Salles / amphis à importer :",
+            "✓ Salles / amphis chargés localement :",
             sallesAmphis.length
         );
-console.log(
-    "Effectifs à importer :",
-    effectifs.length
-);
-
-        // =================================================
-        // 1. PRÉPARATION DU BATCH
-        // =================================================
-
-        const batch =
-            writeBatch(db);
-
-
-        // =================================================
-        // 2. SUPPRESSION DES ANCIENNES SALLES / AMPHIS
-        // =================================================
-
-        const anciennesSallesAmphis =
-            await getDocs(
-                collection(
-                    db,
-                    "salles_amphis"
-                )
-            );
-
-
-        anciennesSallesAmphis.forEach(
-            function (documentFirestore) {
-
-                batch.delete(
-                    documentFirestore.ref
-                );
-
-            }
-        );
-
 
         console.log(
-            "Anciennes salles / amphis supprimées :",
-            anciennesSallesAmphis.size
-        );
-
-
-        // =================================================
-        // 3. AJOUT DES SALLES / AMPHIS DU NOUVEL EXCEL
-        // =================================================
-
-        for (
-            let i = 0;
-            i < sallesAmphis.length;
-            i++
-        ) {
-
-            const salleAmphi =
-                sallesAmphis[i];
-
-
-            const identifiant =
-                salleAmphi.code;
-
-
-            batch.set(
-
-                doc(
-                    db,
-                    "salles_amphis",
-                    identifiant
-                ),
-
-                salleAmphi
-
-            );
-
-        }
-        // =================================================
-        // 4. SUPPRESSION DES ANCIENS EFFECTIFS
-        // =================================================
-
-        const anciensEffectifs =
-            await getDocs(
-                collection(
-                    db,
-                    "effectifs"
-                )
-            );
-
-
-        anciensEffectifs.forEach(
-            function (documentFirestore) {
-
-                batch.delete(
-                    documentFirestore.ref
-                );
-
-            }
-        );
-
-
-        console.log(
-            "Anciens effectifs supprimés :",
-            anciensEffectifs.size
-        );
-
-
-        // =================================================
-        // 4. AJOUT DES EFFECTIFS DU NOUVEL EXCEL
-        // =================================================
-
-        for (
-            let i = 0;
-            i < effectifs.length;
-            i++
-        ) {
-
-            const effectif =
-                effectifs[i];
-
-
-            const identifiant =
-                effectif.anneeUniversitaire
-                + "_"
-                + effectif.niveauCode
-                + "_"
-                + effectif.filiereCode
-                    .replace(/\s+/g, "_");
-
-
-            batch.set(
-
-                doc(
-                    db,
-                    "effectifs",
-                    identifiant
-                ),
-
-                effectif
-
-            );
-
-        }
-
-
-        console.log(
-            "Effectifs ajoutés au batch :",
+            "✓ Effectifs chargés localement :",
             effectifs.length
         );
-
-
-        // =================================================
-        // 5. EXÉCUTION
-        // =================================================
-
-        await batch.commit();
-
-
-        console.log(
-            "✓ Salles / amphis synchronisées :",
-            sallesAmphis.length
-        );
-
-
-        // -------------------------------------------------
-        // Confirmation
-        // -------------------------------------------------
 
         if (statut) {
 
             statut.textContent =
-                "✓ Synchronisation terminée : " +
+                "✓ Chargement local terminé : " +
                 sallesAmphis.length +
-                " salles / amphis.";
+                " salles / amphis et " +
+                effectifs.length +
+                " effectifs.";
 
         }
 
-
         console.log(
-            "===================================="
-        );
-
-
-        console.log(
-            "✓ SYNCHRONISATION SALLES / AMPHIS TERMINÉE"
-        );
-
-
-        console.log(
-            "===================================="
+            "✓ SALLES / AMPHIS CHARGÉS EN MÉMOIRE — AUCUNE ÉCRITURE FIRESTORE"
         );
 
     }
 
-
     catch (erreur) {
 
         console.error(
-            "❌ Erreur lors de la synchronisation des salles / amphis :",
+            "❌ Erreur lors du chargement local des salles / amphis :",
             erreur
         );
-
 
         if (statut) {
 
             statut.textContent =
-                "❌ Erreur lors de la synchronisation. " +
-                "Consultez la console F12.";
+                "❌ Erreur lors du chargement local. Consultez la console F12.";
 
         }
 
