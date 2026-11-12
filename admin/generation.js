@@ -3803,6 +3803,18 @@ function definirDernierCalendrierEnregistre(idCalendrier) {
 console.log("EXPORT GENERATION.JS ATTEINT");
 window.generationExamens = {
 
+definirDonneesLocales: function (donnees) {
+
+    donneesGeneration.matieres = donnees.matieres;
+    donneesGeneration.sessions = donnees.sessions;
+    donneesGeneration.creneaux = donnees.creneaux;
+    donneesGeneration.sallesAmphis = donnees.sallesAmphis;
+    donneesGeneration.effectifs = donnees.effectifs;
+
+    console.log("✓ Données locales transmises au moteur.");
+
+},
+    
     definirDernierCalendrierEnregistre:
     definirDernierCalendrierEnregistre,
 
