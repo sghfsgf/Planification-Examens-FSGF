@@ -289,6 +289,10 @@ function verifierDonneesGeneration() {
     );
 
 
+    // -------------------------------------------------
+    // 1. Vérification des matières
+    // -------------------------------------------------
+
     if (
         donneesGeneration.matieres.length === 0
     ) {
@@ -301,6 +305,10 @@ function verifierDonneesGeneration() {
 
     }
 
+
+    // -------------------------------------------------
+    // 2. Vérification des sessions
+    // -------------------------------------------------
 
     if (
         donneesGeneration.sessions.length === 0
@@ -315,6 +323,10 @@ function verifierDonneesGeneration() {
     }
 
 
+    // -------------------------------------------------
+    // 3. Vérification des créneaux
+    // -------------------------------------------------
+
     if (
         donneesGeneration.creneaux.length === 0
     ) {
@@ -327,6 +339,10 @@ function verifierDonneesGeneration() {
 
     }
 
+
+    // -------------------------------------------------
+    // 4. Vérification des salles / amphis
+    // -------------------------------------------------
 
     if (
         donneesGeneration.sallesAmphis.length === 0
@@ -341,20 +357,50 @@ function verifierDonneesGeneration() {
     }
 
 
+    // -------------------------------------------------
+    // 5. Vérification des effectifs
+    // -------------------------------------------------
+
+    if (
+        donneesGeneration.effectifs.length === 0
+    ) {
+
+        console.error(
+            "❌ Aucun effectif disponible."
+        );
+
+        return false;
+
+    }
+
+
+    // -------------------------------------------------
+    // Confirmation
+    // -------------------------------------------------
+
     console.log(
-        "✓ Matières disponibles"
+        "✓ Matières disponibles :",
+        donneesGeneration.matieres.length
     );
 
     console.log(
-        "✓ Sessions disponibles"
+        "✓ Sessions disponibles :",
+        donneesGeneration.sessions.length
     );
 
     console.log(
-        "✓ Créneaux disponibles"
+        "✓ Créneaux disponibles :",
+        donneesGeneration.creneaux.length
     );
 
     console.log(
-        "✓ Salles / amphis disponibles"
+        "✓ Salles / amphis disponibles :",
+        donneesGeneration.sallesAmphis.length
+    );
+
+    console.log(
+        "✓ Effectifs disponibles :",
+        donneesGeneration.effectifs.length
     );
 
 
@@ -374,6 +420,7 @@ function verifierDonneesGeneration() {
     return true;
 
 }
+
 
 
 // =====================================================
