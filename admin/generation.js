@@ -90,6 +90,12 @@ let generationChargee = false;
 // =====================================================
 
 let dernierCalendrierEnregistre = null;
+
+// =====================================================
+// STOCKAGE LOCAL DES CALENDRIERS
+// =====================================================
+
+let calendriersLocaux = {};
 // =====================================================
 // CHARGER UNE COLLECTION FIRESTORE
 // =====================================================
