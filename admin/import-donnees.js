@@ -106,6 +106,7 @@ document.addEventListener(
 // =====================================================
 
 
+
 async function importerParametrage() {
 
     const statut =
@@ -113,401 +114,188 @@ async function importerParametrage() {
             "statutImportParametrage"
         );
 
-
     try {
 
-   // -------------------------------------------------
-// Récupération du fichier choisi par l'Admin
-// -------------------------------------------------
-
-const fichier =
-    document.getElementById(
-        "fichierParametrage"
-    ).files[0];
-
-
-if (!fichier) {
-
-    throw new Error(
-        "Veuillez sélectionner le fichier parametrage_examens.xlsx."
-    );
-
-}
-
-
-// -------------------------------------------------
-// Vérification du nom du fichier
-// -------------------------------------------------
-
-console.log(
-    "Fichier sélectionné :",
-    fichier.name
-);
-
-
-// -------------------------------------------------
-// Lecture du fichier Excel sélectionné
-// -------------------------------------------------
-
-const tableau =
-    await fichier.arrayBuffer();
-
-
-const classeur =
-    XLSX.read(
-
-        tableau,
-
-        {
-            type: "array"
-        }
-
-    );
-
-
-// -------------------------------------------------
-// Lecture des trois feuilles
-// -------------------------------------------------
-
-const matieres =
-    lireFeuille(
-
-        classeur,
-
-        "matieres"
-
-    );
-
-
-const sessionsBrutes =
-    lireFeuille(
-
-        classeur,
-
-        "sessions"
-
-    );
-
-
-const creneauxBruts =
-    lireFeuille(
-
-        classeur,
-
-        "creneaux"
-
-    );
-
-
-// -------------------------------------------------
-// Préparation des sessions
-// -------------------------------------------------
-
-const sessions =
-    sessionsBrutes.map(function (session) {
-
-        return {
-
-            ...session,
-
-            dateDebutAffichage:
-                formaterDate(
-                    session.dateDebut
-                ),
-
-            dateFinAffichage:
-                formaterDate(
-                    session.dateFin
-                )
-
-        };
-
-    });
-
-
-// -------------------------------------------------
-// Préparation des créneaux
-// -------------------------------------------------
-
-const creneaux =
-    creneauxBruts.map(function (creneau) {
-
-        return {
-
-            ...creneau,
-
-            heureDebutAffichage:
-                convertirHeureExcel(
-                    creneau.heureDebut
-                ),
-
-            heureFinAffichage:
-                convertirHeureExcel(
-                    creneau.heureFin
-                )
-
-        };
-
-    });     
-
-
-
-        console.log(
-            "Début de la synchronisation Firestore..."
-        );
-
-
-        console.log(
-            "Matières à importer :",
-            matieres.length
-        );
-
-
-        console.log(
-            "Sessions à importer :",
-            sessions.length
-        );
-
-
-        console.log(
-            "Créneaux à importer :",
-            creneaux.length
-        );
-
-
-        // =================================================
-        // 1. PRÉPARATION DU BATCH
-        // =================================================
-
-        const batch =
-            writeBatch(db);
-
-
-        // =================================================
-        // 2. SUPPRESSION DES ANCIENNES MATIÈRES
-        // =================================================
-
-        const anciensMatieres =
-            await getDocs(
-                collection(
-                    db,
-                    "matieres"
-                )
-            );
-
-
-        anciensMatieres.forEach(
-            function (documentFirestore) {
-
-                batch.delete(
-                    documentFirestore.ref
-                );
-
-            }
-        );
-
-
-        console.log(
-            "Anciennes matières supprimées :",
-            anciensMatieres.size
-        );
-
-
-        // =================================================
-        // 3. SUPPRESSION DES ANCIENNES SESSIONS
-        // =================================================
-
-        const anciennesSessions =
-            await getDocs(
-                collection(
-                    db,
-                    "sessions"
-                )
-            );
-
-
-        anciennesSessions.forEach(
-            function (documentFirestore) {
-
-                batch.delete(
-                    documentFirestore.ref
-                );
-
-            }
-        );
-
-
-        console.log(
-            "Anciennes sessions supprimées :",
-            anciennesSessions.size
-        );
-
-
-        // =================================================
-        // 4. SUPPRESSION DES ANCIENS CRÉNEAUX
-        // =================================================
-
-        const anciensCreneaux =
-            await getDocs(
-                collection(
-                    db,
-                    "creneaux"
-                )
-            );
-
-
-        anciensCreneaux.forEach(
-            function (documentFirestore) {
-
-                batch.delete(
-                    documentFirestore.ref
-                );
-
-            }
-        );
-
-
-        console.log(
-            "Anciens créneaux supprimés :",
-            anciensCreneaux.size
-        );
-
-
-        // =================================================
-        // 5. AJOUT DES MATIÈRES DU NOUVEL EXCEL
-        // =================================================
-
-        for (
-            let i = 0;
-            i < matieres.length;
-            i++
-        ) {
-
-            const matiere =
-                matieres[i];
-
-
-            const identifiant =
-                "matiere_" +
-                i;
-
-
-            batch.set(
-
-                doc(
-                    db,
-                    "matieres",
-                    identifiant
-                ),
-
-                matiere
-
+        // -------------------------------------------------
+        // 1. RÉCUPÉRATION DU FICHIER EXCEL
+        // -------------------------------------------------
+
+        const fichier =
+            document.getElementById(
+                "fichierParametrage"
+            ).files[0];
+
+        if (!fichier) {
+
+            throw new Error(
+                "Veuillez sélectionner le fichier parametrage_examens.xlsx."
             );
 
         }
 
-
-        // =================================================
-        // 6. AJOUT DES SESSIONS DU NOUVEL EXCEL
-        // =================================================
-
-        for (
-            let i = 0;
-            i < sessions.length;
-            i++
-        ) {
-
-            const session =
-                sessions[i];
-
-
-            const identifiant =
-                session.sessionCode;
-
-
-            batch.set(
-
-                doc(
-                    db,
-                    "sessions",
-                    identifiant
-                ),
-
-                session
-
-            );
-
-        }
-
-
-        // =================================================
-        // 7. AJOUT DES CRÉNEAUX DU NOUVEL EXCEL
-        // =================================================
-
-        for (
-            let i = 0;
-            i < creneaux.length;
-            i++
-        ) {
-
-            const creneau =
-                creneaux[i];
-
-
-            const identifiant =
-                creneau.sessionCode +
-                "_" +
-                creneau.creneauOrdre;
-
-
-            batch.set(
-
-                doc(
-                    db,
-                    "creneaux",
-                    identifiant
-                ),
-
-                creneau
-
-            );
-
-        }
-
-
-        // =================================================
-        // 8. EXÉCUTION DE LA SYNCHRONISATION
-        // =================================================
-
-        await batch.commit();
-
-
         console.log(
-            "✓ Matières synchronisées :",
-            matieres.length
-        );
-
-
-        console.log(
-            "✓ Sessions synchronisées :",
-            sessions.length
-        );
-
-
-        console.log(
-            "✓ Créneaux synchronisés :",
-            creneaux.length
+            "Fichier sélectionné :",
+            fichier.name
         );
 
 
         // -------------------------------------------------
-        // Confirmation
+        // 2. LECTURE DU FICHIER EXCEL
         // -------------------------------------------------
+
+        const tableau =
+            await fichier.arrayBuffer();
+
+        const classeur =
+            XLSX.read(
+                tableau,
+                {
+                    type: "array"
+                }
+            );
+
+
+        // -------------------------------------------------
+        // 3. LECTURE DES TROIS FEUILLES
+        // -------------------------------------------------
+
+        const matieres =
+            lireFeuille(
+                classeur,
+                "matieres"
+            );
+
+        const sessionsBrutes =
+            lireFeuille(
+                classeur,
+                "sessions"
+            );
+
+        const creneauxBruts =
+            lireFeuille(
+                classeur,
+                "creneaux"
+            );
+
+
+        // -------------------------------------------------
+        // 4. PRÉPARATION DES SESSIONS
+        // -------------------------------------------------
+
+        const sessions =
+            sessionsBrutes.map(function (session) {
+
+                return {
+
+                    ...session,
+
+                    dateDebutAffichage:
+                        formaterDate(
+                            session.dateDebut
+                        ),
+
+                    dateFinAffichage:
+                        formaterDate(
+                            session.dateFin
+                        )
+
+                };
+
+            });
+
+
+        // -------------------------------------------------
+        // 5. PRÉPARATION DES CRÉNEAUX
+        // -------------------------------------------------
+
+        const creneaux =
+            creneauxBruts.map(function (creneau) {
+
+                return {
+
+                    ...creneau,
+
+                    heureDebutAffichage:
+                        convertirHeureExcel(
+                            creneau.heureDebut
+                        ),
+
+                    heureFinAffichage:
+                        convertirHeureExcel(
+                            creneau.heureFin
+                        )
+
+                };
+
+            });
+
+
+        // -------------------------------------------------
+        // 6. VÉRIFICATION DES DONNÉES
+        // -------------------------------------------------
+
+        if (
+            matieres.length === 0 ||
+            sessions.length === 0 ||
+            creneaux.length === 0
+        ) {
+
+            throw new Error(
+                "Une ou plusieurs feuilles Excel sont vides."
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // 7. TRANSMISSION AU MOTEUR LOCAL
+        // -------------------------------------------------
+
+        if (
+            !window.generationExamens ||
+            typeof window.generationExamens.definirDonneesLocales !== "function"
+        ) {
+
+            throw new Error(
+                "Le moteur de génération locale n'est pas disponible."
+            );
+
+        }
+
+        window.generationExamens.definirDonneesLocales({
+
+            matieres: matieres,
+
+            sessions: sessions,
+
+            creneaux: creneaux
+
+        });
+
+
+        // -------------------------------------------------
+        // 8. CONFIRMATION
+        // -------------------------------------------------
+
+        console.log(
+            "✓ Matières chargées localement :",
+            matieres.length
+        );
+
+        console.log(
+            "✓ Sessions chargées localement :",
+            sessions.length
+        );
+
+        console.log(
+            "✓ Créneaux chargés localement :",
+            creneaux.length
+        );
 
         if (statut) {
 
             statut.textContent =
-                "✓ Synchronisation terminée : " +
+                "✓ Chargement local terminé : " +
                 matieres.length +
                 " matières, " +
                 sessions.length +
@@ -517,43 +305,30 @@ const creneaux =
 
         }
 
-
         console.log(
-            "===================================="
-        );
-
-
-        console.log(
-            "✓ SYNCHRONISATION PARAMÉTRAGE TERMINÉE"
-        );
-
-
-        console.log(
-            "===================================="
+            "✓ PARAMÉTRAGE CHARGÉ EN MÉMOIRE — AUCUNE ÉCRITURE FIRESTORE"
         );
 
     }
 
-
     catch (erreur) {
 
         console.error(
-            "❌ Erreur lors de la synchronisation :",
+            "❌ Erreur lors du chargement du paramétrage :",
             erreur
         );
-
 
         if (statut) {
 
             statut.textContent =
-                "❌ Erreur lors de la synchronisation. " +
-                "Consultez la console F12.";
+                "❌ Erreur lors du chargement local. Consultez la console F12.";
 
         }
 
     }
 
 }
+
 
 // =====================================================
 // 4. IMPORT DES SALLES / AMPHIS
