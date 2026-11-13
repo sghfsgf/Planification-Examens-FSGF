@@ -3591,59 +3591,82 @@ function obtenirDonneesGeneration() {
 // PUBLICATION DU CALENDRIER
 // =====================================================
 
-function publierCalendrier(idCalendrier) {
+ // =====================================================
+ // PUBLICATION DU CALENDRIER
+ // FIRESTORE + LOCALSTORAGE
+ // =====================================================
+
+async function publierCalendrier(idCalendrier) {
 
     console.log("==========================================");
     console.log("PUBLICATION DU CALENDRIER");
     console.log("==========================================");
 
     if (!idCalendrier) {
-
         console.error("❌ Identifiant du calendrier absent.");
-
         return false;
     }
 
-    const calendrier =
-        calendriersLocaux[idCalendrier];
+    const calendrier = calendriersLocaux[idCalendrier];
 
     if (!calendrier) {
-
         console.error(
             "❌ Calendrier introuvable :",
             idCalendrier
         );
-
         return false;
     }
 
-    // Changer le statut
     const ancienStatut = calendrier.statut;
+    const ancienneDate = calendrier.modifieLe;
 
-    calendrier.statut = "publie";
+    try {
 
-    calendrier.modifieLe =
-        new Date().toISOString();
+        // Préparer le document officiel
+        const documentCalendrier = {
+            ...calendrier,
+            statut: "publie",
+            modifieLe: new Date().toISOString()
+        };
 
-    // Sauvegarder localement
-    if (!sauvegarderCalendriersLocaux()) {
+        // Enregistrer dans Firestore
+        await setDoc(
+            doc(db, "calendriers", idCalendrier),
+            documentCalendrier
+        );
+
+        // Actualiser le stockage local après réussite
+        calendrier.statut = "publie";
+        calendrier.modifieLe = documentCalendrier.modifieLe;
+
+        if (!sauvegarderCalendriersLocaux()) {
+            console.warn(
+                "⚠️ Publication réussie dans Firestore, " +
+                "mais échec de mise à jour locale."
+            );
+        }
+
+        console.log(
+            "✓ Calendrier publié dans Firestore :",
+            idCalendrier
+        );
+
+        return true;
+
+    } catch (erreur) {
 
         calendrier.statut = ancienStatut;
+        calendrier.modifieLe = ancienneDate;
 
         console.error(
-            "❌ Échec de la sauvegarde de la publication."
+            "❌ Erreur de publication dans Firestore :",
+            erreur
         );
 
         return false;
     }
-
-    console.log(
-        "✓ Calendrier publié localement :",
-        idCalendrier
-    );
-
-    return true;
 }
+
 
 // =====================================================
 // EXPOSER LES FONCTIONS
