@@ -329,6 +329,11 @@ function initialiserCalendriersPublics() {
         const planning =
             calendrierFirestore.planning;
 
+          console.log(
+          "🔎 STRUCTURE DES CELLULES :",
+             planning.filieres[0]?.cellules?.slice(0, 10)
+              );
+
         if (
             !planning ||
             !Array.isArray(planning.filieres)
