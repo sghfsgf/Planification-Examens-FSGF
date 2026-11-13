@@ -2543,6 +2543,24 @@ console.log(
         )
     ];
 
+    console.log("==========================================");
+console.log("DIAGNOSTIC DES CODES FILIÈRES");
+console.log("==========================================");
+
+console.table(
+    [...new Set(
+        matieresSpecifiques.map(m => m.filiereCode)
+    )].map(code => ({
+        code: JSON.stringify(code),
+        matieres: matieresSpecifiques.filter(
+            m => m.filiereCode === code
+        ).length,
+        filiereDansPlanning: planning.filieres.some(
+            f => f.filiereCode === code
+        )
+    }))
+);
+
     console.log(
     "Matières restantes avant stratégie 3 :",
     matieresRestantes.length
