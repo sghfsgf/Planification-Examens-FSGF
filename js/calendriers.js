@@ -433,28 +433,45 @@ function initialiserCalendriersPublics() {
                 colonnesMap.values()
             );
 
-        colonnes.sort(
-            function (a, b) {
-                if (
-                    a.date &&
-                    typeof a.date.toDate === "function" &&
-                    b.date &&
-                    typeof b.date.toDate === "function"
-                ) {
-                    const dateA =
-                        a.date.toDate().getTime();
-                    const dateB =
-                        b.date.toDate().getTime();
-                    if (dateA !== dateB) {
-                        return dateA - dateB;
-                    }
-                }
-                return (
-                    a.creneauOrdre -
-                    b.creneauOrdre
-                );
+        
+colonnes.sort(
+    function (a, b) {
+
+        // Récupérer la date de la première colonne
+        const dateA = a.date
+            ? (
+                typeof a.date.toDate === "function"
+                    ? a.date.toDate()
+                    : new Date(a.date)
+            )
+            : null;
+
+        // Récupérer la date de la deuxième colonne
+        const dateB = b.date
+            ? (
+                typeof b.date.toDate === "function"
+                    ? b.date.toDate()
+                    : new Date(b.date)
+            )
+            : null;
+
+        // Comparer les dates
+        if (dateA && dateB) {
+            const differenceDate =
+                dateA.getTime() - dateB.getTime();
+
+            if (differenceDate !== 0) {
+                return differenceDate;
             }
+        }
+
+        // Pour une même date, comparer les créneaux
+        return (
+            a.creneauOrdre - b.creneauOrdre
         );
+    }
+);
+
 
         console.log(
             "📅 Colonnes du calendrier Firestore :",
