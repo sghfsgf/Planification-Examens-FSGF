@@ -659,48 +659,36 @@ function initialiserCalendriersPublics() {
                         const celluleHTML =
                             document.createElement("td");
 
-                        // Recherche de la cellule Firestore
-                        const celluleFirestore =
-                            cellules.find(
-                                function (cellule) {
-                                    return (
-                                        Number(
-                                            cellule.creneauOrdre
-                                        ) ===
-                                        colonne.creneauOrdre
-                                        &&
-                                        (
-                                            (
-                                                cellule.date &&
-                                                typeof cellule.date.toDate ===
-                                                "function"
-                                                &&
-                                                cellule.date
-                                                    .toDate()
-                                                    .toISOString()
-                                                    .substring(0, 10)
-                                                    ===
-                                                (
-                                                    colonne.date &&
-                                                    typeof colonne.date.toDate ===
-                                                    "function"
-                                                        ? colonne.date
-                                                            .toDate()
-                                                            .toISOString()
-                                                            .substring(0, 10)
-                                                        : colonne.dateAffichage
-                                                )
-                                            )
-                                            ||
-                                            (
-                                                !cellule.date &&
-                                                cellule.dateAffichage ===
-                                                colonne.dateAffichage
-                                            )
-                                        )
-                                    );
-                                }
-                            );
+               const celluleFirestore = cellules.find(function (cellule) {
+
+    const dateCellule = cellule.date
+        ? (
+            typeof cellule.date.toDate === "function"
+                ? cellule.date.toDate().toISOString().substring(0, 10)
+                : new Date(cellule.date).toISOString().substring(0, 10)
+        )
+        : null;
+
+    const dateColonne = colonne.date
+        ? (
+            typeof colonne.date.toDate === "function"
+                ? colonne.date.toDate().toISOString().substring(0, 10)
+                : new Date(colonne.date).toISOString().substring(0, 10)
+        )
+        : null;
+
+    return (
+        Number(cellule.creneauOrdre) === colonne.creneauOrdre &&
+        (
+            dateCellule === dateColonne ||
+            (
+                !dateCellule &&
+                cellule.dateAffichage === colonne.dateAffichage
+            )
+        )
+    );
+
+});
 
                         // -------------------------------------------------
                         // Affichage de la matière déjà enregistrée
