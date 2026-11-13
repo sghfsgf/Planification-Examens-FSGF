@@ -178,136 +178,94 @@ async function chargerCollection(nomCollection) {
 
 async function chargerDonneesGeneration() {
 
+    const debutTotal = performance.now();
+
     console.log("==========================================");
     console.log("CHARGEMENT DES DONNÉES POUR LA GÉNÉRATION");
     console.log("==========================================");
 
     try {
 
-        // -------------------------------------------------
-        // Attendre que data.js ait terminé le chargement
-        // -------------------------------------------------
+        let debut = performance.now();
 
-       
-
-        // -------------------------------------------------
-        // Récupérer les données déjà chargées par data.js
-        // -------------------------------------------------
-
-       // -------------------------------------------------
-// Récupérer les données actuelles depuis Firestore
-// -------------------------------------------------
-
-const snapshotMatieres =
-    await getDocs(
-        collection(
-            db,
-            "matieres"
-        )
-    );
-
-donneesGeneration.matieres =
-    snapshotMatieres.docs.map(
-        function (documentFirestore) {
-            return documentFirestore.data();
-        }
-    );
-
-
-const snapshotSessions =
-    await getDocs(
-        collection(
-            db,
-            "sessions"
-        )
-    );
-
-donneesGeneration.sessions =
-    snapshotSessions.docs.map(
-        function (documentFirestore) {
-            return documentFirestore.data();
-        }
-    );
-
-
-const snapshotCreneaux =
-    await getDocs(
-        collection(
-            db,
-            "creneaux"
-        )
-    );
-
-donneesGeneration.creneaux =
-    snapshotCreneaux.docs.map(
-        function (documentFirestore) {
-            return documentFirestore.data();
-        }
-    );
-
-
-const snapshotSallesAmphis =
-    await getDocs(
-        collection(
-            db,
-            "salles_amphis"
-        )
-    );
-
-donneesGeneration.sallesAmphis =
-    snapshotSallesAmphis.docs.map(
-        function (documentFirestore) {
-            return documentFirestore.data();
-        }
-    );
-
-        const snapshotEffectifs =
-    await getDocs(
-        collection(
-            db,
-            "effectifs"
-        )
-    );
-
-donneesGeneration.effectifs =
-    snapshotEffectifs.docs.map(
-        function (documentFirestore) {
-            return documentFirestore.data();
-        }
-    );
-
-        // -------------------------------------------------
-        // Contrôle
-        // -------------------------------------------------
-
-        console.log(
-            "Matières :",
-            donneesGeneration.matieres.length
+        const snapshotMatieres = await getDocs(
+            collection(db, "matieres")
         );
 
+        donneesGeneration.matieres =
+            snapshotMatieres.docs.map(doc => doc.data());
+
         console.log(
-            "Sessions :",
-            donneesGeneration.sessions.length
+            "Temps lecture matières :",
+            (performance.now() - debut).toFixed(2), "ms"
         );
 
-        console.log(
-            "Créneaux :",
-            donneesGeneration.creneaux.length
+        debut = performance.now();
+
+        const snapshotSessions = await getDocs(
+            collection(db, "sessions")
         );
 
+        donneesGeneration.sessions =
+            snapshotSessions.docs.map(doc => doc.data());
+
         console.log(
-            "Salles / amphis :",
-            donneesGeneration.sallesAmphis.length
+            "Temps lecture sessions :",
+            (performance.now() - debut).toFixed(2), "ms"
         );
 
-        console.log(
-    "Effectifs :",
-    donneesGeneration.effectifs.length
-);
+        debut = performance.now();
+
+        const snapshotCreneaux = await getDocs(
+            collection(db, "creneaux")
+        );
+
+        donneesGeneration.creneaux =
+            snapshotCreneaux.docs.map(doc => doc.data());
 
         console.log(
-    "✓ Données de génération récupérées depuis Firestore"
-);
+            "Temps lecture créneaux :",
+            (performance.now() - debut).toFixed(2), "ms"
+        );
+
+        debut = performance.now();
+
+        const snapshotSallesAmphis = await getDocs(
+            collection(db, "salles_amphis")
+        );
+
+        donneesGeneration.sallesAmphis =
+            snapshotSallesAmphis.docs.map(doc => doc.data());
+
+        console.log(
+            "Temps lecture salles/amphis :",
+            (performance.now() - debut).toFixed(2), "ms"
+        );
+
+        debut = performance.now();
+
+        const snapshotEffectifs = await getDocs(
+            collection(db, "effectifs")
+        );
+
+        donneesGeneration.effectifs =
+            snapshotEffectifs.docs.map(doc => doc.data());
+
+        console.log(
+            "Temps lecture effectifs :",
+            (performance.now() - debut).toFixed(2), "ms"
+        );
+
+        console.log("Matières :", donneesGeneration.matieres.length);
+        console.log("Sessions :", donneesGeneration.sessions.length);
+        console.log("Créneaux :", donneesGeneration.creneaux.length);
+        console.log("Salles/amphis :", donneesGeneration.sallesAmphis.length);
+        console.log("Effectifs :", donneesGeneration.effectifs.length);
+
+        console.log(
+            "TEMPS TOTAL CHARGEMENT :",
+            (performance.now() - debutTotal).toFixed(2), "ms"
+        );
 
         return true;
 
@@ -321,7 +279,6 @@ donneesGeneration.effectifs =
         return false;
     }
 }
-
 // =====================================================
 // VÉRIFIER LES DONNÉES
 // =====================================================
