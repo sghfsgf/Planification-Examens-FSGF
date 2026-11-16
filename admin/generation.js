@@ -3245,7 +3245,11 @@ function construireStructureGeneration() {
 // =====================================================
 
 function verifierCapacitePeriode(planning) {
-
+console.log(
+    "🔎 CONTRÔLE DE CAPACITÉ EXÉCUTÉ",
+    planning.niveauCode,
+    planning.sessionCode
+);
     const zoneDiagnostic = document.getElementById(
         "diagnosticCapaciteCalendrierAdmin"
     );
