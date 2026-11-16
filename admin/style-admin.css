@@ -1604,3 +1604,16 @@ body {
 
 
 
+.diagnostic-capacite-admin {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 8px;
+    white-space: pre-line;
+    line-height: 1.7;
+}
+
+.diagnostic-capacite-erreur {
+    background-color: #fff0f0;
+    border: 1px solid #dc3545;
+    color: #842029;
+}
