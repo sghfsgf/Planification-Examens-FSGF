@@ -1310,6 +1310,24 @@ function construireGrilleSession(
     const session =
         obtenirSession(sessionCode);
 
+console.log(
+    "🔎 SESSION RÉELLEMENT UTILISÉE :",
+    session
+);
+
+if (session) {
+    console.table([{
+        sessionCode: session.sessionCode,
+        anneeUniversitaire: session.anneeUniversitaire,
+        regimeCode: session.regimeCode,
+        semestreCode: session.semestreCode,
+        dateDebut: session.dateDebut,
+        dateFin: session.dateFin,
+        dateDebutAffichage: session.dateDebutAffichage,
+        dateFinAffichage: session.dateFinAffichage
+    }]);
+}
+    
 
     if (!session) {
 
