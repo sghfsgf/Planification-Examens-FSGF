@@ -3241,6 +3241,214 @@ function construireStructureGeneration() {
 
 
 // =====================================================
+// VÉRIFIER LA CAPACITÉ DE LA PÉRIODE
+// =====================================================
+
+function verifierCapacitePeriode(planning) {
+
+    const zoneDiagnostic = document.getElementById(
+        "diagnosticCapaciteCalendrierAdmin"
+    );
+
+    if (zoneDiagnostic) {
+        zoneDiagnostic.style.display = "none";
+        zoneDiagnostic.textContent = "";
+    }
+
+    if (
+        !planning ||
+        !planning.filieres ||
+        planning.filieres.length === 0
+    ) {
+        return false;
+    }
+
+    // -------------------------------------------------
+    // 1. Récupérer les dates et créneaux disponibles
+    // -------------------------------------------------
+
+    const cellules = planning.filieres[0].cellules;
+
+    const capacitesParDate = {};
+
+    cellules.forEach(function (cellule) {
+
+        const date = cellule.dateAffichage;
+        const ordre = Number(cellule.creneauOrdre);
+
+        if (!Number.isFinite(ordre)) {
+            return;
+        }
+
+        if (!capacitesParDate[date]) {
+            capacitesParDate[date] = new Set();
+        }
+
+        capacitesParDate[date].add(ordre);
+
+    });
+
+    // -------------------------------------------------
+    // 2. Calculer le maximum de matières par jour
+    //    sans créneaux consécutifs
+    // -------------------------------------------------
+
+    let capaciteTotale = 0;
+
+    Object.values(capacitesParDate).forEach(
+        function (creneaux) {
+
+            const ordres = [...creneaux].sort(
+                function (a, b) {
+                    return a - b;
+                }
+            );
+
+            let dernierCreneau = null;
+            let capaciteJour = 0;
+
+            ordres.forEach(function (ordre) {
+
+                if (
+                    dernierCreneau === null ||
+                    ordre - dernierCreneau > 1
+                ) {
+                    capaciteJour++;
+                    dernierCreneau = ordre;
+                }
+
+            });
+
+            capaciteTotale += capaciteJour;
+
+        }
+    );
+
+    // -------------------------------------------------
+    // 3. Compter les matières de chaque filière
+    // -------------------------------------------------
+
+    const diagnostics = [];
+
+    planning.filieres.forEach(function (filiere) {
+
+        const matieres = new Set();
+
+        // Matières communes
+        planning.matieresCommunes.forEach(
+            function (matiere) {
+
+                if (
+                    matiere.filieres.includes(
+                        filiere.filiereCode
+                    )
+                ) {
+                    matieres.add(matiere.matiereLibelle);
+                }
+
+            }
+        );
+
+        // Matières spécifiques
+        planning.matieresSpecifiques.forEach(
+            function (matiere) {
+
+                if (
+                    matiere.filiereCode ===
+                    filiere.filiereCode
+                ) {
+                    matieres.add(matiere.matiereLibelle);
+                }
+
+            }
+        );
+
+        const nombreMatieres = matieres.size;
+
+        diagnostics.push({
+            filiereCode: filiere.filiereCode,
+            nombreMatieres: nombreMatieres,
+            capacite: capaciteTotale,
+            deficit: Math.max(
+                0,
+                nombreMatieres - capaciteTotale
+            )
+        });
+
+    });
+
+    // -------------------------------------------------
+    // 4. Identifier les filières impossibles à placer
+    // -------------------------------------------------
+
+    const filieresImpossible = diagnostics.filter(
+        function (diagnostic) {
+            return diagnostic.deficit > 0;
+        }
+    );
+
+    console.table(diagnostics);
+
+    // -------------------------------------------------
+    // 5. Afficher le résultat dans la page Admin
+    // -------------------------------------------------
+
+    if (filieresImpossible.length > 0) {
+
+        const lignes = [
+            "⚠️ PÉRIODE INSUFFISANTE",
+            "",
+            "Nombre de jours disponibles : " +
+                Object.keys(capacitesParDate).length,
+            "Capacité maximale par filière : " +
+                capaciteTotale + " matières",
+            "",
+            "Filières concernées :"
+        ];
+
+        filieresImpossible.forEach(
+            function (diagnostic) {
+
+                lignes.push(
+                    "• " + diagnostic.filiereCode +
+                    " : " + diagnostic.nombreMatieres +
+                    " matières pour une capacité de " +
+                    diagnostic.capacite +
+                    " (déficit : " +
+                    diagnostic.deficit + ")"
+                );
+
+            }
+        );
+
+        lignes.push(
+            "",
+            "Veuillez prolonger la période des examens."
+        );
+
+        if (zoneDiagnostic) {
+            zoneDiagnostic.textContent = lignes.join("\n");
+            zoneDiagnostic.className =
+                "diagnostic-capacite-admin diagnostic-capacite-erreur";
+            zoneDiagnostic.style.display = "block";
+        }
+
+        console.warn(
+            "❌ Capacité insuffisante : génération interrompue."
+        );
+
+        return false;
+    }
+
+    console.log(
+        "✓ Capacité de la période suffisante pour toutes les filières."
+    );
+
+    return true;
+}
+
+
+// =====================================================
 // PRÉPARER LE MOTEUR
 // =====================================================
 
@@ -3943,6 +4151,14 @@ console.log("Paramètres de génération :", {
 
                      return;
                   }
+
+// =================================================
+// VÉRIFICATION DE LA CAPACITÉ DE LA PÉRIODE
+// =================================================
+
+if (!verifierCapacitePeriode(planning)) {
+    return;
+}
 
                 // =================================================
                 // PLACEMENT DES MATIÈRES COMMUNES
