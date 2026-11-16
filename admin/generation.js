@@ -1503,6 +1503,32 @@ function construireMatricePlanning(niveauCode, sessionCode) {
 
     const filieres = obtenirFilieresDuNiveau(niveauCode);
 
+    console.log("========== DIAGNOSTIC FILIÈRES ==========");
+
+console.log("Niveau :", niveauCode);
+console.log("Session :", sessionCode);
+
+console.log("Filières de toute la matrice :");
+console.table(filieres.map(code => ({
+    code: code,
+    longueur: code.length
+})));
+
+console.log("Filières des matières de la session :");
+console.table([
+    ...new Set(
+        structure.matieresCommunes.flatMap(m => m.filieres)
+            .concat(
+                structure.matieresSpecifiques.map(m => m.filiereCode)
+            )
+    )
+].map(code => ({
+    code: code,
+    longueur: code.length
+})));
+
+console.log("=========================================");
+
     if (!filieres || filieres.length === 0) {
         console.error(
             "❌ Aucune filière trouvée pour le niveau :",
@@ -1911,7 +1937,7 @@ return !aUnExamenAdjacent(
         const matieresPlacees =
             filiere.cellules.filter(
                 function (cellule) {
-                    return cellule.estOccupee;
+                  return cellule.estOccupee;
                 }
             );
 
