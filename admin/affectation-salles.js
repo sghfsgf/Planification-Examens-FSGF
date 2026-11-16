@@ -1,6 +1,11 @@
 // =================================================
-// AFFECTATION DES SALLES / AMPHIS - VERSION OPTIMISÉE FIRESTORE
-// Règle : Sauver d'abord ce qui est propre + minimiser lectures/écritures
+// AFFECTATION DES SALLES / AMPHIS 
+//
+// Principes :
+//  1. On ne sauvegarde QUE les affectations propres (succès complet d'une filière)
+//  2. AUCUNE double réservation possible : index d'occupation unique,
+//     alimenté par TOUT ce qui existe déjà en base
+//  3. Lecture Firestore unique, écriture par lots de 450
 // =================================================
 
 import { app } from "../firebase-config.js";
@@ -15,453 +20,611 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 const db = getFirestore(app);
-console.log("✓ affectation-salles.js (version optimisée Firestore) chargé.");
+
+// -------------------------------------------------
+// CONFIGURATION
+// -------------------------------------------------
+const CONFIG = {
+    // ⚠️ CORRECTIF C4 : fuseau explicite. Ne JAMAIS dépendre du fuseau du navigateur.
+    fuseau: "Africa/Tunis",
+    // ⚠️ CORRECTIF C1 : Firestore limite un batch à 500 opérations
+    tailleLot: 450,
+    // Marge de sécurité : 0.95 = on ne remplit jamais à plus de 95 %
+    tauxRemplissage: 1.0,
+    // En dessous, on n'ouvre pas un local supplémentaire
+    minimumParLocal: 5
+};
+
+console.log("✓ affectation-salles.js (version corrigée) chargé.");
 
 // =================================================
-// OUTILS (identiques à la version précédente)
+// 1. OUTILS DE DATE  — CORRECTIF C4
 // =================================================
+
+const _formateurJour = new Intl.DateTimeFormat("fr-CA", {
+    timeZone: CONFIG.fuseau,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+});
+
+function jourCivilDepuisDate(date) {
+    if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
+        throw new Error("Date invalide.");
+    }
+    const p = Object.fromEntries(
+        _formateurJour.formatToParts(date).map(x => [x.type, x.value])
+    );
+    return `${p.year}-${p.month}-${p.day}`;
+}
 
 function jourCivilAffectation(valeur) {
-    let date;
-    if (valeur instanceof Date) date = valeur;
-    else if (valeur && typeof valeur.toDate === "function") date = valeur.toDate();
-    else if (valeur && Number.isInteger(valeur.seconds)) {
-        const ns = valeur.nanoseconds ?? 0;
-        if (!Number.isInteger(ns) || ns < 0 || ns >= 1e9) throw new Error("Date Timestamp invalide.");
-        date = new Date(valeur.seconds * 1000 + ns / 1e6);
-    } else if (typeof valeur === "string") {
-        const m = valeur.match(/^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2}))?$/);
-        if (!m) throw new Error("Date non ISO ou invalide.");
-        const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
-        const verif = new Date(0);
-        verif.setUTCFullYear(y, mo - 1, d);
-        verif.setUTCHours(0, 0, 0, 0);
-        if (verif.getUTCFullYear() !== y || verif.getUTCMonth() !== mo - 1 || verif.getUTCDate() !== d) {
-            throw new Error("Jour civil invalide.");
+    if (valeur == null) throw new Error("Date absente.");
+
+    // Chaîne
+    if (typeof valeur === "string") {
+        const pure = valeur.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (pure) {
+            const y = +pure[1], mo = +pure[2], d = +pure[3];
+            const v = new Date(Date.UTC(y, mo - 1, d));
+            if (v.getUTCFullYear() !== y || v.getUTCMonth() !== mo - 1 || v.getUTCDate() !== d) {
+                throw new Error("Jour civil inexistant : " + valeur);
+            }
+            return valeur; // déjà normalisée, aucune conversion de fuseau
         }
-        if (!m[4]) return `${m[1]}-${m[2]}-${m[3]}`;
-        date = new Date(valeur);
-    } else {
-        throw new Error("Format de date non pris en charge.");
+        const dt = new Date(valeur);
+        if (!Number.isFinite(dt.getTime())) throw new Error("Date non ISO : " + valeur);
+        return jourCivilDepuisDate(dt); // ← conversion dans le fuseau configuré
     }
-    if (!(date instanceof Date) || !Number.isFinite(date.getTime())) throw new Error("Date invalide.");
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+    // Date native
+    if (valeur instanceof Date) return jourCivilDepuisDate(valeur);
+
+    // Timestamp Firestore
+    if (typeof valeur.toDate === "function") return jourCivilDepuisDate(valeur.toDate());
+
+    // Timestamp sérialisé { seconds, nanoseconds }
+    if (Number.isInteger(valeur.seconds)) {
+        const ns = valeur.nanoseconds ?? 0;
+        if (!Number.isInteger(ns) || ns < 0 || ns >= 1e9) {
+            throw new Error("Timestamp invalide (nanoseconds).");
+        }
+        return jourCivilDepuisDate(new Date(valeur.seconds * 1000 + ns / 1e6));
+    }
+
+    throw new Error("Format de date non pris en charge.");
 }
 
 function cleCreneauAffectation(cellule) {
-    if (!cellule || cellule.creneauOrdre == null || cellule.creneauOrdre === "" || typeof cellule.creneauOrdre === "boolean") {
+    const brut = cellule?.creneauOrdre;
+    if (brut == null || brut === "" || typeof brut === "boolean") {
         throw new Error("Créneau absent ou invalide.");
     }
-    const ordre = Number(cellule.creneauOrdre);
+    const ordre = Number(brut);
     if (!Number.isInteger(ordre) || ordre <= 0) throw new Error("Ordre de créneau invalide.");
     return jourCivilAffectation(cellule.date) + "|" + ordre;
 }
 
-function memeCreneau(a, b) {
-    return cleCreneauAffectation(a) === cleCreneauAffectation(b);
+// =================================================
+// 2. VALIDATIONS
+// =================================================
+
+function estDisponible(local) {                       // CORRECTIF L5
+    const v = local?.disponible;
+    if (v === true) return true;
+    if (v === false || v == null) return false;
+    return ["oui", "yes", "true", "1", "vrai", "disponible"]
+        .includes(String(v).trim().toLowerCase());
 }
 
 function catalogueLocauxValide(salles) {
-    if (!Array.isArray(salles)) throw new Error("Catalogue des locaux invalide.");
+    if (!Array.isArray(salles) || salles.length === 0) {
+        throw new Error("Catalogue des locaux vide ou invalide.");
+    }
     const codes = new Set();
-    salles.forEach(s => {
-        if (!s || typeof s.code !== "string" || !s.code.trim()) throw new Error("Code local invalide.");
+    for (const s of salles) {
+        if (!s || typeof s.code !== "string" || !s.code.trim()) {
+            throw new Error("Code local invalide.");
+        }
         if (codes.has(s.code)) throw new Error("Code local dupliqué : " + s.code);
         codes.add(s.code);
-        if (!Number.isInteger(Number(s.capacite)) || Number(s.capacite) <= 0) {
-            throw new Error("Capacité invalide : " + s.code);
+        const cap = Number(s.capacite);
+        if (!Number.isInteger(cap) || cap <= 0) {
+            throw new Error("Capacité invalide pour " + s.code);
         }
-    });
+    }
 }
 
 function codesLocauxStricts(amphis) {
     if (!Array.isArray(amphis)) throw new Error("Liste de locaux invalide.");
-    const codes = amphis.map(l => typeof l === "string" ? l : (l?.code || l?.localCode));
+    const codes = amphis.map(l => (typeof l === "string" ? l : (l?.code ?? l?.localCode)));
     const vus = new Set();
-    codes.forEach(c => {
+    for (const c of codes) {
         if (typeof c !== "string" || !c.trim()) throw new Error("Code d'affectation invalide.");
         if (vus.has(c)) throw new Error("Local affecté en double : " + c);
         vus.add(c);
-    });
+    }
     return codes;
 }
 
-function validerPlanningDates(planning) {
-    if (!planning?.filieres?.length || !planning.niveauCode) throw new Error("Structure du planning invalide.");
+function validerPlanning(planning) {
+    if (!planning || !Array.isArray(planning.filieres) || planning.filieres.length === 0) {
+        throw new Error("Planning sans filière.");
+    }
+    if (!planning.niveauCode) throw new Error("niveauCode manquant dans le planning.");
     const vus = new Set();
-    planning.filieres.forEach(f => {
-        if (!f?.filiereCode || vus.has(f.filiereCode) || !Array.isArray(f.cellules)) {
-            throw new Error("Filière invalide : " + (f?.filiereCode || "?"));
-        }
+    for (const f of planning.filieres) {
+        if (!f?.filiereCode) throw new Error("filiereCode manquant.");
+        if (vus.has(f.filiereCode)) throw new Error("Filière dupliquée : " + f.filiereCode);
         vus.add(f.filiereCode);
-        f.cellules.forEach(c => {
-            if (c?.estOccupee) cleCreneauAffectation(c);
-        });
-    });
+        if (!Array.isArray(f.cellules)) throw new Error("Cellules manquantes : " + f.filiereCode);
+    }
 }
 
-function filiereAvecNiveau(filiere, niveauCode) {
-    if (!filiere || !niveauCode) throw new Error("Niveau de filière manquant.");
-    return { ...filiere, niveauCode };
-}
-
-function lireEffectifStrict(effectifs, annee, niveau, filiere) {
-    const lignes = effectifs.filter(l =>
-        l?.anneeUniversitaire === annee &&
-        l?.niveauCode === niveau &&
-        l?.filiereCode === filiere
-    );
-    if (lignes.length !== 1) throw new Error(`Effectif absent ou ambigu : ${annee}/${niveau}/${filiere}`);
-    const v = Number(lignes[0].effectif);
-    if (!Number.isInteger(v) || v <= 0) throw new Error("Effectif invalide : " + filiere);
-    return v;
-}
+// CORRECTIF M2 : mémoïsation des clés de créneaux
+const _cacheCles = new WeakMap();
 
 function clesExamens(filiere) {
-    return [...new Set((filiere.cellules || []).filter(c => c.estOccupee).map(c => cleCreneauAffectation(c)))];
-}
-
-// =================================================
-// CAPACITÉ RÉSIDUELLE + INTERDICTION INTER-NIVEAUX
-// =================================================
-
-function capaciteRestanteLocal(filiere, code, salles, affectations) {
-    const capacite = Number(salles.find(s => s.code === code)?.capacite || 0);
-    let restant = capacite;
-
-    for (const cle of clesExamens(filiere)) {
-        let utilise = 0;
-        for (const a of affectations) {
-            if (!a.locaux.includes(code) || !clesExamens(a.filiere).includes(cle)) continue;
-
-            // Règle stricte : pas de partage entre niveaux différents
-            if (filiere.niveauCode !== a.filiere.niveauCode) return 0;
-
-            const r = a.repartitionLocaux || a.filiere.repartitionLocaux || [];
-            utilise += r.find(x => x.codeLocal === code)?.effectif || 0;
-        }
-        restant = Math.min(restant, capacite - utilise);
+    if (typeof filiere === "object" && filiere !== null && _cacheCles.has(filiere)) {
+        return _cacheCles.get(filiere);
     }
-    return Math.max(0, restant);
+    const cles = [...new Set(
+        (filiere.cellules || [])
+            .filter(c => c?.estOccupee)
+            .map(c => cleCreneauAffectation(c))
+    )];
+    if (typeof filiere === "object" && filiere !== null) _cacheCles.set(filiere, cles);
+    return cles;
+}
+
+// CORRECTIF M4 : effectifs indexés une seule fois
+function construireIndexEffectifs(effectifs) {
+    const index = new Map();
+    const doublons = new Set();
+    for (const l of effectifs || []) {
+        if (!l?.anneeUniversitaire || !l?.niveauCode || !l?.filiereCode) continue;
+        const k = `${l.anneeUniversitaire}|${l.niveauCode}|${l.filiereCode}`;
+        if (index.has(k)) doublons.add(k);
+        index.set(k, Number(l.effectif));
+    }
+    return {
+        lire(annee, niveau, filiere) {
+            const k = `${annee}|${niveau}|${filiere}`;
+            if (doublons.has(k)) throw new Error("Effectif ambigu (doublon) : " + k);
+            if (!index.has(k)) throw new Error("Effectif absent : " + k);
+            const v = index.get(k);
+            if (!Number.isInteger(v) || v <= 0) throw new Error("Effectif invalide : " + k);
+            return v;
+        }
+    };
 }
 
 // =================================================
-// RECHERCHE DE COMBINAISON (simplifiée et sécurisée)
+// 3. INDEX D'OCCUPATION  — CORRECTIFS C2, C3, M2
+//
+// Clé : "CODELOCAL@AAAA-MM-JJ|ordre"
+// Accès O(1) au lieu de O(n³)
 // =================================================
 
-function rechercherMeilleureCombinaisonLocaux(filiere, effectif, sallesAmphis, affectationsExistantes) {
-    catalogueLocauxValide(sallesAmphis);
+class IndexOccupation {
+    constructor(salles) {
+        this.capacites = new Map(salles.map(s => [s.code, Number(s.capacite)]));
+        this.occupation = new Map();
+    }
 
-    const locauxDisponibles = sallesAmphis
-        .filter(s => s.disponible === "Oui")
+    static _k(code, cle) { return code + "@" + cle; }
+
+    /** Déclare qu'un local est occupé sur une liste de créneaux. */
+    reserver(code, cles, effectif, niveauCode, origine) {
+        for (const cle of cles) {
+            const k = IndexOccupation._k(code, cle);
+            let e = this.occupation.get(k);
+            if (!e) {
+                e = { effectif: 0, niveaux: new Set(), origines: [] };
+                this.occupation.set(k, e);
+            }
+            e.effectif += Math.max(0, Number(effectif) || 0);
+            e.niveaux.add(niveauCode);
+            e.origines.push(origine);
+        }
+    }
+
+    /** Annule une réservation (mode « recalcul total »). */
+    liberer(code, cles, effectif, origine) {
+        for (const cle of cles) {
+            const k = IndexOccupation._k(code, cle);
+            const e = this.occupation.get(k);
+            if (!e) continue;
+            e.effectif = Math.max(0, e.effectif - (Number(effectif) || 0));
+            e.origines = e.origines.filter(o => o !== origine);
+            if (e.origines.length === 0) this.occupation.delete(k);
+        }
+    }
+
+    /**
+     * Capacité réellement disponible pour une filière donnée.
+     * Renvoie 0 si un niveau DIFFÉRENT occupe déjà le local sur un créneau commun.
+     */
+    capaciteRestante(code, cles, niveauCode) {
+        const cap = this.capacites.get(code) ?? 0;
+        if (cap <= 0 || cles.length === 0) return 0;
+
+        const plafond = Math.floor(cap * CONFIG.tauxRemplissage);
+        let minimum = plafond;
+
+        for (const cle of cles) {
+            const e = this.occupation.get(IndexOccupation._k(code, cle));
+            if (!e) continue;
+            for (const n of e.niveaux) {
+                if (n !== niveauCode) return 0;   // règle stricte inter-niveaux
+            }
+            minimum = Math.min(minimum, plafond - e.effectif);
+            if (minimum <= 0) return 0;
+        }
+        return Math.max(0, minimum);
+    }
+}
+
+// =================================================
+// 4. RECHERCHE DE COMBINAISON  — CORRECTIFS L1, L4, L6
+// =================================================
+
+function rechercherCombinaison(cles, effectif, niveauCode, salles, index) {
+    if (cles.length === 0) {
+        return { succes: false, locaux: [], repartitionLocaux: [], message: "Filière sans examen : aucune salle requise." };
+    }
+
+    const disponibles = salles
+        .filter(estDisponible)
         .map(s => ({
-            ...s,
-            capaciteRestante: capaciteRestanteLocal(filiere, s.code, sallesAmphis, affectationsExistantes)
+            code: s.code,
+            capacite: Number(s.capacite),
+            restant: index.capaciteRestante(s.code, cles, niveauCode)
         }))
-        .filter(s => s.capaciteRestante > 0)
-        .sort((a, b) => b.capaciteRestante - a.capaciteRestante); // plus grands d'abord
+        .filter(s => s.restant > 0);
 
-    // 1. Un seul local suffit ?
-    const mono = locauxDisponibles.find(s => s.capaciteRestante >= effectif);
-    if (mono) {
+    if (disponibles.length === 0) {
+        return { succes: false, locaux: [], repartitionLocaux: [], message: "Aucun local libre sur ces créneaux." };
+    }
+
+    // --- 1) BEST FIT : le PLUS PETIT local suffisant (correctif L1)
+    const suffisants = disponibles
+        .filter(s => s.restant >= effectif)
+        .sort((a, b) => a.restant - b.restant || a.code.localeCompare(b.code));
+
+    if (suffisants.length > 0) {
+        const choisi = suffisants[0];
         return {
             succes: true,
-            locaux: [mono.code],
-            repartitionLocaux: [{ codeLocal: mono.code, effectif }],
-            message: "Un seul local suffit."
+            locaux: [choisi.code],
+            repartitionLocaux: [{ codeLocal: choisi.code, effectif }],
+            message: `1 local (${choisi.code}, ${effectif}/${choisi.capacite}).`
         };
     }
 
-    // 2. Plusieurs locaux (greedy)
-    const choisis = [];
-    let restant = effectif;
-    let capaciteTotale = 0;
+    // --- 2) Greedy décroissant : minimiser le NOMBRE de locaux
+    const parTaille = [...disponibles]
+        .sort((a, b) => b.restant - a.restant || a.code.localeCompare(b.code));
 
-    for (const s of locauxDisponibles) {
-        if (restant <= 0) break;
-        const prend = Math.min(s.capaciteRestante, restant);
-        if (prend <= 0) continue;
-        choisis.push({ codeLocal: s.code, effectif: prend });
-        capaciteTotale += Number(s.capacite);
-        restant -= prend;
+    const retenus = [];
+    let cumul = 0;
+    for (const s of parTaille) {
+        if (cumul >= effectif) break;
+        retenus.push(s);
+        cumul += s.restant;
     }
 
-    if (restant > 0) {
+    if (cumul < effectif) {
         return {
-            succes: false,
-            locaux: [],
-            repartitionLocaux: [],
-            message: "Capacité insuffisante (contraintes de niveau + réservation)."
+            succes: false, locaux: [], repartitionLocaux: [],
+            message: `Capacité insuffisante : ${cumul} places pour ${effectif} étudiants.`
         };
+    }
+
+    // --- 3) Équilibrage proportionnel (correctif L4)
+    const repartition = equilibrer(retenus, effectif);
+
+    // On retire les locaux à qui il ne reste rien après équilibrage
+    const utiles = repartition.filter(r => r.effectif >= Math.min(CONFIG.minimumParLocal, effectif));
+    const reste = effectif - utiles.reduce((s, r) => s + r.effectif, 0);
+    if (reste > 0 && utiles.length > 0) {
+        utiles.sort((a, b) => b.capaciteRestante - a.capaciteRestante);
+        let r = reste;
+        for (const u of utiles) {
+            const marge = u.capaciteRestante - u.effectif;
+            const ajout = Math.min(marge, r);
+            u.effectif += ajout;
+            r -= ajout;
+            if (r <= 0) break;
+        }
+        if (r > 0) return { succes: false, locaux: [], repartitionLocaux: [], message: "Échec de l'équilibrage." };
+    }
+
+    const finale = utiles.map(u => ({ codeLocal: u.codeLocal, effectif: u.effectif }));
+    const controle = finale.reduce((s, r) => s + r.effectif, 0);
+    if (controle !== effectif) {
+        return { succes: false, locaux: [], repartitionLocaux: [], message: `Incohérence : ${controle} ≠ ${effectif}.` };
     }
 
     return {
         succes: true,
-        locaux: choisis.map(c => c.codeLocal),
-        repartitionLocaux: choisis,
-        message: "Plusieurs locaux nécessaires."
+        locaux: finale.map(r => r.codeLocal),
+        repartitionLocaux: finale,
+        message: `${finale.length} locaux : ` + finale.map(r => `${r.codeLocal}(${r.effectif})`).join(", ")
     };
 }
 
-// =================================================
-// AFFECTATION D'UN PLANNING (partiel autorisé)
-// =================================================
-
-function affecterLocauxFixes(planning, sallesAmphis, effectifs, affectationsPrecedentes = [], anneeUniversitaire) {
-    try {
-        catalogueLocauxValide(sallesAmphis);
-        validerPlanningDates(planning);
-        if (!anneeUniversitaire) throw new Error("Année universitaire requise.");
-    } catch (e) {
-        return { succes: false, affectations: [], message: e.message };
+/** Répartit `effectif` proportionnellement aux capacités restantes, sans dépassement. */
+function equilibrer(locaux, effectif) {
+    const total = locaux.reduce((s, l) => s + l.restant, 0);
+    const sortie = locaux.map(l => ({
+        codeLocal: l.code,
+        capaciteRestante: l.restant,
+        effectif: Math.min(l.restant, Math.floor(effectif * l.restant / total))
+    }));
+    // Distribution du reste entier, place par place
+    let reste = effectif - sortie.reduce((s, r) => s + r.effectif, 0);
+    let i = 0, garde = 0;
+    while (reste > 0 && garde++ < 10000) {
+        const r = sortie[i % sortie.length];
+        if (r.effectif < r.capaciteRestante) { r.effectif++; reste--; }
+        i++;
     }
+    return sortie;
+}
 
-    const resultats = [];
+// =================================================
+// 5. AFFECTATION D'UN CALENDRIER  — CORRECTIF L2, L3
+// =================================================
 
-    // On traite les filières une par une (ordre simple)
-    for (const sourceFiliere of planning.filieres) {
-        const filiere = filiereAvecNiveau(sourceFiliere, planning.niveauCode);
+function affecterCalendrier({ calendrierId, planning, salles, indexEffectifs, index, annee, modeRecalcul }) {
+    const niveauCode = planning.niveauCode;
+    const rapport = [];
+    let modifie = false;
 
-        let effectif;
-        try {
-            effectif = lireEffectifStrict(effectifs, anneeUniversitaire, planning.niveauCode, filiere.filiereCode);
-        } catch (e) {
-            resultats.push({
-                filiereCode: filiere.filiereCode,
-                succes: false,
-                locaux: [],
-                message: e.message
-            });
+    // CORRECTIF L2 : on place les plus gros effectifs d'abord
+    const ordonnees = planning.filieres
+        .map(f => {
+            let effectif = null, erreur = null;
+            try { effectif = indexEffectifs.lire(annee, niveauCode, f.filiereCode); }
+            catch (e) { erreur = e.message; }
+            return { filiere: f, effectif, erreur };
+        })
+        .sort((a, b) => (b.effectif ?? -1) - (a.effectif ?? -1));
+
+    const nouvelles = new Map();
+
+    for (const { filiere, effectif, erreur } of ordonnees) {
+        const base = { calendrierId, filiereCode: filiere.filiereCode, niveauCode };
+
+        if (erreur) {
+            rapport.push({ ...base, statut: "erreur", message: erreur });
             continue;
         }
 
-        const resultat = rechercherMeilleureCombinaisonLocaux(
-            filiere,
-            effectif,
-            sallesAmphis,
-            affectationsPrecedentes
-        );
-
-        if (resultat.succes) {
-            resultats.push({
-                filiereCode: filiere.filiereCode,
-                succes: true,
-                locaux: resultat.locaux,
-                repartitionLocaux: resultat.repartitionLocaux,
-                message: resultat.message
-            });
-
-            // On ajoute immédiatement pour les filières suivantes du même planning
-            affectationsPrecedentes.push({
-                filiere,
-                locaux: resultat.locaux,
-                repartitionLocaux: resultat.repartitionLocaux
-            });
-        } else {
-            resultats.push({
-                filiereCode: filiere.filiereCode,
-                succes: false,
-                locaux: [],
-                message: resultat.message
-            });
+        let cles;
+        try { cles = clesExamens(filiere); }
+        catch (e) {
+            rapport.push({ ...base, statut: "erreur", message: "Créneau illisible : " + e.message });
+            continue;
         }
+
+        // CORRECTIF L3 : pas d'examen → pas de salle
+        if (cles.length === 0) {
+            rapport.push({ ...base, statut: "ignore", message: "Aucun examen planifié." });
+            continue;
+        }
+
+        // Déjà affectée et mode « compléter » → on n'y touche pas (déjà dans l'index)
+        if (!modeRecalcul && Array.isArray(filiere.amphis) && filiere.amphis.length > 0) {
+            rapport.push({ ...base, statut: "conserve", locaux: filiere.amphis, message: "Affectation existante conservée." });
+            continue;
+        }
+
+        const res = rechercherCombinaison(cles, effectif, niveauCode, salles, index);
+
+        if (!res.succes) {
+            rapport.push({ ...base, statut: "echec", effectif, message: res.message });
+            continue;
+        }
+
+        // ✅ On réserve IMMÉDIATEMENT (correctif C3)
+        for (const r of res.repartitionLocaux) {
+            index.reserver(r.codeLocal, cles, r.effectif, niveauCode, `${calendrierId}#${filiere.filiereCode}`);
+        }
+
+        const ancien = (filiere.amphis || []).slice().sort().join(",");
+        const nouveau = res.locaux.slice().sort().join(",");
+        if (ancien !== nouveau) modifie = true;
+
+        nouvelles.set(filiere.filiereCode, {
+            amphis: res.locaux,
+            repartitionLocaux: res.repartitionLocaux
+        });
+
+        rapport.push({ ...base, statut: "affecte", effectif, locaux: res.locaux, message: res.message });
     }
 
-    const nbReussies = resultats.filter(r => r.succes).length;
+    // Reconstruction du planning en préservant l'ordre d'origine
+    const filieresMAJ = planning.filieres.map(f => {
+        const n = nouvelles.get(f.filiereCode);
+        return n ? { ...f, amphis: n.amphis, repartitionLocaux: n.repartitionLocaux } : f;
+    });
 
-    return {
-        succes: nbReussies === planning.filieres.length,
-        affectations: resultats,
-        nombreAffecte: nbReussies,
-        nombreFilieres: planning.filieres.length,
-        message: nbReussies === planning.filieres.length
-            ? "Toutes les filières affectées."
-            : `Solution partielle : ${nbReussies}/${planning.filieres.length} filière(s) affectée(s).`
-    };
+    return { modifie, planning: { ...planning, filieres: filieresMAJ }, rapport };
 }
 
 // =================================================
-// BOUTON GÉNÉRER – VERSION OPTIMISÉE FIRESTORE
+// 6. ÉCRITURE PAR LOTS  — CORRECTIF C1
+// =================================================
+
+async function ecrireParLots(operations) {
+    let total = 0;
+    for (let i = 0; i < operations.length; i += CONFIG.tailleLot) {
+        const tranche = operations.slice(i, i + CONFIG.tailleLot);
+        const lot = writeBatch(db);
+        for (const op of tranche) lot.update(op.ref, op.data);
+        await lot.commit();
+        total += tranche.length;
+        console.log(`✓ Lot ${Math.floor(i / CONFIG.tailleLot) + 1} : ${tranche.length} écriture(s).`);
+    }
+    return total;
+}
+
+// =================================================
+// 7. BOUTON GÉNÉRER  — CORRECTIFS C2, C5, M1, M3, L7
 // =================================================
 
 const btnGenererAffectations = document.getElementById("btnGenererAffectations");
 
 if (btnGenererAffectations) {
-    btnGenererAffectations.addEventListener("click", async function () {
+    btnGenererAffectations.addEventListener("click", async () => {
         const statut = document.getElementById("statutAffectationSalles");
         const resume = document.getElementById("resumeAffectationSalles");
-        btnGenererAffectations.disabled = true;
+        const majStatut = t => { if (statut) statut.textContent = t; };
 
-        if (statut) statut.textContent = "Chargement des calendriers filtrés...";
+        btnGenererAffectations.disabled = true;
+        majStatut("Initialisation…");
 
         try {
+            // ---------- Données de référence ----------
             const donnees = await window.generationExamens.obtenirDonnees();
-            const sallesAmphis = donnees.sallesAmphis || [];
+            const salles = donnees.sallesAmphis || [];
             const effectifs = donnees.effectifs || [];
-            catalogueLocauxValide(sallesAmphis);
-
-            if (!sallesAmphis.length || !effectifs.length) {
-                throw new Error("Salles ou effectifs manquants.");
-            }
+            catalogueLocauxValide(salles);
+            if (!effectifs.length) throw new Error("Aucun effectif chargé.");
+            const indexEffectifs = construireIndexEffectifs(effectifs);
 
             const annee = document.getElementById("anneeAffectationSalles")?.value;
             const semestre = document.getElementById("semestreAffectationSalles")?.value;
             const regime = document.getElementById("regimeAffectationSalles")?.value;
             const session = document.getElementById("sessionAffectationSalles")?.value;
+            const modeRecalcul = document.getElementById("modeRecalculTotal")?.checked === true;
 
             if (!annee || !semestre || !regime || !session) {
-                throw new Error("Veuillez sélectionner année, semestre, régime et session.");
+                throw new Error("Sélectionnez année, semestre, régime et session.");
             }
 
-            // ========== LECTURE OPTIMISÉE (filtre serveur) ==========
-            const q = query(
-                collection(db, "calendriers"),
-                where("anneeUniversitaire", "==", annee),
-                where("semestreCode", "==", semestre),
-                where("regimeCode", "==", regime),
-                where("sessionCode", "==", session)
-            );
-
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                throw new Error("Aucun calendrier trouvé pour cette sélection.");
-            }
-
-            const calendriers = snapshot.docs;
-            console.log(`✓ ${calendriers.length} calendrier(s) chargé(s) avec filtre serveur.`);
-
-            // On récupère aussi les autres calendriers de la même année/semestre
-            // uniquement si nécessaire pour les réservations externes (version légère)
-            const qExternes = query(
+            // ---------- LECTURE UNIQUE (correctif M1) ----------
+            majStatut("Lecture des calendriers…");
+            const snapshot = await getDocs(query(
                 collection(db, "calendriers"),
                 where("anneeUniversitaire", "==", annee),
                 where("semestreCode", "==", semestre)
-            );
-            const snapshotExternes = await getDocs(qExternes);
+            ));
+            if (snapshot.empty) throw new Error("Aucun calendrier pour cette année/semestre.");
 
-            const affectationsPrecedentesGlobales = [];
+            const cibles = [];
+            const contexte = [];
+            for (const d of snapshot.docs) {
+                const data = d.data();
+                ((data.regimeCode === regime && data.sessionCode === session) ? cibles : contexte)
+                    .push({ id: d.id, ref: d.ref, data });
+            }
+            console.log(`✓ ${snapshot.size} document(s) lu(s) — ${cibles.length} à traiter, ${contexte.length} en contexte.`);
+            if (cibles.length === 0) throw new Error("Aucun calendrier pour ce régime/session.");
 
-            // Construction légère des réservations externes
-            snapshotExternes.docs.forEach(docu => {
-                if (calendriers.some(c => c.id === docu.id)) return; // on ignore ceux qu'on traite
+            // ---------- INDEX D'OCCUPATION ----------
+            majStatut("Construction de l'index d'occupation…");
+            const index = new IndexOccupation(salles);
+            const avertissements = [];
 
-                const data = docu.data();
-                const p = data.planning;
-                if (!p?.filieres) return;
+            const enregistrerExistant = (src, estCible) => {
+                const p = src.data.planning;
+                if (!Array.isArray(p?.filieres)) return;
+                for (const f of p.filieres) {
+                    // ⚠️ CORRECTIF C2 : en mode « compléter », les affectations des
+                    // calendriers CIBLES sont aussi déclarées. Sans ça → double réservation.
+                    if (estCible && modeRecalcul) continue;
+                    if (!Array.isArray(f.amphis) || f.amphis.length === 0) continue;
 
-                p.filieres.forEach(f => {
-                    if (!f.amphis || f.amphis.length === 0) return;
+                    let codes, cles;
                     try {
-                        const locaux = codesLocauxStricts(f.amphis);
-                        affectationsPrecedentesGlobales.push({
-                            calendrierId: docu.id,
-                            filiere: filiereAvecNiveau(f, p.niveauCode),
-                            locaux,
-                            repartitionLocaux: f.repartitionLocaux || locaux.map(c => ({
-                                codeLocal: c,
-                                effectif: Number(sallesAmphis.find(s => s.code === c)?.capacite || 0)
-                            }))
-                        });
-                    } catch (_) { /* on ignore les réservations invalides */ }
-                });
-            });
+                        codes = codesLocauxStricts(f.amphis);
+                        cles = clesExamens(f);
+                    } catch (e) {
+                        // ⚠️ CORRECTIF C5 : on TRACE au lieu d'ignorer silencieusement
+                        avertissements.push(`[${src.id}/${f.filiereCode}] réservation illisible (${e.message}) — risque de conflit non détecté.`);
+                        continue;
+                    }
+                    if (cles.length === 0) continue;
 
-            let traites = 0;
-            let enregistres = 0;
-            let partiels = 0;
+                    const rep = Array.isArray(f.repartitionLocaux) && f.repartitionLocaux.length
+                        ? f.repartitionLocaux
+                        : codes.map(c => ({
+                            codeLocal: c,
+                            effectif: Number(salles.find(s => s.code === c)?.capacite || 0)
+                          }));
+
+                    for (const r of rep) {
+                        index.reserver(r.codeLocal, cles, r.effectif, p.niveauCode, `${src.id}#${f.filiereCode}`);
+                    }
+                }
+            };
+
+            contexte.forEach(s => enregistrerExistant(s, false));
+            cibles.forEach(s => enregistrerExistant(s, true));
+
+            // ---------- TRAITEMENT ----------
+            majStatut(`Affectation de ${cibles.length} calendrier(s)…`);
+            const operations = [];
+            const rapportGlobal = [];
             const erreurs = [];
-            const batch = writeBatch(db);
-            let operationsBatch = 0;
 
-            for (const documentCalendrier of calendriers) {
-                const data = documentCalendrier.data();
-                const planning = data.planning;
+            for (const cible of cibles) {
+                const planning = cible.data.planning;
+                try { validerPlanning(planning); }
+                catch (e) { erreurs.push(`${cible.id} : ${e.message}`); continue; }
 
-                if (!planning?.filieres) {
-                    erreurs.push(documentCalendrier.id + " : planning invalide");
-                    continue;
-                }
-
-                traites++;
-
-                const resultat = affecterLocauxFixes(
+                const r = affecterCalendrier({
+                    calendrierId: cible.id,
                     planning,
-                    sallesAmphis,
-                    effectifs,
-                    [...affectationsPrecedentesGlobales], // copie
-                    data.anneeUniversitaire
-                );
-
-                // ===== RÈGLE : on ne touche que les filières réussies =====
-                let aChange = false;
-                const filieresMisesAJour = planning.filieres.map(filiere => {
-                    const aff = resultat.affectations.find(a => a.filiereCode === filiere.filiereCode);
-
-                    if (aff?.succes && aff.locaux?.length > 0) {
-                        // Vérifier si ça a vraiment changé
-                        const anciens = Array.isArray(filiere.amphis) ? filiere.amphis.slice().sort().join(",") : "";
-                        const nouveaux = aff.locaux.slice().sort().join(",");
-
-                        if (anciens !== nouveaux) {
-                            aChange = true;
-                            return {
-                                ...filiere,
-                                amphis: aff.locaux,
-                                repartitionLocaux: aff.repartitionLocaux
-                            };
-                        }
-                    }
-                    // Échec ou identique → on garde l'ancien
-                    return filiere;
+                    salles,
+                    indexEffectifs,
+                    index,
+                    annee,
+                    modeRecalcul
                 });
 
-                if (aChange) {
-                    batch.update(doc(db, "calendriers", documentCalendrier.id), {
-                        planning: { ...planning, filieres: filieresMisesAJour }
-                    });
-                    operationsBatch++;
-                    enregistres++;
-
-                    if (resultat.nombreAffecte < resultat.nombreFilieres) {
-                        partiels++;
-                    }
-                }
-
-                // Ajouter les réussites pour les calendriers suivants
-                resultat.affectations.forEach(aff => {
-                    if (aff.succes && aff.locaux.length > 0) {
-                        const f = filieresMisesAJour.find(x => x.filiereCode === aff.filiereCode);
-                        if (f) {
-                            affectationsPrecedentesGlobales.push({
-                                calendrierId: documentCalendrier.id,
-                                filiere: filiereAvecNiveau(f, planning.niveauCode),
-                                locaux: aff.locaux,
-                                repartitionLocaux: aff.repartitionLocaux
-                            });
-                        }
-                    }
-                });
+                rapportGlobal.push(...r.rapport);
+                if (r.modifie) operations.push({ ref: cible.ref, data: { planning: r.planning } });
             }
 
-            // ===== ÉCRITURE UNIQUE =====
-            if (operationsBatch > 0) {
-                await batch.commit();
-                console.log(`✓ Batch commit : ${operationsBatch} calendrier(s) mis à jour.`);
+            // ---------- ÉCRITURE ----------
+            let ecrites = 0;
+            if (operations.length > 0) {
+                majStatut(`Enregistrement de ${operations.length} calendrier(s)…`);
+                ecrites = await ecrireParLots(operations);
             }
 
-            const bilan = `Traités : ${traites} | Écrits : ${enregistres} | Partiels : ${partiels} | Erreurs : ${erreurs.length}`;
-            if (statut) statut.textContent = bilan + " | Seules les affectations propres ont été enregistrées.";
+            // ---------- BILAN DÉTAILLÉ (correctif L7) ----------
+            const compte = s => rapportGlobal.filter(r => r.statut === s).length;
+            const bilan =
+                `Calendriers traités : ${cibles.length}  |  écrits : ${ecrites}\n` +
+                `Filières — affectées : ${compte("affecte")}  ·  conservées : ${compte("conserve")}  ` +
+                `·  échecs : ${compte("echec")}  ·  erreurs : ${compte("erreur")}  ·  sans examen : ${compte("ignore")}`;
+
+            majStatut(`Terminé — ${compte("affecte")} affectation(s), ${compte("echec")} échec(s).`);
+
             if (resume) {
-                resume.textContent = [
-                    bilan,
-                    erreurs.length ? "Détails erreurs :\n" + erreurs.join("\n") : "Aucune erreur bloquante."
-                ].join("\n\n");
+                const bloc = (titre, liste) =>
+                    liste.length ? `\n\n━━ ${titre} (${liste.length}) ━━\n` + liste.join("\n") : "";
+                resume.textContent =
+                    bilan +
+                    bloc("ÉCHECS", rapportGlobal.filter(r => r.statut === "echec")
+                        .map(r => `• ${r.filiereCode} (${r.niveauCode}, ${r.effectif} étu.) → ${r.message}`)) +
+                    bloc("ERREURS DE DONNÉES", rapportGlobal.filter(r => r.statut === "erreur")
+                        .map(r => `• ${r.filiereCode} → ${r.message}`)) +
+                    bloc("CALENDRIERS INVALIDES", erreurs) +
+                    bloc("⚠ AVERTISSEMENTS", avertissements) +
+                    bloc("AFFECTATIONS", rapportGlobal.filter(r => r.statut === "affecte")
+                        .map(r => `• ${r.filiereCode} → ${r.message}`));
             }
 
         } catch (erreur) {
             console.error(erreur);
-            if (statut) statut.textContent = "Échec : " + erreur.message;
+            majStatut("Échec : " + erreur.message);
+            if (resume) resume.textContent = (erreur.stack || erreur.message);
         } finally {
             btnGenererAffectations.disabled = false;
         }
