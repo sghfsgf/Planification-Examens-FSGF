@@ -1012,16 +1012,38 @@ function preparerMatieresPourSession(niveauCode, sessionCode) {
 
 function obtenirSession(sessionCode) {
 
-    return donneesGeneration.sessions.find(
+    console.log(
+        "🔎 RECHERCHE SESSION :",
+        sessionCode
+    );
+
+    console.table(
+        donneesGeneration.sessions.map(
+            function (session) {
+                return {
+                    annee: session.anneeUniversitaire,
+                    regime: session.regimeCode,
+                    semestre: session.semestreCode,
+                    code: session.sessionCode,
+                    debut: session.dateDebut,
+                    fin: session.dateFin
+                };
+            }
+        )
+    );
+
+    const session = donneesGeneration.sessions.find(
         function (session) {
-
-            return (
-                session.sessionCode ===
-                sessionCode
-            );
-
+            return session.sessionCode === sessionCode;
         }
     );
+
+    console.log(
+        "📌 SESSION SÉLECTIONNÉE :",
+        session
+    );
+
+    return session;
 
 }
 
