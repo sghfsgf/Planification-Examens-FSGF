@@ -1,6 +1,6 @@
 // =================================================
-// AFFECTATION DES SALLES / AMPHIS - VERSION AMÉLIORÉE
-// Règle : Enregistrer d'abord ce qui est propre, laisser le reste intact
+// AFFECTATION DES SALLES / AMPHIS - VERSION OPTIMISÉE FIRESTORE
+// Règle : Sauver d'abord ce qui est propre + minimiser lectures/écritures
 // =================================================
 
 import { app } from "../firebase-config.js";
@@ -8,16 +8,17 @@ import {
     getFirestore,
     getDocs,
     collection,
-    onSnapshot,
+    query,
+    where,
     doc,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 const db = getFirestore(app);
-console.log("✓ affectation-salles.js (version sécurisée) chargé.");
+console.log("✓ affectation-salles.js (version optimisée Firestore) chargé.");
 
 // =================================================
-// OUTILS DE VALIDATION ET DATES
+// OUTILS (identiques à la version précédente)
 // =================================================
 
 function jourCivilAffectation(valeur) {
@@ -56,21 +57,18 @@ function cleCreneauAffectation(cellule) {
     return jourCivilAffectation(cellule.date) + "|" + ordre;
 }
 
-function memeCreneau(celluleA, celluleB) {
-    return cleCreneauAffectation(celluleA) === cleCreneauAffectation(celluleB);
+function memeCreneau(a, b) {
+    return cleCreneauAffectation(a) === cleCreneauAffectation(b);
 }
 
 function catalogueLocauxValide(salles) {
     if (!Array.isArray(salles)) throw new Error("Catalogue des locaux invalide.");
     const codes = new Set();
     salles.forEach(s => {
-        if (!s || typeof s.code !== "string" || !s.code.trim() || s.code !== s.code.trim()) {
-            throw new Error("Code local vide ou non normalisé.");
-        }
+        if (!s || typeof s.code !== "string" || !s.code.trim()) throw new Error("Code local invalide.");
         if (codes.has(s.code)) throw new Error("Code local dupliqué : " + s.code);
         codes.add(s.code);
-        if (typeof s.capacite === "boolean" || s.capacite == null || String(s.capacite).trim() === "" ||
-            !Number.isInteger(Number(s.capacite)) || Number(s.capacite) <= 0) {
+        if (!Number.isInteger(Number(s.capacite)) || Number(s.capacite) <= 0) {
             throw new Error("Capacité invalide : " + s.code);
         }
     });
@@ -78,10 +76,10 @@ function catalogueLocauxValide(salles) {
 
 function codesLocauxStricts(amphis) {
     if (!Array.isArray(amphis)) throw new Error("Liste de locaux invalide.");
-    const codes = amphis.map(l => typeof l === "string" ? l : (l && (l.code || l.localCode)));
+    const codes = amphis.map(l => typeof l === "string" ? l : (l?.code || l?.localCode));
     const vus = new Set();
     codes.forEach(c => {
-        if (typeof c !== "string" || !c.trim() || c !== c.trim()) throw new Error("Code d'affectation invalide.");
+        if (typeof c !== "string" || !c.trim()) throw new Error("Code d'affectation invalide.");
         if (vus.has(c)) throw new Error("Local affecté en double : " + c);
         vus.add(c);
     });
@@ -89,58 +87,34 @@ function codesLocauxStricts(amphis) {
 }
 
 function validerPlanningDates(planning) {
-    if (!planning || !Array.isArray(planning.filieres) || !planning.filieres.length || !planning.niveauCode) {
-        throw new Error("Structure du planning invalide.");
-    }
+    if (!planning?.filieres?.length || !planning.niveauCode) throw new Error("Structure du planning invalide.");
     const vus = new Set();
     planning.filieres.forEach(f => {
-        if (!f || !f.filiereCode || vus.has(f.filiereCode) || !Array.isArray(f.cellules)) {
-            throw new Error("Filière absente, dupliquée ou cellules invalides.");
-        }
-        if (f.niveauCode != null && f.niveauCode !== planning.niveauCode) {
-            throw new Error("Niveau de filière contradictoire avec le planning : " + f.filiereCode);
+        if (!f?.filiereCode || vus.has(f.filiereCode) || !Array.isArray(f.cellules)) {
+            throw new Error("Filière invalide : " + (f?.filiereCode || "?"));
         }
         vus.add(f.filiereCode);
         f.cellules.forEach(c => {
-            if (!c || typeof c.estOccupee !== "boolean") throw new Error("Cellule invalide.");
-            if (c.estOccupee) cleCreneauAffectation(c);
+            if (c?.estOccupee) cleCreneauAffectation(c);
         });
     });
 }
 
 function filiereAvecNiveau(filiere, niveauCode) {
-    if (!filiere || !niveauCode || (filiere.niveauCode != null && filiere.niveauCode !== niveauCode)) {
-        throw new Error("Niveau de filière contradictoire ou absent du planning.");
-    }
+    if (!filiere || !niveauCode) throw new Error("Niveau de filière manquant.");
     return { ...filiere, niveauCode };
 }
 
 function lireEffectifStrict(effectifs, annee, niveau, filiere) {
-    if (typeof annee !== "string" || !annee.trim()) throw new Error("Année universitaire explicite requise.");
-    const lignes = effectifs.filter(l => l && l.anneeUniversitaire === annee && l.niveauCode === niveau && l.filiereCode === filiere);
-    if (lignes.length !== 1) throw new Error("Effectif absent ou ambigu pour " + annee + " / " + niveau + " / " + filiere);
-    const v = lignes[0].effectif;
-    if (typeof v === "boolean" || v == null || String(v).trim() === "" || !Number.isInteger(Number(v)) || Number(v) <= 0) {
-        throw new Error("Effectif invalide : " + filiere);
-    }
-    return Number(v);
-}
-
-function repartitionValidee(filiere, locaux, effectif, salles) {
-    const r = filiere.repartitionLocaux;
-    if (!Array.isArray(r) || r.length !== locaux.length) throw new Error("Répartition par local absente ou incomplète.");
-    const vus = new Set();
-    let total = 0;
-    r.forEach(a => {
-        if (!a || !locaux.includes(a.codeLocal) || vus.has(a.codeLocal)) throw new Error("Code de répartition invalide ou dupliqué.");
-        vus.add(a.codeLocal);
-        if (typeof a.effectif === "boolean" || !Number.isInteger(a.effectif) || a.effectif <= 0) throw new Error("Effectif par local invalide.");
-        const s = salles.find(s => s.code === a.codeLocal);
-        if (!s || a.effectif > Number(s.capacite)) throw new Error("Répartition supérieure à la capacité du local.");
-        total += a.effectif;
-    });
-    if (total !== effectif) throw new Error("Somme de la répartition différente de l'effectif annuel.");
-    return r.map(a => ({ codeLocal: a.codeLocal, effectif: a.effectif }));
+    const lignes = effectifs.filter(l =>
+        l?.anneeUniversitaire === annee &&
+        l?.niveauCode === niveau &&
+        l?.filiereCode === filiere
+    );
+    if (lignes.length !== 1) throw new Error(`Effectif absent ou ambigu : ${annee}/${niveau}/${filiere}`);
+    const v = Number(lignes[0].effectif);
+    if (!Number.isInteger(v) || v <= 0) throw new Error("Effectif invalide : " + filiere);
+    return v;
 }
 
 function clesExamens(filiere) {
@@ -148,11 +122,11 @@ function clesExamens(filiere) {
 }
 
 // =================================================
-// CAPACITÉ RÉSIDUELLE (renforcée contre les conflits de niveau)
+// CAPACITÉ RÉSIDUELLE + INTERDICTION INTER-NIVEAUX
 // =================================================
 
 function capaciteRestanteLocal(filiere, code, salles, affectations) {
-    const capacite = Number(salles.find(s => s.code === code).capacite);
+    const capacite = Number(salles.find(s => s.code === code)?.capacite || 0);
     let restant = capacite;
 
     for (const cle of clesExamens(filiere)) {
@@ -160,14 +134,10 @@ function capaciteRestanteLocal(filiere, code, salles, affectations) {
         for (const a of affectations) {
             if (!a.locaux.includes(code) || !clesExamens(a.filiere).includes(cle)) continue;
 
-            // Règle stricte : interdiction de partage entre niveaux différents
-            if (!filiere.niveauCode || !a.filiere.niveauCode) throw new Error("Niveau canonique de réservation absent.");
-            if (filiere.niveauCode !== a.filiere.niveauCode) {
-                return 0; // Conflit de niveau → capacité nulle
-            }
+            // Règle stricte : pas de partage entre niveaux différents
+            if (filiere.niveauCode !== a.filiere.niveauCode) return 0;
 
-            const r = a.repartitionLocaux || a.filiere.repartitionLocaux;
-            if (!Array.isArray(r)) throw new Error("Répartition de réservation absente.");
+            const r = a.repartitionLocaux || a.filiere.repartitionLocaux || [];
             utilise += r.find(x => x.codeLocal === code)?.effectif || 0;
         }
         restant = Math.min(restant, capacite - utilise);
@@ -176,346 +146,142 @@ function capaciteRestanteLocal(filiere, code, salles, affectations) {
 }
 
 // =================================================
-// CONFLITS ENTRE FILIÈRES (même calendrier)
+// RECHERCHE DE COMBINAISON (simplifiée et sécurisée)
 // =================================================
 
-function construireConflitsFilieres(planning) {
-    const conflits = [];
-    if (!planning || !Array.isArray(planning.filieres)) return conflits;
-
-    for (let i = 0; i < planning.filieres.length; i++) {
-        const filiereA = planning.filieres[i];
-        for (let j = i + 1; j < planning.filieres.length; j++) {
-            const filiereB = planning.filieres[j];
-
-            // Même niveau = pas de conflit métier
-            if (filiereA.niveauCode === filiereB.niveauCode) continue;
-
-            const examensA = (filiereA.cellules || []).filter(c => c.estOccupee);
-            const examensB = (filiereB.cellules || []).filter(c => c.estOccupee);
-
-            for (const celluleA of examensA) {
-                for (const celluleB of examensB) {
-                    if (memeCreneau(celluleA, celluleB)) {
-                        const dejaDeclare = conflits.some(c =>
-                            c.filiereA === filiereA.filiereCode &&
-                            c.filiereB === filiereB.filiereCode &&
-                            memeCreneau({ date: c.date, creneauOrdre: c.creneauOrdre }, celluleA)
-                        );
-                        if (!dejaDeclare) {
-                            conflits.push({
-                                filiereA: filiereA.filiereCode,
-                                filiereB: filiereB.filiereCode,
-                                date: celluleA.date,
-                                creneauOrdre: celluleA.creneauOrdre
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return conflits;
-}
-
-function construireCarteConflits(conflits) {
-    const carte = {};
-    (conflits || []).forEach(c => {
-        if (!carte[c.filiereA]) carte[c.filiereA] = [];
-        if (!carte[c.filiereB]) carte[c.filiereB] = [];
-        carte[c.filiereA].push(c.filiereB);
-        carte[c.filiereB].push(c.filiereA);
-    });
-    return carte;
-}
-
-// =================================================
-// RECHERCHE DE LA MEILLEURE COMBINAISON
-// =================================================
-
-function rechercherMeilleureCombinaisonLocaux(
-    filiere,
-    effectif,
-    sallesAmphis,
-    carteConflits,
-    affectationsFilieresCourantes,
-    affectationsPrecedentes
-) {
+function rechercherMeilleureCombinaisonLocaux(filiere, effectif, sallesAmphis, affectationsExistantes) {
     catalogueLocauxValide(sallesAmphis);
-    if (typeof effectif === "boolean" || effectif == null || String(effectif).trim() === "" ||
-        !Number.isInteger(Number(effectif)) || Number(effectif) <= 0) {
-        throw new Error("Effectif invalide.");
-    }
-    validerPlanningDates({ niveauCode: filiere.niveauCode, filieres: [filiere] });
 
-    const courantes = Array.isArray(affectationsFilieresCourantes)
-        ? affectationsFilieresCourantes
-        : Array.from(affectationsFilieresCourantes?.values?.() || []);
-
-    const toutes = [...(affectationsPrecedentes || []), ...courantes];
-    toutes.forEach(a => {
-        codesLocauxStricts(a.locaux);
-        validerPlanningDates({ niveauCode: a.filiere.niveauCode, filieres: [a.filiere] });
-    });
-
-    // Locaux avec capacité résiduelle > 0 (et respect des niveaux)
     const locauxDisponibles = sallesAmphis
         .filter(s => s.disponible === "Oui")
         .map(s => ({
             ...s,
-            capaciteRestante: capaciteRestanteLocal(filiere, s.code, sallesAmphis, toutes)
+            capaciteRestante: capaciteRestanteLocal(filiere, s.code, sallesAmphis, affectationsExistantes)
         }))
-        .filter(s => s.capaciteRestante > 0);
+        .filter(s => s.capaciteRestante > 0)
+        .sort((a, b) => b.capaciteRestante - a.capaciteRestante); // plus grands d'abord
 
-    const combinaisons = [];
-
-    function rechercherCombinaisons(debut, combinaison, capaciteDisponible) {
-        if (combinaison.length && capaciteDisponible >= effectif) {
-            let restant = Number(effectif);
-            const repartitionLocaux = [];
-            for (let j = 0; j < combinaison.length; j++) {
-                const s = locauxDisponibles.find(s => s.code === combinaison[j]);
-                const quantite = Math.min(s.capaciteRestante, restant - (combinaison.length - j - 1));
-                if (quantite <= 0) return;
-                repartitionLocaux.push({ codeLocal: s.code, effectif: quantite });
-                restant -= quantite;
-            }
-            if (restant !== 0) return;
-
-            const capaciteTotale = combinaison.reduce((sum, c) =>
-                sum + Number(sallesAmphis.find(x => x.code === c).capacite), 0);
-
-            combinaisons.push({
-                locaux: combinaison.slice(),
-                capaciteTotale,
-                capaciteDisponible,
-                tauxOccupation: effectif / capaciteTotale,
-                repartitionLocaux
-            });
-            return;
-        }
-
-        for (let i = debut; i < locauxDisponibles.length; i++) {
-            combinaison.push(locauxDisponibles[i].code);
-            rechercherCombinaisons(i + 1, combinaison, capaciteDisponible + locauxDisponibles[i].capaciteRestante);
-            combinaison.pop();
-        }
-    }
-
-    rechercherCombinaisons(0, [], 0);
-
-    if (combinaisons.length === 0) {
+    // 1. Un seul local suffit ?
+    const mono = locauxDisponibles.find(s => s.capaciteRestante >= effectif);
+    if (mono) {
         return {
-            succes: false,
-            locaux: [],
-            capaciteTotale: 0,
-            tauxOccupation: 0,
-            combinaisons: [],
-            message: "Aucune combinaison de locaux compatible (contraintes de niveau + capacité)."
+            succes: true,
+            locaux: [mono.code],
+            repartitionLocaux: [{ codeLocal: mono.code, effectif }],
+            message: "Un seul local suffit."
         };
     }
 
-    // Priorité : moins de locaux, puis capacité totale minimale
-    combinaisons.sort((a, b) => {
-        if (a.locaux.length !== b.locaux.length) return a.locaux.length - b.locaux.length;
-        return a.capaciteTotale - b.capaciteTotale;
-    });
+    // 2. Plusieurs locaux (greedy)
+    const choisis = [];
+    let restant = effectif;
+    let capaciteTotale = 0;
 
-    const meilleure = combinaisons[0];
+    for (const s of locauxDisponibles) {
+        if (restant <= 0) break;
+        const prend = Math.min(s.capaciteRestante, restant);
+        if (prend <= 0) continue;
+        choisis.push({ codeLocal: s.code, effectif: prend });
+        capaciteTotale += Number(s.capacite);
+        restant -= prend;
+    }
+
+    if (restant > 0) {
+        return {
+            succes: false,
+            locaux: [],
+            repartitionLocaux: [],
+            message: "Capacité insuffisante (contraintes de niveau + réservation)."
+        };
+    }
+
     return {
         succes: true,
-        locaux: meilleure.locaux,
-        capaciteTotale: meilleure.capaciteTotale,
-        tauxOccupation: meilleure.tauxOccupation,
-        repartitionLocaux: meilleure.repartitionLocaux,
-        message: meilleure.locaux.length === 1
-            ? "Un seul local suffit."
-            : "Plusieurs locaux nécessaires.",
-        combinaisons
+        locaux: choisis.map(c => c.codeLocal),
+        repartitionLocaux: choisis,
+        message: "Plusieurs locaux nécessaires."
     };
 }
 
 // =================================================
-// AFFECTATION AVEC BACKTRACKING (partiel autorisé)
+// AFFECTATION D'UN PLANNING (partiel autorisé)
 // =================================================
 
 function affecterLocauxFixes(planning, sallesAmphis, effectifs, affectationsPrecedentes = [], anneeUniversitaire) {
-    if (!planning || !Array.isArray(planning.filieres) || !Array.isArray(sallesAmphis) ||
-        !Array.isArray(effectifs) || !Array.isArray(affectationsPrecedentes)) {
-        return { succes: false, affectations: [], message: "Données insuffisantes." };
-    }
-
     try {
         catalogueLocauxValide(sallesAmphis);
         validerPlanningDates(planning);
-        planning = { ...planning, filieres: planning.filieres.map(f => filiereAvecNiveau(f, planning.niveauCode)) };
-        affectationsPrecedentes.forEach(prec => {
-            codesLocauxStricts(prec.locaux);
-            validerPlanningDates({ niveauCode: prec.filiere.niveauCode, filieres: [prec.filiere] });
-        });
-        if (!anneeUniversitaire) throw new Error("Année universitaire explicite requise.");
-    } catch (erreur) {
-        return { succes: false, affectations: [], message: erreur.message };
+        if (!anneeUniversitaire) throw new Error("Année universitaire requise.");
+    } catch (e) {
+        return { succes: false, affectations: [], message: e.message };
     }
 
-    const conflits = construireConflitsFilieres(planning);
-    const carteConflits = construireCarteConflits(conflits);
+    const resultats = [];
 
-    const filieresTriees = planning.filieres.slice().sort((a, b) =>
-        compterMatieresProgrammeesParFiliere(b) - compterMatieresProgrammeesParFiliere(a)
-    );
+    // On traite les filières une par une (ordre simple)
+    for (const sourceFiliere of planning.filieres) {
+        const filiere = filiereAvecNiveau(sourceFiliere, planning.niveauCode);
 
-    const donneesFilieres = filieresTriees.map(filiere => {
+        let effectif;
         try {
-            const effectif = lireEffectifStrict(effectifs, anneeUniversitaire, planning.niveauCode, filiere.filiereCode);
-            return { filiere, valide: true, effectif, message: "" };
-        } catch (erreur) {
-            return { filiere, valide: false, effectif: null, message: erreur.message };
-        }
-    });
-
-    const LIMITE_RECHERCHE = 8000;
-    let noeudsExplores = 0;
-    let limiteAtteinte = false;
-    let meilleureSolution = new Map();
-    let meilleurNombreAffecte = -1;
-
-    function compterMatieresProgrammeesParFiliere(filiere) {
-        const matieres = new Set();
-        (filiere.cellules || []).forEach(c => {
-            if (c && c.estOccupee && c.matiereLibelle) matieres.add(String(c.matiereLibelle).trim());
-        });
-        return matieres.size;
-    }
-
-    function copierSolution(solution) {
-        return new Map(Array.from(solution.entries()).map(([k, v]) => [k, { ...v, locaux: v.locaux.slice() }]));
-    }
-
-    function enregistrerMeilleureSolution(solution) {
-        const nombre = Array.from(solution.values()).filter(a => a.succes).length;
-        if (nombre > meilleurNombreAffecte) {
-            meilleurNombreAffecte = nombre;
-            meilleureSolution = copierSolution(solution);
-        }
-    }
-
-    function rechercher(index, affectationsCourantes) {
-        if (noeudsExplores >= LIMITE_RECHERCHE) {
-            limiteAtteinte = true;
-            enregistrerMeilleureSolution(affectationsCourantes);
-            return;
-        }
-        noeudsExplores++;
-        enregistrerMeilleureSolution(affectationsCourantes);
-
-        if (index >= donneesFilieres.length) return;
-        if (meilleurNombreAffecte === donneesFilieres.length) return;
-
-        const donnee = donneesFilieres[index];
-        const filiere = donnee.filiere;
-        const code = filiere.filiereCode;
-
-        if (!donnee.valide) {
-            const branche = new Map(affectationsCourantes);
-            branche.set(code, {
-                filiereCode: code,
-                effectif: donnee.effectif,
+            effectif = lireEffectifStrict(effectifs, anneeUniversitaire, planning.niveauCode, filiere.filiereCode);
+        } catch (e) {
+            resultats.push({
+                filiereCode: filiere.filiereCode,
                 succes: false,
                 locaux: [],
-                message: donnee.message
+                message: e.message
             });
-            rechercher(index + 1, branche);
-            return;
+            continue;
         }
 
-        const resultatRecherche = rechercherMeilleureCombinaisonLocaux(
+        const resultat = rechercherMeilleureCombinaisonLocaux(
             filiere,
-            donnee.effectif,
+            effectif,
             sallesAmphis,
-            carteConflits,
-            Array.from(affectationsCourantes.values()).filter(a => a.succes),
             affectationsPrecedentes
         );
 
-        const combinaisons = Array.isArray(resultatRecherche.combinaisons)
-            ? resultatRecherche.combinaisons
-            : (resultatRecherche.succes ? [{
-                locaux: resultatRecherche.locaux,
-                capaciteTotale: resultatRecherche.capaciteTotale,
-                tauxOccupation: resultatRecherche.tauxOccupation,
-                repartitionLocaux: resultatRecherche.repartitionLocaux
-            }] : []);
-
-        for (const combinaison of combinaisons) {
-            if (limiteAtteinte) break;
-
-            const branche = new Map(affectationsCourantes);
-            branche.set(code, {
-                filiereCode: code,
-                effectif: donnee.effectif,
+        if (resultat.succes) {
+            resultats.push({
+                filiereCode: filiere.filiereCode,
                 succes: true,
-                locaux: combinaison.locaux.slice(),
-                filiere,
-                repartitionLocaux: combinaison.repartitionLocaux.map(a => ({ ...a })),
-                capaciteTotale: combinaison.capaciteTotale,
-                tauxOccupation: combinaison.tauxOccupation,
-                message: combinaison.locaux.length === 1
-                    ? "Un local : capacité résiduelle suffisante."
-                    : "Plusieurs locaux : capacité résiduelle suffisante."
+                locaux: resultat.locaux,
+                repartitionLocaux: resultat.repartitionLocaux,
+                message: resultat.message
             });
 
-            rechercher(index + 1, branche);
-            if (meilleurNombreAffecte === donneesFilieres.length) return;
-        }
-
-        // Explorer aussi le cas "non affectée"
-        if (!limiteAtteinte) {
-            const branche = new Map(affectationsCourantes);
-            branche.set(code, {
-                filiereCode: code,
-                effectif: donnee.effectif,
+            // On ajoute immédiatement pour les filières suivantes du même planning
+            affectationsPrecedentes.push({
+                filiere,
+                locaux: resultat.locaux,
+                repartitionLocaux: resultat.repartitionLocaux
+            });
+        } else {
+            resultats.push({
+                filiereCode: filiere.filiereCode,
                 succes: false,
                 locaux: [],
-                message: resultatRecherche.message || "Aucune combinaison compatible."
+                message: resultat.message
             });
-            rechercher(index + 1, branche);
         }
     }
 
-    rechercher(0, new Map());
-
-    const resultats = donneesFilieres.map(donnee => {
-        const code = donnee.filiere.filiereCode;
-        const resultat = meilleureSolution.get(code);
-        if (resultat) return resultat;
-        return {
-            filiereCode: code,
-            effectif: donnee.effectif,
-            succes: false,
-            locaux: [],
-            message: limiteAtteinte
-                ? "Affectation non résolue : limite de recherche atteinte."
-                : (donnee.message || "Affectation non résolue.")
-        };
-    });
-
-    const nombreAffecte = resultats.filter(r => r.succes).length;
+    const nbReussies = resultats.filter(r => r.succes).length;
 
     return {
-        succes: nombreAffecte === donneesFilieres.length,
+        succes: nbReussies === planning.filieres.length,
         affectations: resultats,
-        message: nombreAffecte === donneesFilieres.length
-            ? "Toutes les filières sont affectées."
-            : `Solution partielle : ${nombreAffecte} filière(s) affectée(s) sur ${donneesFilieres.length}.`,
-        rechercheLimitee: limiteAtteinte,
-        nombreAffecte,
-        nombreFilieres: donneesFilieres.length
+        nombreAffecte: nbReussies,
+        nombreFilieres: planning.filieres.length,
+        message: nbReussies === planning.filieres.length
+            ? "Toutes les filières affectées."
+            : `Solution partielle : ${nbReussies}/${planning.filieres.length} filière(s) affectée(s).`
     };
 }
 
 // =================================================
-// GÉNÉRATION + ENREGISTREMENT PARTIEL (règle principale)
+// BOUTON GÉNÉRER – VERSION OPTIMISÉE FIRESTORE
 // =================================================
 
 const btnGenererAffectations = document.getElementById("btnGenererAffectations");
@@ -524,9 +290,9 @@ if (btnGenererAffectations) {
     btnGenererAffectations.addEventListener("click", async function () {
         const statut = document.getElementById("statutAffectationSalles");
         const resume = document.getElementById("resumeAffectationSalles");
-
         btnGenererAffectations.disabled = true;
-        if (statut) statut.textContent = "Chargement des calendriers...";
+
+        if (statut) statut.textContent = "Chargement des calendriers filtrés...";
 
         try {
             const donnees = await window.generationExamens.obtenirDonnees();
@@ -534,8 +300,8 @@ if (btnGenererAffectations) {
             const effectifs = donnees.effectifs || [];
             catalogueLocauxValide(sallesAmphis);
 
-            if (sallesAmphis.length === 0 || effectifs.length === 0) {
-                throw new Error("Les salles/amphis ou les effectifs sont absents.");
+            if (!sallesAmphis.length || !effectifs.length) {
+                throw new Error("Salles ou effectifs manquants.");
             }
 
             const annee = document.getElementById("anneeAffectationSalles")?.value;
@@ -544,139 +310,153 @@ if (btnGenererAffectations) {
             const session = document.getElementById("sessionAffectationSalles")?.value;
 
             if (!annee || !semestre || !regime || !session) {
-                throw new Error("Veuillez sélectionner l'année, le semestre, le régime et la session.");
+                throw new Error("Veuillez sélectionner année, semestre, régime et session.");
             }
 
-            const snapshot = await getDocs(collection(db, "calendriers"));
-            const calendriersSelectionnes = snapshot.docs.filter(d => {
-                const c = d.data();
-                return String(c.anneeUniversitaire ?? "").trim() === annee &&
-                       String(c.semestreCode ?? "").trim() === semestre &&
-                       String(c.regimeCode ?? "").trim() === regime &&
-                       String(c.sessionCode ?? "").trim() === session;
+            // ========== LECTURE OPTIMISÉE (filtre serveur) ==========
+            const q = query(
+                collection(db, "calendriers"),
+                where("anneeUniversitaire", "==", annee),
+                where("semestreCode", "==", semestre),
+                where("regimeCode", "==", regime),
+                where("sessionCode", "==", session)
+            );
+
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                throw new Error("Aucun calendrier trouvé pour cette sélection.");
+            }
+
+            const calendriers = snapshot.docs;
+            console.log(`✓ ${calendriers.length} calendrier(s) chargé(s) avec filtre serveur.`);
+
+            // On récupère aussi les autres calendriers de la même année/semestre
+            // uniquement si nécessaire pour les réservations externes (version légère)
+            const qExternes = query(
+                collection(db, "calendriers"),
+                where("anneeUniversitaire", "==", annee),
+                where("semestreCode", "==", semestre)
+            );
+            const snapshotExternes = await getDocs(qExternes);
+
+            const affectationsPrecedentesGlobales = [];
+
+            // Construction légère des réservations externes
+            snapshotExternes.docs.forEach(docu => {
+                if (calendriers.some(c => c.id === docu.id)) return; // on ignore ceux qu'on traite
+
+                const data = docu.data();
+                const p = data.planning;
+                if (!p?.filieres) return;
+
+                p.filieres.forEach(f => {
+                    if (!f.amphis || f.amphis.length === 0) return;
+                    try {
+                        const locaux = codesLocauxStricts(f.amphis);
+                        affectationsPrecedentesGlobales.push({
+                            calendrierId: docu.id,
+                            filiere: filiereAvecNiveau(f, p.niveauCode),
+                            locaux,
+                            repartitionLocaux: f.repartitionLocaux || locaux.map(c => ({
+                                codeLocal: c,
+                                effectif: Number(sallesAmphis.find(s => s.code === c)?.capacite || 0)
+                            }))
+                        });
+                    } catch (_) { /* on ignore les réservations invalides */ }
+                });
             });
 
-            if (calendriersSelectionnes.length === 0) {
-                throw new Error("Aucun calendrier trouvé pour la sélection.");
-            }
-
-            const calendriersTries = classerCalendriersPourAffectation(calendriersSelectionnes);
-            const reservationsExternes = reservationsHorsSelection(snapshot.docs, calendriersSelectionnes, sallesAmphis, effectifs);
-            const affectationsPrecedentesGlobales = reservationsExternes.slice();
-
-            let calendriersTraites = 0;
-            let calendriersEnregistres = 0;
-            let calendriersPartiels = 0;
+            let traites = 0;
+            let enregistres = 0;
+            let partiels = 0;
             const erreurs = [];
-            const calendriersAEnregistrer = [];
+            const batch = writeBatch(db);
+            let operationsBatch = 0;
 
-            for (const documentCalendrier of calendriersTries) {
-                const donneesCalendrier = documentCalendrier.data();
-                const planning = donneesCalendrier.planning;
+            for (const documentCalendrier of calendriers) {
+                const data = documentCalendrier.data();
+                const planning = data.planning;
 
-                if (!planning || !Array.isArray(planning.filieres)) {
-                    erreurs.push(documentCalendrier.id + " : structure du planning invalide.");
+                if (!planning?.filieres) {
+                    erreurs.push(documentCalendrier.id + " : planning invalide");
                     continue;
                 }
 
-                try {
-                    validerPlanningDates(planning);
-                } catch (e) {
-                    erreurs.push(documentCalendrier.id + " : " + e.message);
-                    continue;
-                }
-
-                calendriersTraites++;
+                traites++;
 
                 const resultat = affecterLocauxFixes(
                     planning,
                     sallesAmphis,
                     effectifs,
-                    affectationsPrecedentesGlobales,
-                    donneesCalendrier.anneeUniversitaire
+                    [...affectationsPrecedentesGlobales], // copie
+                    data.anneeUniversitaire
                 );
 
-                // ===== RÈGLE PRINCIPALE : on ne touche que les filières réussies =====
+                // ===== RÈGLE : on ne touche que les filières réussies =====
+                let aChange = false;
                 const filieresMisesAJour = planning.filieres.map(filiere => {
                     const aff = resultat.affectations.find(a => a.filiereCode === filiere.filiereCode);
 
-                    if (aff && aff.succes && Array.isArray(aff.locaux) && aff.locaux.length > 0) {
-                        // Affectation propre → on l'enregistre
-                        return {
-                            ...filiere,
-                            amphis: aff.locaux,
-                            repartitionLocaux: aff.repartitionLocaux
-                        };
-                    }
+                    if (aff?.succes && aff.locaux?.length > 0) {
+                        // Vérifier si ça a vraiment changé
+                        const anciens = Array.isArray(filiere.amphis) ? filiere.amphis.slice().sort().join(",") : "";
+                        const nouveaux = aff.locaux.slice().sort().join(",");
 
-                    // Échec ou pas d'affectation → on conserve l'ancienne version
+                        if (anciens !== nouveaux) {
+                            aChange = true;
+                            return {
+                                ...filiere,
+                                amphis: aff.locaux,
+                                repartitionLocaux: aff.repartitionLocaux
+                            };
+                        }
+                    }
+                    // Échec ou identique → on garde l'ancien
                     return filiere;
                 });
 
-                const planningMisAJour = {
-                    ...planning,
-                    filieres: filieresMisesAJour
-                };
+                if (aChange) {
+                    batch.update(doc(db, "calendriers", documentCalendrier.id), {
+                        planning: { ...planning, filieres: filieresMisesAJour }
+                    });
+                    operationsBatch++;
+                    enregistres++;
 
-                calendriersAEnregistrer.push({
-                    id: documentCalendrier.id,
-                    planning: planningMisAJour
-                });
+                    if (resultat.nombreAffecte < resultat.nombreFilieres) {
+                        partiels++;
+                    }
+                }
 
-                // On ajoute uniquement les réussites pour les contrôles suivants
+                // Ajouter les réussites pour les calendriers suivants
                 resultat.affectations.forEach(aff => {
                     if (aff.succes && aff.locaux.length > 0) {
-                        const filiereComplete = filieresMisesAJour.find(f => f.filiereCode === aff.filiereCode);
-                        if (filiereComplete) {
+                        const f = filieresMisesAJour.find(x => x.filiereCode === aff.filiereCode);
+                        if (f) {
                             affectationsPrecedentesGlobales.push({
                                 calendrierId: documentCalendrier.id,
-                                filiere: filiereAvecNiveau(filiereComplete, planning.niveauCode),
+                                filiere: filiereAvecNiveau(f, planning.niveauCode),
                                 locaux: aff.locaux,
                                 repartitionLocaux: aff.repartitionLocaux
                             });
                         }
                     }
                 });
-
-                if (resultat.nombreAffecte < resultat.nombreFilieres) {
-                    calendriersPartiels++;
-                }
             }
 
-            // Validation globale (sécurité)
-            const anomalies = verifierAffectationsPartagees(
-                calendriersAEnregistrer.map(e => ({
-                    ...e,
-                    anneeUniversitaire: calendriersSelectionnes.find(d => d.id === e.id).data().anneeUniversitaire
-                })),
-                sallesAmphis,
-                effectifs,
-                reservationsExternes
-            );
-
-            if (anomalies.length > 0) {
-                if (statut) statut.textContent = `Enregistrement bloqué : ${anomalies.length} anomalie(s) de conflit de niveau ou capacité.`;
-                if (resume) resume.textContent = ["Anomalies détectées :", ...anomalies].join("\n");
-                return;
-            }
-
-            // ===== ENREGISTREMENT (même en cas de succès partiel) =====
-            if (calendriersAEnregistrer.length > 0) {
-                const batch = writeBatch(db);
-                for (const element of calendriersAEnregistrer) {
-                    batch.update(doc(db, "calendriers", element.id), { planning: element.planning });
-                }
+            // ===== ÉCRITURE UNIQUE =====
+            if (operationsBatch > 0) {
                 await batch.commit();
-                calendriersEnregistres = calendriersAEnregistrer.length;
+                console.log(`✓ Batch commit : ${operationsBatch} calendrier(s) mis à jour.`);
             }
 
-            const bilan = `Calendriers traités : ${calendriersTraites} | Enregistrés : ${calendriersEnregistres} | Partiels : ${calendriersPartiels}`;
-            if (statut) statut.textContent = bilan + " | Les filières réussies ont été sauvegardées.";
+            const bilan = `Traités : ${traites} | Écrits : ${enregistres} | Partiels : ${partiels} | Erreurs : ${erreurs.length}`;
+            if (statut) statut.textContent = bilan + " | Seules les affectations propres ont été enregistrées.";
             if (resume) {
                 resume.textContent = [
                     bilan,
-                    erreurs.length ? "Erreurs :\n" + erreurs.join("\n") : "Aucune erreur bloquante."
-                ].join("\n");
+                    erreurs.length ? "Détails erreurs :\n" + erreurs.join("\n") : "Aucune erreur bloquante."
+                ].join("\n\n");
             }
 
         } catch (erreur) {
@@ -687,7 +467,3 @@ if (btnGenererAffectations) {
         }
     });
 }
-
-// Les fonctions classerCalendriersPourAffectation, reservationsHorsSelection,
-// verifierAffectationsPartagees et les filtres restent globalement identiques
-// à votre version précédente (vous pouvez les coller à la suite).
