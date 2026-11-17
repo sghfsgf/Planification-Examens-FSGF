@@ -1129,11 +1129,78 @@ function rechercher(filieresRestantes, affectationsCourantes) {
     // 2. SÉLECTIONNER LA FILIÈRE MRV
     // -------------------------------------------------
 
-    possibilites.sort(function (a, b) {
-        return a.combinaisons.length - b.combinaisons.length;
-    });
+   // -------------------------------------------------
+// 2. SÉLECTION MRV AVEC DÉPARTAGE DYNAMIQUE
+// -------------------------------------------------
 
-    const selection = possibilites[0];
+// Calculer l'impact de chaque filière sur les possibilités
+// des autres filières restantes.
+
+possibilites.forEach(function (option) {
+
+    option.impact = 0;
+
+    if (option.combinaisons.length === 0) {
+        return;
+    }
+
+    for (const combinaison of option.combinaisons) {
+
+        const brancheTest = new Map(affectationsCourantes);
+
+        brancheTest.set(option.donnee.filiere.filiereCode, {
+            filiereCode: option.donnee.filiere.filiereCode,
+            effectif: option.donnee.effectif,
+            succes: true,
+            locaux: combinaison.locaux.slice(),
+            filiere: option.donnee.filiere,
+            repartitionLocaux: combinaison.repartitionLocaux.map(
+                function (a) {
+                    return { ...a };
+                }
+            )
+        });
+
+        for (const autre of possibilites) {
+
+            if (autre === option || autre.combinaisons.length === 0) {
+                continue;
+            }
+
+            const resultatTest = rechercherMeilleureCombinaisonLocaux(
+                autre.donnee.filiere,
+                autre.donnee.effectif,
+                sallesAmphis,
+                carteConflits,
+                Array.from(brancheTest.values()).filter(
+                    function (affectation) {
+                        return affectation.succes;
+                    }
+                ),
+                affectationsPrecedentes
+            );
+
+            if (!resultatTest.succes) {
+                option.impact++;
+            }
+        }
+    }
+});
+
+// Priorité :
+// 1. Moins de combinaisons (MRV).
+// 2. Impact le plus élevé sur les possibilités des autres filières.
+
+possibilites.sort(function (a, b) {
+
+    if (a.combinaisons.length !== b.combinaisons.length) {
+        return a.combinaisons.length - b.combinaisons.length;
+    }
+
+    return b.impact - a.impact;
+});
+
+const selection = possibilites[0];
 
     const donnee = selection.donnee;
     const filiere = donnee.filiere;
