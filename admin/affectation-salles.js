@@ -1042,18 +1042,79 @@ function affecterLocauxFixes(
         );
     }
 
-    function enregistrerMeilleureSolution(solution) {
-        const nombreAffecte = Array.from(solution.values()).filter(
-            function (affectation) {
-                return affectation.succes;
-            }
-        ).length;
+   function calculerScoreSolution(solution) {
 
-        if (nombreAffecte > meilleurNombreAffecte) {
-            meilleurNombreAffecte = nombreAffecte;
-            meilleureSolution = copierSolution(solution);
+    const affectations = Array.from(solution.values()).filter(
+        function (affectation) {
+            return affectation.succes;
         }
+    );
+
+    const nombreLocaux = affectations.reduce(
+        function (total, affectation) {
+            return total + affectation.locaux.length;
+        },
+        0
+    );
+
+    const capaciteTotale = affectations.reduce(
+        function (total, affectation) {
+            return total + Number(affectation.capaciteTotale || 0);
+        },
+        0
+    );
+
+    const tauxOccupationMoyen = affectations.length > 0
+        ? affectations.reduce(
+            function (total, affectation) {
+                return total + Number(affectation.tauxOccupation || 0);
+            },
+            0
+        ) / affectations.length
+        : 0;
+
+    return {
+        nombreAffecte: affectations.length,
+        nombreLocaux: nombreLocaux,
+        capaciteTotale: capaciteTotale,
+        tauxOccupationMoyen: tauxOccupationMoyen
+    };
+}
+
+
+function enregistrerMeilleureSolution(solution) {
+
+    // Ne comparer que les solutions complètes.
+    if (solution.size !== donneesFilieres.length) {
+        return;
     }
+
+    const score = calculerScoreSolution(solution);
+
+    if (score.nombreAffecte !== donneesFilieres.length) {
+        return;
+    }
+
+    const meilleurScore = calculerScoreSolution(meilleureSolution);
+
+    const meilleure =
+        meilleureSolution.size !== donneesFilieres.length ||
+        score.nombreLocaux < meilleurScore.nombreLocaux ||
+        (
+            score.nombreLocaux === meilleurScore.nombreLocaux &&
+            score.capaciteTotale < meilleurScore.capaciteTotale
+        ) ||
+        (
+            score.nombreLocaux === meilleurScore.nombreLocaux &&
+            score.capaciteTotale === meilleurScore.capaciteTotale &&
+            score.tauxOccupationMoyen > meilleurScore.tauxOccupationMoyen
+        );
+
+    if (meilleure) {
+        meilleurNombreAffecte = score.nombreAffecte;
+        meilleureSolution = copierSolution(solution);
+    }
+}
 
 
 function rechercher(filieresRestantes, affectationsCourantes) {
