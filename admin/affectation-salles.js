@@ -1026,8 +1026,12 @@ function affecterLocauxFixes(
     let noeudsExplores = 0;
     let limiteAtteinte = false;
 
+    // Meilleure solution complète
     let meilleureSolution = new Map();
-    let meilleurNombreAffecte = -1;
+
+    // Meilleure solution partielle
+    let meilleureSolutionPartielle = new Map();
+    let meilleurNombreAffectePartiel = -1;
 
     function copierSolution(solution) {
         return new Map(
@@ -1084,12 +1088,28 @@ function affecterLocauxFixes(
 
 function enregistrerMeilleureSolution(solution) {
 
-    // Ne comparer que les solutions complètes.
+    const score = calculerScoreSolution(solution);
+
+    // 1. Conserver la meilleure solution partielle.
+    if (
+        score.nombreAffecte > meilleurNombreAffectePartiel ||
+        (
+            score.nombreAffecte === meilleurNombreAffectePartiel &&
+            (
+                meilleureSolutionPartielle.size === 0 ||
+                score.nombreLocaux <
+                    calculerScoreSolution(meilleureSolutionPartielle).nombreLocaux
+            )
+        )
+    ) {
+        meilleurNombreAffectePartiel = score.nombreAffecte;
+        meilleureSolutionPartielle = copierSolution(solution);
+    }
+
+    // 2. Une solution complète est prioritaire.
     if (solution.size !== donneesFilieres.length) {
         return;
     }
-
-    const score = calculerScoreSolution(solution);
 
     if (score.nombreAffecte !== donneesFilieres.length) {
         return;
@@ -1115,7 +1135,6 @@ function enregistrerMeilleureSolution(solution) {
         meilleureSolution = copierSolution(solution);
     }
 }
-
 
 function rechercher(filieresRestantes, affectationsCourantes) {
 
