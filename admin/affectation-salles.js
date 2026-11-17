@@ -1351,9 +1351,6 @@ const selection = possibilites[0];
 
         rechercher(restantes, branche);
 
-        if (meilleurNombreAffecte === donneesFilieres.length) {
-            return;
-        }
     }
 
     // -------------------------------------------------
