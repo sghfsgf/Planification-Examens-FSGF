@@ -1395,7 +1395,7 @@ const solutionFinale =
 
     const resultats = donneesFilieres.map(function (donnee) {
         const code = donnee.filiere.filiereCode;
-        const resultat = meilleureSolution.get(code);
+        const resultat = solutionFinale.get(code);
 
         if (resultat) {
             return resultat;
