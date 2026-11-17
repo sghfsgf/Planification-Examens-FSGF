@@ -1073,11 +1073,7 @@ function rechercher(filieresRestantes, affectationsCourantes) {
         return;
     }
 
-    // Une solution complète ne peut pas être améliorée.
-    if (meilleurNombreAffecte === donneesFilieres.length) {
-        return;
-    }
-
+   
     // -------------------------------------------------
     // 1. CALCULER LES POSSIBILITÉS DE CHAQUE FILIÈRE
     // -------------------------------------------------
