@@ -1384,6 +1384,14 @@ const selection = possibilites[0];
 
 
 rechercher(donneesFilieres.slice(), new Map());
+// -------------------------------------------------
+// SÉLECTION DE LA SOLUTION FINALE
+// -------------------------------------------------
+
+const solutionFinale =
+    meilleureSolution.size === donneesFilieres.length
+        ? meilleureSolution
+        : meilleureSolutionPartielle;  
 
     const resultats = donneesFilieres.map(function (donnee) {
         const code = donnee.filiere.filiereCode;
