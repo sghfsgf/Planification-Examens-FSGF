@@ -1180,9 +1180,13 @@ possibilites.forEach(function (option) {
                 affectationsPrecedentes
             );
 
-            if (!resultatTest.succes) {
-                option.impact++;
-            }
+          const nombreAvant = autre.combinaisons.length;
+
+const nombreApres = Array.isArray(resultatTest.combinaisons)
+    ? resultatTest.combinaisons.length
+    : (resultatTest.succes ? 1 : 0);
+
+option.impact += Math.max(0, nombreAvant - nombreApres);
         }
     }
 });
