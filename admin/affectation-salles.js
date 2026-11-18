@@ -634,29 +634,21 @@ function localCompatibleAvecAffectationsPrecedentes(
 for (const cellA of examensCourants) {
     for (const cellB of examensPrec) {
 
-        
-const conflit = memeCreneau(cellA, cellB);
+       const conflit = memeCreneau(cellA, cellB);
 
-if (conflit || (
-    cellA.date?.toDate?.()?.toISOString() ===
-        cellB.date?.toDate?.()?.toISOString() &&
-    Number(cellA.creneauOrdre) === Number(cellB.creneauOrdre)
-)) {
-    console.log("Créneau identique détecté :", {
+if (conflit) {
+    console.log("Conflit temporel détecté :", {
         codeLocal,
         calendrierPrecedent: prec.calendrierId,
-        dateCourante: cellA.date?.toDate?.()?.toISOString(),
-        datePrecedente: cellB.date?.toDate?.()?.toISOString(),
+        dateCourante: jourCivilAffectation(cellA.date),
+        datePrecedente: jourCivilAffectation(cellB.date),
         ordreCourant: cellA.creneauOrdre,
-        ordrePrecedent: cellB.creneauOrdre,
-        memeCreneau: conflit
+        ordrePrecedent: cellB.creneauOrdre
     });
-}
 
+    return false;
+} 
 
-        if (memeCreneau(cellA, cellB)) {
-            return false; // conflit temporel réel
-        }
     }
 }
 
