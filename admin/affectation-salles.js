@@ -1047,45 +1047,70 @@ function affecterLocauxFixes(
         );
     }
 
-   function calculerScoreSolution(solution) {
+function calculerScoreSolution(solution) {
+    const affectations = Array.from(solution.values())
+        .filter(a => a.succes);
 
-    const affectations = Array.from(solution.values()).filter(
-        function (affectation) {
-            return affectation.succes;
+    const utilisations = new Map();
+
+    affectations.forEach(a => {
+        const repartition = a.repartitionLocaux;
+
+        if (!Array.isArray(repartition)) {
+            throw new Error(
+                "Répartition des locaux absente pour " + a.filiereCode
+            );
         }
-    );
 
-    const nombreLocaux = affectations.reduce(
-        function (total, affectation) {
-            return total + affectation.locaux.length;
-        },
-        0
-    );
+        const cles = clesExamens(a.filiere);
 
-    const capaciteTotale = affectations.reduce(
-        function (total, affectation) {
-            return total + Number(affectation.capaciteTotale || 0);
-        },
-        0
-    );
+        cles.forEach(cle => {
+            repartition.forEach(r => {
+                const k = r.codeLocal + "|" + cle;
 
-    const tauxOccupationMoyen = affectations.length > 0
-        ? affectations.reduce(
-            function (total, affectation) {
-                return total + Number(affectation.tauxOccupation || 0);
-            },
-            0
-        ) / affectations.length
+                if (!utilisations.has(k)) {
+                    const local = sallesAmphis.find(
+                        s => s.code === r.codeLocal
+                    );
+
+                    if (!local) {
+                        throw new Error("Local inconnu : " + r.codeLocal);
+                    }
+
+                    utilisations.set(k, {
+                        codeLocal: r.codeLocal,
+                        cle,
+                        capacite: Number(local.capacite),
+                        effectif: 0
+                    });
+                }
+
+                utilisations.get(k).effectif += Number(r.effectif);
+            });
+        });
+    });
+
+    const nombreAffecte = affectations.length;
+
+    const nombreLocaux = utilisations.size;
+
+    const capaciteTotale = Array.from(utilisations.values())
+        .reduce((total, u) => total + u.capacite, 0);
+
+    const effectifTotal = Array.from(utilisations.values())
+        .reduce((total, u) => total + u.effectif, 0);
+
+    const tauxOccupationMoyen = capaciteTotale > 0
+        ? effectifTotal / capaciteTotale
         : 0;
 
     return {
-        nombreAffecte: affectations.length,
-        nombreLocaux: nombreLocaux,
-        capaciteTotale: capaciteTotale,
-        tauxOccupationMoyen: tauxOccupationMoyen
+        nombreAffecte,
+        nombreLocaux,
+        capaciteTotale,
+        tauxOccupationMoyen
     };
 }
-
 
 function enregistrerMeilleureSolution(solution) {
 
