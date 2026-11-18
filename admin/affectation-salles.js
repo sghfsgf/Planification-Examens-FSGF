@@ -1034,18 +1034,30 @@ function affecterLocauxFixes(
     let meilleurNombreAffectePartiel = -1;
     
 
-    function copierSolution(solution) {
-        return new Map(
-            Array.from(solution.entries()).map(function (entree) {
-                return [
-                    entree[0],
-                    Object.assign({}, entree[1], {
-                        locaux: entree[1].locaux.slice()
-                    })
-                ];
-            })
-        );
-    }
+   function copierSolution(solution) {
+    return new Map(
+        Array.from(solution.entries()).map(function (entree) {
+            const affectation = entree[1];
+
+            return [
+                entree[0],
+                Object.assign({}, affectation, {
+                    locaux: Array.isArray(affectation.locaux)
+                        ? affectation.locaux.slice()
+                        : [],
+
+                    repartitionLocaux: Array.isArray(
+                        affectation.repartitionLocaux
+                    )
+                        ? affectation.repartitionLocaux.map(function (r) {
+                            return { ...r };
+                        })
+                        : affectation.repartitionLocaux
+                })
+            ];
+        })
+    );
+}
 
 function calculerScoreSolution(solution) {
     const affectations = Array.from(solution.values())
