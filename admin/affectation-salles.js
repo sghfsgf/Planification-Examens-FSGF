@@ -954,7 +954,7 @@ function affecterLocauxFixes(
     effectifs,
     affectationsPrecedentes = [],
     anneeUniversitaire
-) {
+) {                                                                                                                                                           
     if (
         !planning ||
         !Array.isArray(planning.filieres) ||
@@ -1032,6 +1032,7 @@ function affecterLocauxFixes(
     // Meilleure solution partielle
     let meilleureSolutionPartielle = new Map();
     let meilleurNombreAffectePartiel = -1;
+    
 
     function copierSolution(solution) {
         return new Map(
@@ -1214,7 +1215,8 @@ function rechercher(filieresRestantes, affectationsCourantes) {
 
 possibilites.forEach(function (option) {
 
-    option.impact = 0;
+   option.impact = 0;
+   let nombreTestsImpact = 0;
 
     if (option.combinaisons.length === 0) {
         return;
@@ -1263,8 +1265,13 @@ const nombreApres = Array.isArray(resultatTest.combinaisons)
     : (resultatTest.succes ? 1 : 0);
 
 option.impact += Math.max(0, nombreAvant - nombreApres);
+nombreTestsImpact++;
         }
     }
+
+    if (nombreTestsImpact > 0) {
+    option.impact /= nombreTestsImpact;
+}
 });
 
 // Priorité :
