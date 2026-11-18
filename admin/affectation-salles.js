@@ -1124,6 +1124,8 @@ function calculerScoreSolution(solution) {
     };
 }
 
+let meilleurNombreAffecte = -1;
+    
 function enregistrerMeilleureSolution(solution) {
 
     const score = calculerScoreSolution(solution);
