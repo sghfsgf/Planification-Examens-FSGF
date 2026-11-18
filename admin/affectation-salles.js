@@ -1115,8 +1115,6 @@ function calculerScoreSolution(solution) {
         tauxOccupationMoyen
     };
 }
-
-let meilleurNombreAffecte = -1;
     
 function enregistrerMeilleureSolution(solution) {
 
@@ -1163,8 +1161,7 @@ function enregistrerMeilleureSolution(solution) {
         );
 
     if (meilleure) {
-        meilleurNombreAffecte = score.nombreAffecte;
-        meilleureSolution = copierSolution(solution);
+      meilleureSolution = copierSolution(solution);
     }
 }
 
