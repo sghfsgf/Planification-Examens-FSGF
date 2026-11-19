@@ -842,45 +842,111 @@ function rechercherMeilleureCombinaisonLocaux(
     affectationsPrecedentes
 ) {
     catalogueLocauxValide(sallesAmphis);
-    if (typeof effectif === "boolean" || effectif == null || String(effectif).trim()==="" || !Number.isInteger(Number(effectif)) || Number(effectif)<=0) throw new Error("Effectif invalide.");
-    validerPlanningDates({niveauCode: filiere.niveauCode, filieres:[filiere]});
-    const filiereCode = filiere.filiereCode;
+    if (
+        typeof effectif === "boolean" ||
+        effectif == null ||
+        String(effectif).trim() === "" ||
+        !Number.isInteger(Number(effectif)) ||
+        Number(effectif) <= 0
+    ) {
+        throw new Error("Effectif invalide.");
+    }
+    validerPlanningDates({ niveauCode: filiere.niveauCode, filieres: [filiere] });
 
-    const courantes=Array.isArray(affectationsFilieresCourantes) ? affectationsFilieresCourantes : Array.from(affectationsFilieresCourantes?.values?.() || []);
-    const toutes=[...(affectationsPrecedentes || []),...courantes];
-    toutes.forEach(a=>{codesLocauxStricts(a.locaux);validerPlanningDates({niveauCode:a.filiere.niveauCode,filieres:[a.filiere]});validerReservationRepartition(a,sallesAmphis);});
-    // Partage autorisé uniquement sur la capacité réellement restante par local/créneau.
-    const locauxDisponibles=sallesAmphis.filter(s=>s.disponible==="Oui").map(s=>({...s,capaciteRestante:capaciteRestanteLocal(filiere,s.code,sallesAmphis,toutes)})).filter(s=>s.capaciteRestante>0);
+    const courantes = Array.isArray(affectationsFilieresCourantes)
+        ? affectationsFilieresCourantes
+        : Array.from(affectationsFilieresCourantes?.values?.() || []);
 
-    // 2. Rechercher toutes les combinaisons compatibles suffisantes.
+    const toutes = [...(affectationsPrecedentes || []), ...courantes];
+
+    toutes.forEach(a => {
+        codesLocauxStricts(a.locaux);
+        validerPlanningDates({ niveauCode: a.filiere.niveauCode, filieres: [a.filiere] });
+        validerReservationRepartition(a, sallesAmphis);
+    });
+
+    const locauxDisponibles = sallesAmphis
+        .filter(s => s.disponible === "Oui")
+        .map(s => ({
+            ...s,
+            capaciteRestante: capaciteRestanteLocal(filiere, s.code, sallesAmphis, toutes)
+        }))
+        .filter(s => s.capaciteRestante > 0)
+        // On privilégie d’abord les plus grandes capacités restantes
+        .sort((a, b) => b.capaciteRestante - a.capaciteRestante);
+
     const combinaisons = [];
+    const MAX_COMBINAISONS = 40; // limite stricte pour éviter l’explosion
 
-    function rechercherCombinaisons(debut,combinaison,capaciteDisponible) {
-        if(combinaison.length && capaciteDisponible>=effectif) {
-            // Répartition déterministe et sûre ; 1 étudiant minimum dans chaque local retenu.
-            let restant=Number(effectif);
-            const repartitionLocaux=[];
-            for(let j=0;j<combinaison.length;j++) {
-                const s=locauxDisponibles.find(s=>s.code===combinaison[j]);
-                const quantite=Math.min(s.capaciteRestante,restant-(combinaison.length-j-1));
-                if(quantite<=0)return;
-                repartitionLocaux.push({codeLocal:s.code,effectif:quantite});restant-=quantite;
-            }
-            if(restant!==0)return;
-            const capaciteTotale=combinaison.reduce((s,c)=>s+Number(sallesAmphis.find(x=>x.code===c).capacite),0);
-            combinaisons.push({locaux:combinaison.slice(),capaciteTotale,capaciteDisponible,tauxOccupation:effectif/capaciteTotale,repartitionLocaux});
-            return;
+    function construireRepartition(combinaison) {
+        let restant = Number(effectif);
+        const repartitionLocaux = [];
+
+        for (let j = 0; j < combinaison.length; j++) {
+            const s = locauxDisponibles.find(x => x.code === combinaison[j]);
+            const quantite = Math.min(
+                s.capaciteRestante,
+                restant - (combinaison.length - j - 1)
+            );
+            if (quantite <= 0) return null;
+            repartitionLocaux.push({ codeLocal: s.code, effectif: quantite });
+            restant -= quantite;
         }
-        for(let i=debut;i<locauxDisponibles.length;i++) {
-            combinaison.push(locauxDisponibles[i].code);
-            rechercherCombinaisons(i+1,combinaison,capaciteDisponible+locauxDisponibles[i].capaciteRestante);
-            combinaison.pop();
+
+        if (restant !== 0) return null;
+
+        const capaciteTotale = combinaison.reduce(
+            (sum, c) => sum + Number(sallesAmphis.find(x => x.code === c).capacite),
+            0
+        );
+
+        return {
+            locaux: combinaison.slice(),
+            capaciteTotale,
+            tauxOccupation: effectif / capaciteTotale,
+            repartitionLocaux
+        };
+    }
+
+    // 1. Essayer d’abord les monolocaux
+    for (const s of locauxDisponibles) {
+        if (s.capaciteRestante >= effectif) {
+            const comb = construireRepartition([s.code]);
+            if (comb) combinaisons.push(comb);
+            if (combinaisons.length >= MAX_COMBINAISONS) break;
         }
     }
 
-    rechercherCombinaisons(0, [], 0);
+    // 2. Puis les combinaisons de 2, 3... locaux (greedy limité)
+    if (combinaisons.length < MAX_COMBINAISONS) {
+        function explorer(debut, combinaison, capaciteCumulee) {
+            if (combinaisons.length >= MAX_COMBINAISONS) return;
 
-    // Aucune combinaison compatible ne permet d'accueillir l'effectif.
+            if (combinaison.length > 0 && capaciteCumulee >= effectif) {
+                const comb = construireRepartition(combinaison);
+                if (comb) combinaisons.push(comb);
+                return;
+            }
+
+            // Limite la taille des combinaisons (ex. max 4 locaux)
+            if (combinaison.length >= 4) return;
+
+            for (let i = debut; i < locauxDisponibles.length; i++) {
+                if (combinaisons.length >= MAX_COMBINAISONS) return;
+
+                combinaison.push(locauxDisponibles[i].code);
+                explorer(
+                    i + 1,
+                    combinaison,
+                    capaciteCumulee + locauxDisponibles[i].capaciteRestante
+                );
+                combinaison.pop();
+            }
+        }
+
+        explorer(0, [], 0);
+    }
+
     if (combinaisons.length === 0) {
         return {
             succes: false,
@@ -893,38 +959,31 @@ function rechercherMeilleureCombinaisonLocaux(
         };
     }
 
-    // 3. Classer les combinaisons selon les priorités définies.
+    // Priorité : moins de locaux, puis capacité totale minimale
     combinaisons.sort(function (a, b) {
-        // Option C : moins de locaux, puis capacité suffisante minimale.
         if (a.locaux.length !== b.locaux.length) {
             return a.locaux.length - b.locaux.length;
         }
-
-        // Priorité 2 : capacité totale minimale.
         return a.capaciteTotale - b.capaciteTotale;
     });
 
-    // 4. Préparer la meilleure combinaison pour rester compatible
-    // avec les appels qui utilisent encore les propriétés classiques.
     const meilleure = combinaisons[0];
-    const tauxOccupation = meilleure.tauxOccupation;
-
-    const message = meilleure.locaux.length === 1
-        ? "Un seul local suffit : capacité suffisante, priorité au minimum de locaux."
-        : "Plusieurs locaux : capacité suffisante, priorité au minimum de locaux.";
 
     return {
         succes: true,
         locaux: meilleure.locaux,
         capaciteTotale: meilleure.capaciteTotale,
-        tauxOccupation: tauxOccupation,
+        tauxOccupation: meilleure.tauxOccupation,
         repartitionLocaux: meilleure.repartitionLocaux,
-        message: message,
-
-        // Nouvelle propriété utilisée par la recherche avec retour arrière.
+        message:
+            meilleure.locaux.length === 1
+                ? "Un seul local suffit : capacité suffisante, priorité au minimum de locaux."
+                : "Plusieurs locaux : capacité suffisante, priorité au minimum de locaux.",
         combinaisons: combinaisons
     };
 }
+
+window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
 window.rechercherMeilleureCombinaisonLocaux = rechercherMeilleureCombinaisonLocaux;
 
@@ -1006,7 +1065,7 @@ function affecterLocauxFixes(
         };
     });
 
-    const LIMITE_RECHERCHE = 10000;
+    const LIMITE_RECHERCHE = 3000;
     let noeudsExplores = 0;
     let limiteAtteinte = false;
 
@@ -1224,84 +1283,17 @@ function affecterLocauxFixes(
         // 2. SÉLECTIONNER LA FILIÈRE MRV
         // -------------------------------------------------
 
-        // Calculer l'impact de chaque filière sur les possibilités
-        // des autres filières restantes.
+// Sélection MRV simple (sans calcul d'impact coûteux)
+possibilites.sort(function (a, b) {
+    // 1. Moins de combinaisons en premier
+    if (a.combinaisons.length !== b.combinaisons.length) {
+        return a.combinaisons.length - b.combinaisons.length;
+    }
+    // 2. Effectif le plus grand ensuite
+    return (b.donnee.effectif || 0) - (a.donnee.effectif || 0);
+});
 
-        possibilites.forEach(function (option) {
-
-            option.impact = 0;
-            let nombreTestsImpact = 0;
-
-            if (option.combinaisons.length === 0) {
-                return;
-            }
-
-            for (const combinaison of option.combinaisons) {
-
-                const brancheTest = new Map(affectationsCourantes);
-
-                brancheTest.set(option.donnee.filiere.filiereCode, {
-                    filiereCode: option.donnee.filiere.filiereCode,
-                    effectif: option.donnee.effectif,
-                    succes: true,
-                    locaux: combinaison.locaux.slice(),
-                    filiere: option.donnee.filiere,
-                    repartitionLocaux: combinaison.repartitionLocaux.map(
-                        function (a) {
-                            return { ...a };
-                        }
-                    )
-                });
-
-                for (const autre of possibilites) {
-
-                    if (autre === option || autre.combinaisons.length === 0) {
-                        continue;
-                    }
-
-                    const resultatTest = rechercherMeilleureCombinaisonLocaux(
-                        autre.donnee.filiere,
-                        autre.donnee.effectif,
-                        sallesAmphis,
-                        carteConflits,
-                        Array.from(brancheTest.values()).filter(
-                            function (affectation) {
-                                return affectation.succes;
-                            }
-                        ),
-                        affectationsPrecedentes
-                    );
-
-                    const nombreAvant = autre.combinaisons.length;
-
-                    const nombreApres = Array.isArray(resultatTest.combinaisons)
-                        ? resultatTest.combinaisons.length
-                        : (resultatTest.succes ? 1 : 0);
-
-                    option.impact += Math.max(0, nombreAvant - nombreApres);
-                    nombreTestsImpact++;
-                }
-            }
-
-            if (nombreTestsImpact > 0) {
-                option.impact /= nombreTestsImpact;
-            }
-        });
-
-        // Priorité :
-        // 1. Moins de combinaisons (MRV).
-        // 2. Impact le plus élevé sur les possibilités des autres filières.
-
-        possibilites.sort(function (a, b) {
-
-            if (a.combinaisons.length !== b.combinaisons.length) {
-                return a.combinaisons.length - b.combinaisons.length;
-            }
-
-            return b.impact - a.impact;
-        });
-
-        const selection = possibilites[0];
+const selection = possibilites[0];
 
         const donnee = selection.donnee;
         const filiere = donnee.filiere;
