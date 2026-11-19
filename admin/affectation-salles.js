@@ -1414,8 +1414,23 @@ const selection = possibilites[0];
     }
 }
 
+console.log("DÉBUT DE LA RECHERCHE RÉCURSIVE :", {
+    filieres: donneesFilieres.length,
+    locaux: sallesAmphis.length
+});
+
+const debutRecherche = performance.now();
 
 rechercher(donneesFilieres.slice(), new Map());
+
+console.log("FIN DE LA RECHERCHE RÉCURSIVE :", {
+    dureeMs: Math.round(performance.now() - debutRecherche),
+    noeudsExplores: noeudsExplores,
+    limiteAtteinte: limiteAtteinte,
+    solutionComplete: meilleureSolution.size,
+    solutionPartielle: meilleureSolutionPartielle.size
+});
+
 // -------------------------------------------------
 // SÉLECTION DE LA SOLUTION FINALE
 // -------------------------------------------------
