@@ -2071,6 +2071,8 @@ for (const documentCalendrier of calendriersTries) {
         };
     })
 );
+            const MODE_TEST_SANS_ECRITURE = true;
+           
             anomaliesGlobales.push(...verifierAffectationsPartagees(
                 calendriersAEnregistrer.map(e=>({...e, anneeUniversitaire:calendriersSelectionnes.find(d=>d.id===e.id).data().anneeUniversitaire})),
                 sallesAmphis,effectifs,reservationsExternes
@@ -2103,25 +2105,47 @@ if (statut) {
     statut.textContent = "Contrôles réussis. Enregistrement en cours...";
 }
 
-            if (calendriersAEnregistrer.length > 0) {
-                const batch = writeBatch(db);
+           if (calendriersAEnregistrer.length > 0) {
 
-                for (const element of calendriersAEnregistrer) {
-                    batch.update(
-                        doc(db, "calendriers", element.id),
-                        { planning: element.planning }
-                    );
-                }
+    if (MODE_TEST_SANS_ECRITURE) {
 
-                await batch.commit();
-                calendriersEnregistres = calendriersAEnregistrer.length;
+        calendriersEnregistres = 0;
 
-                console.log(
-                    "Enregistrement groupé réussi :",
-                    calendriersEnregistres,
-                    "calendrier(s)."
-                );
-            }
+        console.warn(
+            "MODE TEST À BLANC : aucune écriture Firestore.",
+            "Calendriers préparés :",
+            calendriersAEnregistrer.length
+        );
+
+        console.table(
+            calendriersAEnregistrer.map(e => ({
+                calendrierId: e.id,
+                nombreFilieres: e.planning.filieres.length
+            }))
+        );
+
+    } else {
+
+        const batch = writeBatch(db);
+
+        for (const element of calendriersAEnregistrer) {
+            batch.update(
+                doc(db, "calendriers", element.id),
+                { planning: element.planning }
+            );
+        }
+
+        await batch.commit();
+
+        calendriersEnregistres = calendriersAEnregistrer.length;
+
+        console.log(
+            "Enregistrement groupé réussi :",
+            calendriersEnregistres,
+            "calendrier(s)."
+        );
+    }
+}
 
              const bilan =
     "Calendriers correspondant aux filtres : " +
