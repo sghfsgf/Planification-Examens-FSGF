@@ -1896,18 +1896,47 @@ for (const documentCalendrier of calendriersTries) {
     );
 
     if (!planning || !Array.isArray(planning.filieres)) {
-        calendriersEnErreur++;
-        erreurs.push(
-            documentCalendrier.id +
-            " : structure du planning invalide."
-        );
-        continue;
-    }
+    calendriersEnErreur++;
+    erreurs.push(
+        documentCalendrier.id +
+        " : structure du planning invalide."
+    );
+    continue;
+}
 
-    try {validerPlanningDates(planning);} catch(erreur) {
-        calendriersEnErreur++; erreurs.push(documentCalendrier.id+" : "+erreur.message); continue;
-    }
-    // Partage simultané réservé au même niveau ; capacité cumulée vérifiée ensuite.
+try {
+    validerPlanningDates(planning);
+
+    console.log(
+        "VALIDATION DES DATES RÉUSSIE :",
+        documentCalendrier.id
+    );
+
+} catch (erreur) {
+    console.error(
+        "ÉCHEC DE VALIDATION DU PLANNING :",
+        documentCalendrier.id,
+        erreur
+    );
+
+    calendriersEnErreur++;
+
+    erreurs.push(
+        documentCalendrier.id + " : " + erreur.message
+    );
+
+    continue;
+}
+
+// Partage simultané réservé au même niveau ; capacité cumulée vérifiée ensuite.
+
+console.log("PRÉPARATION DE L'APPEL À AFFECTER :", {
+    calendrier: documentCalendrier.id,
+    nombreFilieres: planning.filieres.length,
+    nombreSalles: sallesAmphis.length,
+    nombreEffectifs: effectifs.length,
+    reservationsPrecedentes: affectationsPrecedentesGlobales.length
+});
 
     calendriersTraites++;
 
