@@ -13,6 +13,13 @@ const NIVEAUX_SIAD = ["L1", "L2", "L3", "MP", "MR"];
 let calendriersPubliesSIAD = [];
 let chargementSIAD = false;
 
+// Catalogue des locaux : code (majuscules) -> "amphis" | "salles"
+// Construit à partir de la collection Firestore "salles_amphis".
+let catalogueLocauxSIAD = new Map();
+
+// Codes de locaux trouvés dans les calendriers mais absents du catalogue
+const codesInconnusSIAD = new Set();
+
 // -----------------------------------------
 // OUTILS
 // -----------------------------------------
@@ -90,6 +97,69 @@ function obtenirCellulesSIAD(filiere) {
 }
 
 // -----------------------------------------
+// LOCAUX : CATALOGUE ET CLASSIFICATION
+// -----------------------------------------
+
+function normaliserTexteSIAD(valeur) {
+    return String(valeur ?? "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function cleLocalSIAD(code) {
+    return String(code ?? "").trim().toUpperCase();
+}
+
+// Construit le catalogue à partir des documents de la collection "salles_amphis".
+// Un local est un amphithéâtre si son type (ou à défaut son libellé) contient « amphi » ;
+// tous les autres locaux sont des salles.
+function construireCatalogueLocauxSIAD(documents) {
+    const catalogue = new Map();
+
+    documents.forEach(document => {
+        const donnees = document.data();
+        const code = cleLocalSIAD(donnees.code ?? document.id);
+
+        if (!code) return;
+
+        const type = normaliserTexteSIAD(donnees.type ?? donnees.typeLocal);
+        const libelle = normaliserTexteSIAD(donnees.libelle);
+
+        const estAmphi =
+            type.includes("amphi") ||
+            (type === "" && libelle.includes("amphi"));
+
+        catalogue.set(code, estAmphi ? "amphis" : "salles");
+    });
+
+    return catalogue;
+}
+
+// Retourne "amphis" ou "salles" pour un code de local.
+function classerLocalSIAD(code) {
+    const cle = cleLocalSIAD(code);
+    const typeCatalogue = catalogueLocauxSIAD.get(cle);
+
+    if (typeCatalogue) return typeCatalogue;
+
+    // Local absent du catalogue : repli sur le code (A... = amphithéâtre)
+    codesInconnusSIAD.add(String(code).trim());
+
+    return /^A/i.test(cle) ? "amphis" : "salles";
+}
+
+// Ajoute un local (une seule fois par créneau) dans la bonne catégorie.
+function ajouterLocalSIAD(ensemble, code) {
+    const texte = String(code ?? "").trim();
+
+    if (!texte) return;
+
+    ensemble[classerLocalSIAD(texte)].add(cleLocalSIAD(texte));
+}
+
+// -----------------------------------------
 // LOCAUX : EXTRACTION DES AFFECTATIONS
 // -----------------------------------------
 
@@ -119,16 +189,12 @@ function extraireLocauxSIAD(objet, resultat, profondeur = 0) {
             nom.includes("locauxaffect");
 
         if (estAmphi || estSalle) {
-            const type = estAmphi ? "amphis" : "salles";
-
             const ajouter = element => {
                 if (element == null) return;
 
                 if (typeof element === "string" ||
                     typeof element === "number") {
-                    const code = String(element).trim();
-
-                    if (code) resultat[type].add(code);
+                    ajouterLocalSIAD(resultat, element);
 
                     return;
                 }
@@ -144,7 +210,7 @@ function extraireLocauxSIAD(objet, resultat, profondeur = 0) {
                         element.id;
 
                     if (code != null && String(code).trim()) {
-                        resultat[type].add(String(code).trim());
+                        ajouterLocalSIAD(resultat, code);
                     }
                 }
             };
@@ -689,7 +755,7 @@ function initialiserInterfaceSIAD() {
 }
 
 // -----------------------------------------
-// LIRE LES CALENDRIERS PUBLIÉS
+// LIRE LES CALENDRIERS PUBLIÉS ET LE CATALOGUE DES LOCAUX
 // -----------------------------------------
 
 async function chargerSIAD() {
@@ -709,8 +775,35 @@ async function chargerSIAD() {
     if (bouton) bouton.disabled = true;
 
     try {
-        const resultat = await getDocs(
-            collection(db, "calendriers")
+        const [resultat, resultatLocaux] = await Promise.all([
+            getDocs(collection(db, "calendriers")),
+
+            // Le catalogue sert à distinguer salles et amphithéâtres.
+            // En cas d'erreur, on se rabat sur le code du local.
+            getDocs(collection(db, "salles_amphis")).catch(erreur => {
+                console.warn(
+                    "SIAD : catalogue salles_amphis illisible, " +
+                    "classification par le code du local :",
+                    erreur
+                );
+
+                return null;
+            })
+        ]);
+
+        catalogueLocauxSIAD = resultatLocaux
+            ? construireCatalogueLocauxSIAD(resultatLocaux.docs)
+            : new Map();
+
+        console.log(
+            "SIAD : catalogue des locaux :",
+            {
+                total: catalogueLocauxSIAD.size,
+                amphis: [...catalogueLocauxSIAD.values()]
+                    .filter(type => type === "amphis").length,
+                salles: [...catalogueLocauxSIAD.values()]
+                    .filter(type => type === "salles").length
+            }
         );
 
         calendriersPubliesSIAD = resultat.docs
@@ -853,7 +946,8 @@ function construireDonneesSIAD(calendriers) {
 
     for (const calendrier of calendriers) {
 
-        const niveau = calendrier.niveauCode;
+        // Le niveau est celui du planning (repli : niveau du document)
+        const niveau = calendrier.planning?.niveauCode ?? calendrier.niveauCode;
 
         // Ignorer les niveaux non gérés par le SIAD
         if (!NIVEAUX_SIAD.includes(niveau)) {
@@ -947,11 +1041,11 @@ function construireDonneesSIAD(calendriers) {
                 // -----------------------------------------
                 // 2. LIRE LES LOCAUX DE LA FILIÈRE
                 // -----------------------------------------
-                // Firestore peut contenir, par exemple :
-                // filiere.amphis = ["A01", "S01"]
+                // Firestore contient, par exemple :
+                // filiere.amphis = ["A01", "B12", "L03"]
                 //
-                // A... : amphithéâtre
-                // S... : salle
+                // Chaque code est classé « salle » ou « amphithéâtre »
+                // d'après le catalogue Firestore "salles_amphis" (champ type).
                 //
                 // Les Set empêchent de compter deux fois
                 // un même local pour un même créneau.
@@ -962,41 +1056,7 @@ function construireDonneesSIAD(calendriers) {
 
                     for (const valeur of filiere.amphis) {
 
-                        if (valeur == null) {
-                            continue;
-                        }
-
-                        const code = String(valeur).trim();
-
-                        if (!code) {
-                            continue;
-                        }
-
-                        // Amphithéâtres : A01, A02, etc.
-                        if (/^A/i.test(code)) {
-
-                            ensemble.amphis.add(code);
-
-                        }
-
-                        // Salles : S01, S02, etc.
-                        else if (/^S/i.test(code)) {
-
-                            ensemble.salles.add(code);
-
-                        }
-
-                        // Signaler les codes non reconnus
-                        else {
-
-                            console.warn(
-                                "SIAD : code de local non reconnu :",
-                                code,
-                                "| Filière :",
-                                filiere.filiereCode
-                            );
-
-                        }
+                        ajouterLocalSIAD(ensemble, valeur);
 
                     }
 
@@ -1192,6 +1252,8 @@ function afficherSIAD() {
         return;
     }
 
+    codesInconnusSIAD.clear();
+
     const donnees = construireDonneesSIAD(calendriers);
 
     // Le tableau Examens compte les matières programmées,
@@ -1287,8 +1349,21 @@ function afficherSIAD() {
 
 
     if (etat) {
-        etat.textContent =
+        let message =
             `${calendriers.length} calendrier(s) publié(s) analysé(s).`;
+
+        if (codesInconnusSIAD.size > 0) {
+            message +=
+                " Locaux absents du catalogue (classés d'après leur code) : " +
+                [...codesInconnusSIAD].join(", ") + ".";
+
+            console.warn(
+                "SIAD : locaux absents de la collection salles_amphis :",
+                [...codesInconnusSIAD]
+            );
+        }
+
+        etat.textContent = message;
     }
 
     console.log(
