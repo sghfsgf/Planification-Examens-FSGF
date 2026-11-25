@@ -627,22 +627,56 @@ async function operationCalendrier(type) {
 
 }
         
-        else if (type === 'enregistrer') {
-            const planning = window.planningCalendrierAdmin;
-            if (String(planning.niveauCode).trim() !== selection[0] || String(planning.sessionCode).trim() !== selection[3]) throw new Error('Le planning ne correspond pas aux filtres.');
-            const controle = window.controleExamens?.verifierPlanningGlobal;
-            if (typeof controle !== 'function') throw new Error('Module de contrôle indisponible.');
-            if (!Array.isArray(planning.matieresCommunes) || !Array.isArray(planning.matieresSpecifiques) || planning.matieresCommunes.length + planning.matieresSpecifiques.length === 0) throw new Error('Aucune matière prévue ou planning incomplet.');
-            const resultat = controle(planning); afficherEtatMatieresCalendrier(resultat);
-            if (resultat?.valide !== true || resultat?.matieresPlacees?.valide !== true) return;
-            const fingerprint = empreintePlanning();
-            const resultatSauvegarde = await api.enregistrerCalendrier(clonerPlanning(planning));
-            if (!courant() || fingerprint !== empreintePlanning()) { invaliderCalendrier(); retourCalendrier('Le planning a changé pendant la sauvegarde : enregistrez à nouveau.'); return; }
-            if (!resultatSauvegarde?.id) throw new Error('Enregistrement échoué : aucun identifiant retourné.');
-            etatCalendrier.savedId = resultatSauvegarde.id; etatCalendrier.fingerprint = fingerprint;
-            etatCalendrier.dirty = false; etatCalendrier.published = false;
-            retourCalendrier('Calendrier enregistré en brouillon. Publication disponible.');
-        } else {
+       else if (type === 'enregistrer') {
+    const planning = window.planningCalendrierAdmin;
+    if (String(planning.niveauCode).trim() !== selection[0] || String(planning.sessionCode).trim() !== selection[3]) {
+        throw new Error('Le planning ne correspond pas aux filtres.');
+    }
+
+    const controle = window.controleExamens?.verifierPlanningGlobal;
+    if (typeof controle !== 'function') {
+        throw new Error('Module de contrôle indisponible.');
+    }
+
+    if (!Array.isArray(planning.matieresCommunes) || !Array.isArray(planning.matieresSpecifiques) ||
+        planning.matieresCommunes.length + planning.matieresSpecifiques.length === 0) {
+        throw new Error('Aucune matière prévue ou planning incomplet.');
+    }
+
+    const resultat = controle(planning);
+    afficherEtatMatieresCalendrier(resultat);
+
+    // 1. Si des anomalies sont détectées, afficher la raison exacte et laisser l'admin décider
+    if (resultat?.valide !== true || resultat?.matieresPlacees?.valide !== true) {
+        const details = [
+            ...(resultat?.anomaliesBloquantes || []).map(a => "• " + a),
+            ...(resultat?.matieresPlacees?.valide !== true ? ["• Des matières ne sont pas placées."] : [])
+        ].join("\n");
+
+        const forcer = confirm(
+            "⚠️ Le contrôle a détecté des anomalies :\n" +
+            details +
+            "\n\nVoulez-vous quand même enregistrer ce calendrier pour pouvoir le publier ?"
+        );
+        if (!forcer) return;
+    }
+
+    // 2. Enregistrement effectif
+    const resultatSauvegarde = await api.enregistrerCalendrier(clonerPlanning(planning));
+    if (!resultatSauvegarde?.id) {
+        throw new Error('Enregistrement échoué : aucun identifiant retourné (vérifiez les données de session).');
+    }
+
+    // 3. Mettre à jour l'état et activer immédiatement le bouton Publier
+    etatCalendrier.savedId = resultatSauvegarde.id;
+    etatCalendrier.fingerprint = empreintePlanning();
+    etatCalendrier.dirty = false;
+    etatCalendrier.published = false;
+    actualiserActionsCalendrier();
+
+    retourCalendrier('✅ Calendrier enregistré en brouillon. Le bouton Publier est maintenant actif.');
+}
+ else {
             const id = etatCalendrier.savedId; const fingerprint = empreintePlanning();
             const publie = await api.publierCalendrier(id);
             if (!courant() || fingerprint !== empreintePlanning()) { invaliderCalendrier(); retourCalendrier('Le planning a changé pendant la publication. Vérifiez le statut distant avant de poursuivre.'); return; }
