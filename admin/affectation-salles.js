@@ -99,13 +99,48 @@ function filiereAvecNiveau(filiere, niveauCode) {
     return { ...filiere, niveauCode };
 }
 
+// Code normalisé pour comparer (espaces, casse, accents) : " IMM 2 " == "imm 2"
+function normaliserCode(valeur) {
+    return String(valeur ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+}
+
 function lireEffectifStrict(effectifs, annee, niveau, filiere) {
     if (typeof annee !== "string" || !annee.trim()) throw new Error("Année universitaire explicite requise.");
-    const lignes = effectifs.filter(l => l && l.anneeUniversitaire === annee && l.niveauCode === niveau && l.filiereCode === filiere);
-    if (lignes.length !== 1) throw new Error("effectif absent ou ambigu pour " + annee + " / " + niveau + " / " + filiere);
-    const v = lignes[0].effectif;
-    if (typeof v === "boolean" || v == null || String(v).trim() === "" || !Number.isInteger(Number(v)) || Number(v) <= 0) throw new Error("Effectif invalide : " + filiere);
-    return Number(v);
+
+    const a = annee.trim(), n = normaliserCode(niveau), f = normaliserCode(filiere);
+
+    const lignes = effectifs.filter(l =>
+        l &&
+        String(l.anneeUniversitaire ?? "").trim() === a &&
+        normaliserCode(l.niveauCode) === n &&
+        normaliserCode(l.filiereCode) === f
+    );
+
+    if (lignes.length === 0) {
+        throw new Error("aucune ligne d'effectif pour " + a + " / " + niveau + " / [" + String(filiere).trim() + "] (vérifier le code de la filière dans les effectifs importés)");
+    }
+
+    const valeurs = lignes.map(l => l.effectif);
+
+    valeurs.forEach(v => {
+        if (typeof v === "boolean" || v == null || String(v).trim() === "" || !Number.isInteger(Number(v)) || Number(v) <= 0) {
+            throw new Error("Effectif invalide : " + String(filiere).trim());
+        }
+    });
+
+    // Plusieurs lignes identiques : acceptées ; lignes contradictoires : refusées
+    const distincts = [...new Set(valeurs.map(Number))];
+
+    if (distincts.length > 1) {
+        throw new Error("effectif ambigu pour " + a + " / " + niveau + " / [" + String(filiere).trim() + "] : " + distincts.join(" ou "));
+    }
+
+    return distincts[0];
 }
 
 // Chaque répartition est fixe pour tous les examens de la filière.
@@ -305,10 +340,20 @@ function construireVecteurPrioriteNiveau(planning) {
 // CLASSER LES CALENDRIERS
 // =================================================
 
-function classerCalendriersPourAffectation(documents) {
+function classerCalendriersPourAffectation(documents, effectifs = []) {
     const elements = documents.map(function (documentCalendrier) {
         const donnees = documentCalendrier.data();
         const planning = donnees.planning;
+
+        // Demande = effectif total du calendrier (niveaux les plus gros traités en premier)
+        let demande = 0;
+        if (planning && Array.isArray(planning.filieres)) {
+            for (const f of planning.filieres) {
+                try {
+                    demande += lireEffectifStrict(effectifs, donnees.anneeUniversitaire, planning.niveauCode, f.filiereCode);
+                } catch (_) { /* filière sans effectif : ignorée pour le classement */ }
+            }
+        }
 
         const cleGroupe = [
             donnees.anneeUniversitaire || "",
@@ -325,6 +370,7 @@ function classerCalendriersPourAffectation(documents) {
                 donnees.niveauCode ||
                 "",
             vecteur: construireVecteurPrioriteNiveau(planning),
+            demande: demande,
             planningValide:
                 !!planning && Array.isArray(planning.filieres)
         };
@@ -342,10 +388,12 @@ function classerCalendriersPourAffectation(documents) {
                 cleGroupe: element.cleGroupe,
                 niveauCode: element.niveauCode,
                 elements: [],
-                vecteur: []
+                vecteur: [],
+                demande: 0
             });
         }
 
+        groupesNiveaux.get(cleNiveau).demande += element.demande;
         groupesNiveaux.get(cleNiveau).elements.push(element);
     });
 
@@ -371,6 +419,10 @@ function classerCalendriersPourAffectation(documents) {
 
         if (comparaisonGroupe !== 0) {
             return comparaisonGroupe;
+        }
+
+        if (a.demande !== b.demande) {
+            return b.demande - a.demande;
         }
 
         const longueur = Math.min(
@@ -432,6 +484,7 @@ function classerCalendriersPourAffectation(documents) {
                 ordre: ordre + 1,
                 groupe: groupe.cleGroupe,
                 niveau: groupe.niveauCode,
+                effectifTotal: groupe.demande,
                 vecteurPriorite: groupe.vecteur.join(", "),
                 nombreCalendriers: groupe.elements.length
             };
@@ -735,13 +788,35 @@ function affecterLocauxFixes(
         };
     });
 
+    // Filières sans effectif exploitable : signalées, exclues de la recherche
+    const donneesInvalides = donneesFilieres.filter(d => !d.valide);
+
+    if (donneesInvalides.length > 0) {
+        console.warn(
+            "⚠ Filières sans effectif exploitable (" + planning.niveauCode + ") :",
+            donneesInvalides.map(d => "[" + d.filiere.filiereCode + "] " + d.message)
+        );
+        console.warn(
+            "Codes présents dans les effectifs pour " + anneeUniversitaire + " / " + planning.niveauCode + " :",
+            effectifs
+                .filter(l => l &&
+                    String(l.anneeUniversitaire ?? "").trim() === String(anneeUniversitaire).trim() &&
+                    normaliserCode(l.niveauCode) === normaliserCode(planning.niveauCode))
+                .map(l => "[" + l.filiereCode + "] = " + l.effectif)
+        );
+    }
+
+    const donneesValides = donneesFilieres.filter(d => d.valide);
+
     const LIMITE_RECHERCHE = 3000;
+    const LIMITE_APRES_SOLUTION = 500;
     const LIMITE_MS = 4000;
     const debutRecherche = performance.now();
 
     let noeudsExplores = 0;
     let limiteAtteinte = false;
     let solutionCompleteTrouvee = false;
+    let noeudsPremiereSolution = 0;
 
     // Meilleure solution complète
     let meilleureSolution = new Map();
@@ -867,8 +942,8 @@ function affecterLocauxFixes(
 
         // 2. Une solution complète est prioritaire.
         if (
-            solution.size !== donneesFilieres.length ||
-            score.nombreAffecte !== donneesFilieres.length
+            solution.size !== donneesValides.length ||
+            score.nombreAffecte !== donneesValides.length
         ) {
             return;
         }
@@ -889,6 +964,7 @@ function affecterLocauxFixes(
         if (meilleure) {
             meilleureSolution = copierSolution(solution);
             meilleurScoreComplet = score;
+            if (!solutionCompleteTrouvee) noeudsPremiereSolution = noeudsExplores;
             solutionCompleteTrouvee = true;
         }
     }
@@ -901,6 +977,11 @@ function affecterLocauxFixes(
         ) {
             limiteAtteinte = true;
             enregistrerMeilleureSolution(affectationsCourantes);
+            return;
+        }
+
+        // Solution complète déjà trouvée : on laisse un budget limité pour l'améliorer
+        if (solutionCompleteTrouvee && noeudsExplores - noeudsPremiereSolution > LIMITE_APRES_SOLUTION) {
             return;
         }
 
@@ -1067,7 +1148,7 @@ function affecterLocauxFixes(
         locaux: sallesAmphis.length
     });
 
-    rechercher(donneesFilieres.slice(), new Map());
+    rechercher(donneesValides.slice(), new Map());
 
     console.log("FIN DE LA RECHERCHE RÉCURSIVE :", {
         dureeMs: Math.round(performance.now() - debutRecherche),
@@ -1099,9 +1180,11 @@ function affecterLocauxFixes(
             effectif: donnee.effectif,
             succes: false,
             locaux: [],
-            message: limiteAtteinte
-                ? "Affectation non résolue : limite de recherche atteinte."
-                : donnee.message || "Affectation non résolue."
+            message: !donnee.valide
+                ? donnee.message
+                : limiteAtteinte
+                    ? "Affectation non résolue : limite de recherche atteinte."
+                    : "Affectation non résolue."
         };
     });
 
@@ -1532,7 +1615,7 @@ if (btnGenererAffectations) {
             const calendriersAEnregistrer = [];
 
             // Classement
-            const calendriersTries = classerCalendriersPourAffectation(calendriersSelectionnes);
+            const calendriersTries = classerCalendriersPourAffectation(calendriersSelectionnes, effectifs);
 
             // Accumuler les affectations réussies des calendriers précédents
             const reservationsExternes = reservationsHorsSelection(snapshot.docs, calendriersSelectionnes, sallesAmphis, effectifs);
