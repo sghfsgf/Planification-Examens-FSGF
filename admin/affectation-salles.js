@@ -505,6 +505,7 @@ function rechercherMeilleureCombinaisonLocaux(
     }
 
     const SEUIL_OCCUPATION = 0.66;
+    const PART_MIN = 10;
     const TAILLE_MAX = 4;
     const MAX_RETENUES = 12;
     const MAX_VISITES = 5000;
@@ -531,6 +532,7 @@ function rechercherMeilleureCombinaisonLocaux(
             capaciteTotale: nominale,
             capaciteRestanteTotale: groupe.reduce((s, l) => s + l.cap, 0),
             tauxOccupation: occupe / nominale,
+            partMin: Math.min(...repartition.map(r => r.effectif)),
             repartitionLocaux: repartition
         };
     }
@@ -576,24 +578,67 @@ function rechercherMeilleureCombinaisonLocaux(
         }
     }
 
+    // 3. Toujours rien avec 4 locaux : recherche gloutonne jusqu'à 12 locaux.
+    //    On prend les plus grands locaux, et pour le dernier le plus petit qui suffit.
+    //    Variantes : on exclut tour à tour l'un des plus grands locaux.
     if (combinaisons.length === 0) {
+        const TAILLE_MAX_GLOUTON = 12;
+        for (let exclu = -1; exclu < Math.min(MAX_RETENUES, locaux.length); exclu++) {
+            const pool = locaux.filter((_, i) => i !== exclu);
+            const groupe = [];
+            let reste = eff;
+            while (reste > 0 && pool.length > 0 && groupe.length < TAILLE_MAX_GLOUTON) {
+                let choix = null;
+                for (let i = pool.length - 1; i >= 0; i--) {
+                    if (pool[i].cap >= reste) { choix = i; break; }
+                }
+                if (choix === null) choix = 0;
+                const l = pool.splice(choix, 1)[0];
+                groupe.push(l);
+                reste -= l.cap;
+            }
+            if (reste <= 0) {
+                const c = construire(groupe);
+                if (c) combinaisons.push(c);
+            }
+        }
+    }
+
+    // Supprimer les doublons (même ensemble de locaux)
+    const dejaVues = new Set();
+    combinaisons = combinaisons.filter(function (c) {
+        const cle = c.locaux.slice().sort().join("|");
+        if (dejaVues.has(cle)) return false;
+        dejaVues.add(cle);
+        return true;
+    });
+
+    if (combinaisons.length === 0) {
+        const capaciteLibre = locaux.reduce((s, l) => s + l.cap, 0);
         return {
             succes: false,
             locaux: [],
             capaciteTotale: 0,
             tauxOccupation: 0,
             combinaisons: [],
-            message: "Aucune combinaison de locaux ne permet d'accueillir l'effectif (contraintes intra + inter-calendriers)."
+            message: "Aucune combinaison possible : effectif " + eff +
+                ", " + locaux.length + " local(aux) libre(s) pour tous ses examens, capacité libre cumulée " +
+                capaciteLibre + (locaux.length ? ", plus grand local libre " + locaux[0].cap : "") +
+                " (maximum 12 locaux par filière)."
         };
     }
 
     // Ordre de préférence :
     //  1) moins de locaux
-    //  2) taux d'occupation >= 66 %
+    //  2) pas de local presque vide (moins de PART_MIN étudiants), puis taux d'occupation >= 66 %
     //  3) ajustement le plus serré (favorise les locaux déjà entamés)
     //  4) taux le plus élevé
     combinaisons.sort(function (a, b) {
         if (a.locaux.length !== b.locaux.length) return a.locaux.length - b.locaux.length;
+        // Éviter les locaux presque vides (moins de PART_MIN étudiants dans un local)
+        const petitA = a.partMin < PART_MIN;
+        const petitB = b.partMin < PART_MIN;
+        if (petitA !== petitB) return petitA ? 1 : -1;
         const okA = a.tauxOccupation >= SEUIL_OCCUPATION;
         const okB = b.tauxOccupation >= SEUIL_OCCUPATION;
         if (okA !== okB) return okA ? -1 : 1;
@@ -806,7 +851,13 @@ function affecterLocauxFixes(
             (
                 score.nombreAffecte === meilleurNombreAffectePartiel &&
                 meilleurScorePartiel &&
-                score.nombreLocaux < meilleurScorePartiel.nombreLocaux
+                (
+                    solution.size > meilleureSolutionPartielle.size ||
+                    (
+                        solution.size === meilleureSolutionPartielle.size &&
+                        score.nombreLocaux < meilleurScorePartiel.nombreLocaux
+                    )
+                )
             )
         ) {
             meilleurNombreAffectePartiel = score.nombreAffecte;
@@ -1588,7 +1639,7 @@ if (btnGenererAffectations) {
                         erreurs.push(
                             documentCalendrier.id +
                             " — filière " + filiere.filiereCode +
-                            " : affectation impossible ou manquante."
+                            " : " + (affectation?.message || "affectation impossible ou manquante.")
                         );
 
                         // Vider les anciens locaux : ils ne sont pas réservés pour les
