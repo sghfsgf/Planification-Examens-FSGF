@@ -486,6 +486,62 @@ function obtenirZoneStatistiquesRecap() {
     return zone;
 }
 
+// Dernières statistiques affichées (utilisées par l'export Excel)
+let dernieresStatistiques = null;
+
+// Tableau compact : 3 lignes (Niveau / Filière / Effectif), une colonne par filière.
+// Les niveaux sont regroupés grâce à colspan.
+function construireTableauStatistiquesHTML(stats) {
+    const groupes = [];
+
+    for (const ligne of stats.lignes) {
+        const dernier = groupes[groupes.length - 1];
+
+        if (dernier && dernier.niveau === ligne.niveau) {
+            dernier.lignes.push(ligne);
+        } else {
+            groupes.push({ niveau: ligne.niveau, lignes: [ligne] });
+        }
+    }
+
+    const centre = ' style="text-align:center"';
+
+    const ligneNiveaux = groupes.map(groupe =>
+        `<th colspan="${groupe.lignes.length}"${centre}>${echapperHTML(groupe.niveau)}</th>`
+    ).join("");
+
+    const ligneFilieres = stats.lignes.map(ligne =>
+        `<td${centre}>${echapperHTML(ligne.filiere)}</td>`
+    ).join("");
+
+    const ligneEffectifs = stats.lignes.map(ligne =>
+        `<td${centre}>${ligne.matieres}</td>`
+    ).join("");
+
+    return `
+        <div style="overflow-x:auto">
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Niveau</th>
+                        ${ligneNiveaux}
+                        <th rowspan="2"${centre}>Total</th>
+                    </tr>
+                    <tr>
+                        <th>Filière</th>
+                        ${ligneFilieres}
+                    </tr>
+                    <tr>
+                        <th>Effectif des matières</th>
+                        ${ligneEffectifs}
+                        <th${centre}>${stats.total}</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
 function afficherStatistiquesRecap(matieres) {
     const zone = obtenirZoneStatistiquesRecap();
 
@@ -493,6 +549,8 @@ function afficherStatistiquesRecap(matieres) {
     const semestre = selectSemestreRecap.value;
     const regime = selectRegimeRecap.value;
     const session = selectSessionRecap.value;
+
+    dernieresStatistiques = null;
 
     if (!annee || !semestre || !regime || !session) {
         zone.innerHTML = "";
@@ -525,32 +583,11 @@ function afficherStatistiquesRecap(matieres) {
         return;
     }
 
-    const lignesHTML = stats.lignes.map(ligne => `
-        <tr>
-            <td>${echapperHTML(ligne.niveau)}</td>
-            <td>${echapperHTML(ligne.filiere)}</td>
-            <td>${ligne.matieres}</td>
-        </tr>
-    `).join("");
+    dernieresStatistiques = stats;
 
     zone.innerHTML = `
         <h4>📊 Matières de la session</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th>Niveau</th>
-                    <th>Filière</th>
-                    <th>Effectif des matières</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${lignesHTML}
-                <tr>
-                    <th colspan="2">Total</th>
-                    <th>${stats.total}</th>
-                </tr>
-            </tbody>
-        </table>
+        ${construireTableauStatistiquesHTML(stats)}
         <p><small>
             Source : collection « matieres » (matières distinctes par niveau et filière).<br>
             Critères appliqués — ${notes}
@@ -809,38 +846,39 @@ async function exporterRecapExcel() {
         }
     };
 
-    // Deuxième feuille : statistiques par niveau (si affichées)
-    const tableauStatistiques = document.querySelector("#statistiquesRecap table");
+    // Deuxième feuille : matières par niveau et filière (une ligne par filière)
+    if (dernieresStatistiques && dernieresStatistiques.lignes.length > 0) {
+        const feuilleStats = classeur.addWorksheet("Matières");
+        const bordure = { style: "thin", color: { argb: "FFCBD5E1" } };
+        const bordures = { top: bordure, left: bordure, bottom: bordure, right: bordure };
 
-    if (tableauStatistiques) {
-        const feuilleStats = classeur.addWorksheet("Statistiques");
+        const lignesStats = [
+            ["Niveau", "Filière", "Effectif des matières"],
+            ...dernieresStatistiques.lignes.map(ligne => [ligne.niveau, ligne.filiere, ligne.matieres]),
+            ["Total", "", dernieresStatistiques.total]
+        ];
 
-        [...tableauStatistiques.querySelectorAll("tr")].forEach((ligneHTML, indexLigne) => {
+        lignesStats.forEach((valeurs, indexLigne) => {
             const ligneExcel = feuilleStats.getRow(indexLigne + 1);
+            const entete = indexLigne === 0 || indexLigne === lignesStats.length - 1;
 
-            [...ligneHTML.querySelectorAll("th, td")].forEach((celluleHTML, indexColonne) => {
+            valeurs.forEach((valeur, indexColonne) => {
                 const celluleExcel = ligneExcel.getCell(indexColonne + 1);
-                const texte = celluleHTML.innerText.trim();
 
-                celluleExcel.value = /^\d+$/.test(texte) ? Number(texte) : texte;
-                celluleExcel.font = { name: "Arial", size: 10, bold: celluleHTML.tagName === "TH" };
+                celluleExcel.value = valeur;
+                celluleExcel.font = { name: "Arial", size: 10, bold: entete };
                 celluleExcel.alignment = {
-                    horizontal: indexColonne < 2 ? "left" : "center",
+                    horizontal: indexColonne === 2 ? "center" : "left",
                     vertical: "middle"
                 };
-                celluleExcel.border = {
-                    top: { style: "thin", color: { argb: "FFCBD5E1" } },
-                    left: { style: "thin", color: { argb: "FFCBD5E1" } },
-                    bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
-                    right: { style: "thin", color: { argb: "FFCBD5E1" } }
-                };
+                celluleExcel.border = bordures;
             });
 
             ligneExcel.commit();
         });
 
         feuilleStats.columns.forEach(colonne => {
-            colonne.width = 20;
+            colonne.width = 24;
         });
     }
 
