@@ -489,52 +489,31 @@ function obtenirZoneStatistiquesRecap() {
 // Dernières statistiques affichées (utilisées par l'export Excel)
 let dernieresStatistiques = null;
 
-// Tableau compact : 3 lignes (Niveau / Filière / Effectif), une colonne par filière.
-// Les niveaux sont regroupés grâce à colspan.
+// Tableau en colonnes : Niveau | Filière | Effectif des matières (une ligne par filière)
 function construireTableauStatistiquesHTML(stats) {
-    const groupes = [];
-
-    for (const ligne of stats.lignes) {
-        const dernier = groupes[groupes.length - 1];
-
-        if (dernier && dernier.niveau === ligne.niveau) {
-            dernier.lignes.push(ligne);
-        } else {
-            groupes.push({ niveau: ligne.niveau, lignes: [ligne] });
-        }
-    }
-
-    const centre = ' style="text-align:center"';
-
-    const ligneNiveaux = groupes.map(groupe =>
-        `<th colspan="${groupe.lignes.length}"${centre}>${echapperHTML(groupe.niveau)}</th>`
-    ).join("");
-
-    const ligneFilieres = stats.lignes.map(ligne =>
-        `<td${centre}>${echapperHTML(ligne.filiere)}</td>`
-    ).join("");
-
-    const ligneEffectifs = stats.lignes.map(ligne =>
-        `<td${centre}>${ligne.matieres}</td>`
-    ).join("");
+    const lignesHTML = stats.lignes.map(ligne => `
+        <tr>
+            <td>${echapperHTML(ligne.niveau)}</td>
+            <td>${echapperHTML(ligne.filiere)}</td>
+            <td>${ligne.matieres}</td>
+        </tr>
+    `).join("");
 
     return `
         <div style="overflow-x:auto">
             <table>
-                <tbody>
+                <thead>
                     <tr>
                         <th>Niveau</th>
-                        ${ligneNiveaux}
-                        <th rowspan="2"${centre}>Total</th>
-                    </tr>
-                    <tr>
                         <th>Filière</th>
-                        ${ligneFilieres}
-                    </tr>
-                    <tr>
                         <th>Effectif des matières</th>
-                        ${ligneEffectifs}
-                        <th${centre}>${stats.total}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${lignesHTML}
+                    <tr>
+                        <th colspan="2">Total</th>
+                        <th>${stats.total}</th>
                     </tr>
                 </tbody>
             </table>
@@ -940,8 +919,62 @@ function exporterRecapPDF() {
 }
 
 // =====================================================
+// STYLE — textes et tableaux agrandis (écran uniquement, pas à l'impression)
+// =====================================================
+
+function appliquerStyleRecap() {
+    if (document.getElementById("styleRecapAgrandi")) return;
+
+    const style = document.createElement("style");
+    style.id = "styleRecapAgrandi";
+    style.textContent = `
+        @media screen {
+            #anneeRecap, #semestreRecap, #regimeRecap, #sessionRecap {
+                font-size: 1.05rem !important;
+                padding: 9px 12px !important;
+            }
+
+            #statistiquesRecap h4 {
+                font-size: 1.4rem;
+                margin: 22px 0 12px;
+            }
+
+            #statistiquesRecap table,
+            #tableauRecapLocaux table {
+                font-size: 1.1rem !important;
+            }
+
+            #statistiquesRecap th,
+            #statistiquesRecap td,
+            #tableauRecapLocaux th,
+            #tableauRecapLocaux td {
+                padding: 11px 16px !important;
+            }
+
+            #statistiquesRecap td:nth-child(3),
+            #statistiquesRecap th:nth-child(3),
+            #statistiquesRecap th[colspan] + th {
+                text-align: center;
+            }
+
+            #statistiquesRecap small {
+                font-size: 0.95rem;
+            }
+
+            #tableauRecapLocaux p {
+                font-size: 1.1rem;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
+// =====================================================
 // EXÉCUTION DU CHARGEMENT
 // =====================================================
+
+appliquerStyleRecap();
 
 Promise.all([chargerCalendriersRecap(), chargerMatieresRecap()])
     .then(([calendriers, matieres]) => {
