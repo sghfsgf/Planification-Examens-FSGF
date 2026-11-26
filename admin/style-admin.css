@@ -1260,7 +1260,8 @@ body {
 
 /* =========================================
    Impression du récapitulatif des locaux
-   Format A3 paysage
+   A3 paysage, une seule page en largeur,
+   textes et tailles minimisés
    ========================================= */
 
 @page {
@@ -1270,37 +1271,90 @@ body {
 
 @media print {
 
-    @page {
-        size: A3 landscape;
-        margin: 8mm;
+    /* Masquer tout ce qui n'est pas le récapitulatif */
+    .entete-admin,
+    .menu-admin,
+    .pied-page-admin,
+    .actions-recap {
+        display: none !important;
     }
 
-    /* Conserver les couleurs et les styles du tableau */
+    body {
+        background: #ffffff !important;
+    }
+
+    .espace-admin,
+    #sectionRecap,
+    .section-recap {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        border-radius: 0 !important;
+    }
+
+    /* Conserver les couleurs (rouge / vert) */
     #tableauRecapLocaux,
     #tableauRecapLocaux * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    /* Conserver la structure et les bordures existantes */
-    #tableauRecapLocaux {
+    /* Conteneur : plus de défilement, plus de cadre */
+    #tableauRecapLocaux,
+    #tableauRecapLocaux div {
         overflow: visible !important;
         max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
+    /* Tableau ajusté à la largeur de la page */
     #tableauRecapLocaux table {
         width: 100% !important;
         min-width: 0 !important;
+        table-layout: fixed !important;
         border-collapse: collapse !important;
+        font-size: var(--taille-impression, 8px) !important;
     }
 
-    /* Masquer uniquement les boutons d'action */
-    .actions-recap {
-        display: none !important;
+    /* Neutralise min-width, nowrap et paddings de l'écran */
+    #tableauRecapLocaux th,
+    #tableauRecapLocaux td,
+    #tableauRecapLocaux thead th,
+    #tableauRecapLocaux tbody td:first-child,
+    #tableauRecapLocaux tbody td:not(:first-child) {
+        min-width: 0 !important;
+        padding: 3px 4px !important;
+        font-size: inherit !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    /* Colonne « Local » */
+    #tableauRecapLocaux th:first-child,
+    #tableauRecapLocaux td:first-child {
+        width: 80px !important;
+    }
+
+    #tableauRecapLocaux tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    #tableauRecapLocaux thead {
+        display: table-header-group;
+    }
+
+    /* Pas de survol à l'impression */
+    #tableauRecapLocaux tbody tr:hover td {
+        background-color: inherit;
     }
 }
-
-
 
 
 /* ==========================================
