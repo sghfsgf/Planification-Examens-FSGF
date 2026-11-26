@@ -135,6 +135,71 @@ async function chargerMatieresRecap() {
 }
 
 // =====================================================
+// ÉTAPE 1 ter — LECTURE DES SESSIONS DANS FIRESTORE
+// Alimente les filtres Année | Semestre | Régime | Session.
+// Retourne null en cas d'erreur ou si la collection est vide
+// (les filtres se rabattent alors sur les calendriers publiés).
+// =====================================================
+
+const sessionsRef = collection(db, "sessions");
+
+// Noms de champs possibles dans la collection "sessions".
+// Si vos champs ont d'autres noms, ajoutez-les simplement ici.
+const CHAMPS_SESSIONS = {
+    anneeUniversitaire: ["anneeUniversitaire", "annee"],
+    semestreCode: ["semestreCode", "semestre"],
+    regimeCode: ["regimeCode", "regime"],
+    sessionCode: ["sessionCode", "session", "code"]
+};
+
+async function chargerSessionsRecap() {
+    try {
+        const resultat = await getDocs(sessionsRef);
+
+        const sessions = resultat.docs
+            .map(document => {
+                const donnees = document.data();
+                const session = { id: document.id };
+
+                for (const [cible, noms] of Object.entries(CHAMPS_SESSIONS)) {
+                    const valeur = lireChamp(donnees, noms);
+                    session[cible] = valeur === null ? null : String(valeur).trim();
+                }
+
+                return session;
+            })
+            // Ignorer les sessions incomplètes
+            .filter(session =>
+                session.anneeUniversitaire &&
+                session.semestreCode &&
+                session.regimeCode &&
+                session.sessionCode
+            );
+
+        console.log("✅ Nombre de sessions récupérées :", sessions.length);
+        console.table(sessions);
+
+        if (sessions.length === 0) {
+            console.warn(
+                "⚠️ Collection « sessions » vide ou champs non reconnus : " +
+                "les filtres utiliseront les calendriers publiés."
+            );
+            return null;
+        }
+
+        return sessions;
+
+    } catch (erreur) {
+        console.error(
+            "❌ Erreur lors du chargement de la collection « sessions » :",
+            erreur
+        );
+
+        return null;
+    }
+}
+
+// =====================================================
 // ÉTAPE 2 — FILTRE ANNÉE UNIVERSITAIRE
 // =====================================================
 
@@ -976,9 +1041,17 @@ function appliquerStyleRecap() {
 
 appliquerStyleRecap();
 
-Promise.all([chargerCalendriersRecap(), chargerMatieresRecap()])
-    .then(([calendriers, matieres]) => {
-        initialiserFiltreAnneeRecap(calendriers);
+Promise.all([
+    chargerCalendriersRecap(),
+    chargerMatieresRecap(),
+    chargerSessionsRecap()
+])
+    .then(([calendriers, matieres, sessionsFirestore]) => {
+
+        // Source des filtres : collection "sessions" (sinon calendriers publiés)
+        const sourceFiltres = sessionsFirestore ?? calendriers;
+
+        initialiserFiltreAnneeRecap(sourceFiltres);
 
         function actualiserRecapitulatif() {
             afficherStatistiquesRecap(matieres);
@@ -987,18 +1060,18 @@ Promise.all([chargerCalendriersRecap(), chargerMatieresRecap()])
 
         selectAnneeRecap.addEventListener("change", () => {
             initialiserFiltreSemestreRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value
             );
 
             initialiserFiltreRegimeRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value,
                 selectSemestreRecap.value
             );
 
             initialiserFiltreSessionRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value,
                 selectSemestreRecap.value,
                 selectRegimeRecap.value
@@ -1009,13 +1082,13 @@ Promise.all([chargerCalendriersRecap(), chargerMatieresRecap()])
 
         selectSemestreRecap.addEventListener("change", () => {
             initialiserFiltreRegimeRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value,
                 selectSemestreRecap.value
             );
 
             initialiserFiltreSessionRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value,
                 selectSemestreRecap.value,
                 selectRegimeRecap.value
@@ -1026,7 +1099,7 @@ Promise.all([chargerCalendriersRecap(), chargerMatieresRecap()])
 
         selectRegimeRecap.addEventListener("change", () => {
             initialiserFiltreSessionRecap(
-                calendriers,
+                sourceFiltres,
                 selectAnneeRecap.value,
                 selectSemestreRecap.value,
                 selectRegimeRecap.value
