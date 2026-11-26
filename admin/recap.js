@@ -643,6 +643,8 @@ function afficherStatistiquesRecap(matieres) {
 
 // =====================================================
 // RÉCAPITULATIF DES LOCAUX
+// Une ligne par local, une colonne par (date, créneau) :
+// chaque case indique « Occupé » (avec la filière) ou « Vide ».
 // =====================================================
 
 function afficherRecapitulatifLocaux(calendriers) {
@@ -674,39 +676,35 @@ function afficherRecapitulatifLocaux(calendriers) {
         calendrier.statut === "publie"
     );
 
-    const lignes = [];
+    // Tous les locaux connus de la session + les occupations
+    const tousLesLocaux = new Set();
+    const occupations = [];
 
     for (const calendrier of calendriersFiltres) {
-        const filieres = calendrier.planning?.filieres ?? [];
+        for (const filiere of calendrier.planning?.filieres ?? []) {
+            const locaux = (filiere.amphis ?? [])
+                .map(local => String(local).trim())
+                .filter(Boolean);
 
-        for (const filiere of filieres) {
-            const locaux = filiere.amphis ?? [];
+            locaux.forEach(local => tousLesLocaux.add(local));
 
             for (const cellule of filiere.cellules ?? []) {
                 if (cellule.estOccupee !== true) {
                     continue;
                 }
 
-                lignes.push({
+                occupations.push({
                     dateTri: horodatageDate(cellule.date),
                     date: cellule.dateAffichage ?? "",
-                    debut: cellule.heureDebutAffichage ?? "",
-                    fin: cellule.heureFinAffichage ?? "",
+                    creneau: `${cellule.heureDebutAffichage ?? ""}–${cellule.heureFinAffichage ?? ""}`,
                     filiere: cellule.filiereCode ?? filiere.filiereCode ?? "",
-                    matiere: cellule.matiereLibelle ?? "",
-                    locaux: locaux.join(", ")
+                    locaux
                 });
             }
         }
     }
 
-    lignes.sort((a, b) =>
-        a.dateTri - b.dateTri ||
-        a.debut.localeCompare(b.debut) ||
-        a.filiere.localeCompare(b.filiere)
-    );
-
-    if (lignes.length === 0) {
+    if (occupations.length === 0) {
         conteneur.innerHTML =
             "<p>Aucun examen occupé trouvé pour ces critères.</p>";
 
@@ -714,61 +712,91 @@ function afficherRecapitulatifLocaux(calendriers) {
         return;
     }
 
-    const dates = [...new Map(
-        lignes.map(ligne => [ligne.date, ligne.dateTri])
-    ).entries()]
-        .sort((a, b) => a[1] - b[1])
-        .map(([date]) => date);
+    // Colonnes : couples (date, créneau) triés chronologiquement
+    const colonnesMap = new Map();
 
-    const creneaux = [...new Set(
-        lignes.map(ligne => `${ligne.debut}–${ligne.fin}`)
-    )].sort((a, b) => a.localeCompare(b));
+    for (const occupation of occupations) {
+        const cle = `${occupation.date}||${occupation.creneau}`;
 
-    const tableau = {};
-
-    for (const creneau of creneaux) {
-        tableau[creneau] = {};
-
-        for (const date of dates) {
-            tableau[creneau][date] = [];
+        if (!colonnesMap.has(cle)) {
+            colonnesMap.set(cle, {
+                cle,
+                date: occupation.date,
+                creneau: occupation.creneau,
+                dateTri: occupation.dateTri
+            });
         }
     }
 
-    for (const ligne of lignes) {
-        const creneau = `${ligne.debut}–${ligne.fin}`;
-        const date = ligne.date;
-        const locaux = ligne.locaux
-            .split(", ")
-            .filter(local => local !== "");
+    const colonnes = [...colonnesMap.values()].sort((a, b) =>
+        a.dateTri - b.dateTri || a.creneau.localeCompare(b.creneau)
+    );
 
-        tableau[creneau][date].push(...locaux);
+    // Occupation : local -> (colonne -> ensemble de filières)
+    const occupe = new Map();
+
+    for (const occupation of occupations) {
+        const cle = `${occupation.date}||${occupation.creneau}`;
+
+        for (const local of occupation.locaux) {
+            if (!occupe.has(local)) occupe.set(local, new Map());
+
+            const parColonne = occupe.get(local);
+
+            if (!parColonne.has(cle)) parColonne.set(cle, new Set());
+
+            if (occupation.filiere) parColonne.get(cle).add(occupation.filiere);
+        }
     }
 
-    conteneur.innerHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Créneau</th>
-                    ${dates.map(date =>
-                        `<th>${echapperHTML(date)}</th>`
-                    ).join("")}
-                </tr>
-            </thead>
-            <tbody>
-                ${creneaux.map(creneau => `
-                    <tr>
-                        <td>${echapperHTML(creneau)}</td>
-                        ${dates.map(date => {
-                            const locaux = [
-                                ...new Set(tableau[creneau][date])
-                            ];
+    const locauxTries = [...tousLesLocaux].sort((a, b) =>
+        a.localeCompare(b, "fr", { numeric: true })
+    );
 
-                            return `<td>${echapperHTML(locaux.join(", "))}</td>`;
-                        }).join("")}
+    const styleOccupe = "background:#fee2e2;color:#991b1b;font-weight:600;text-align:center;";
+    const styleVide = "background:#dcfce7;color:#166534;text-align:center;";
+
+    conteneur.innerHTML = `
+        <div style="overflow-x:auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Local</th>
+                        ${colonnes.map(colonne => `
+                            <th style="text-align:center">
+                                ${echapperHTML(colonne.date)}<br>${echapperHTML(colonne.creneau)}
+                            </th>
+                        `).join("")}
                     </tr>
-                `).join("")}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    ${locauxTries.map(local => `
+                        <tr>
+                            <td>${echapperHTML(local)}</td>
+                            ${colonnes.map(colonne => {
+                                const filieres = occupe.get(local)?.get(colonne.cle);
+
+                                if (!filieres) {
+                                    return `<td style="${styleVide}">Vide</td>`;
+                                }
+
+                                const detail = filieres.size > 0
+                                    ? ` (${[...filieres].join(", ")})`
+                                    : "";
+
+                                return `<td style="${styleOccupe}">${echapperHTML("Occupé" + detail)}</td>`;
+                            }).join("")}
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+        <p><small>
+            <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;">Occupé</span>
+            &nbsp;
+            <span style="background:#dcfce7;color:#166534;padding:2px 8px;">Vide</span>
+            — locaux issus des filières des calendriers publiés de la session.
+        </small></p>
     `;
 
     actualiserBoutonsRecap(true);
