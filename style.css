@@ -1568,20 +1568,21 @@ button,
     color: #000000 !important;
 
     font-family: "Calibri Light", Calibri, sans-serif !important;
-    font-size: 11pt !important;
+    font-size: var(--taille-impression-calendrier, 8px) !important;
     font-weight: 400 !important;
     line-height: 1.2 !important;
 
-    padding: 4px !important;
+    padding: 3px !important;
     height: auto !important;
 
-    /* Conserver le texte vertical */
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
+    /* Texte horizontal */
+    writing-mode: horizontal-tb !important;
+    transform: none !important;
 
     white-space: normal !important;
     overflow: visible !important;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
 
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
