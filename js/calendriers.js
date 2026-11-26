@@ -1153,55 +1153,61 @@ colonnes.sort(
         );
     }
 
-    // =====================================================
-    // IMPRESSION DU CALENDRIER
-    // =====================================================
-    const btnImprimerCalendrier =
-        document.getElementById("btnImprimerCalendrier");
+// =====================================================
+// IMPRESSION / PDF DU CALENDRIER
+// =====================================================
+function preparerImpressionCalendrier() {
+    const section = document.getElementById("calendriers");
+    const tableauImpression = document.getElementById("tableauCalendrier");
 
-    if (btnImprimerCalendrier) {
-        btnImprimerCalendrier.addEventListener(
-            "click",
-            function () {
-                const tableauImpression =
-                    document.getElementById(
-                        "tableauCalendrier"
-                    );
-
-                if (!tableauImpression) {
-                    console.error(
-                        "❌ Tableau du calendrier introuvable."
-                    );
-                    return;
-                }
-
-                console.log(
-                    "🖨️ Impression du calendrier..."
-                );
-                window.print();
-            }
-        );
+    if (!section || !tableauImpression) {
+        console.error("❌ Section ou tableau du calendrier introuvable.");
+        return false;
     }
 
-    
-// =====================================================
-// EXPORTER LE CALENDRIER EN PDF
-// =====================================================
-const btnExporterPDFCalendrier =
-    document.getElementById("btnExporterPDFCalendrier");
+    // S'assurer que la section est visible pour le moteur d'impression
+    section.classList.add("active");
+    section.style.display = "block";
 
+    // Ajuster la taille du texte selon le nombre de colonnes (meilleur rendu A3)
+    const nbColonnes = tableauImpression.querySelectorAll("thead tr:last-child th").length
+        + 2; // + FILIÈRE + AMPHIS si la 2e ligne n'inclut pas les rowSpan
+    let taille = "7.5pt";
+    if (nbColonnes > 28) taille = "6pt";
+    else if (nbColonnes > 22) taille = "6.5pt";
+    else if (nbColonnes > 16) taille = "7pt";
+
+    document.documentElement.style.setProperty(
+        "--taille-impression-calendrier",
+        taille
+    );
+
+    console.log("🖨️ Impression/PDF — colonnes ≈", nbColonnes, "| police matières:", taille);
+    return true;
+}
+
+function lancerImpressionCalendrier() {
+    if (!preparerImpressionCalendrier()) return;
+
+    // Laisser le navigateur appliquer les styles print
+    requestAnimationFrame(function () {
+        window.print();
+    });
+}
+
+const btnImprimerCalendrier = document.getElementById("btnImprimerCalendrier");
+if (btnImprimerCalendrier) {
+    btnImprimerCalendrier.addEventListener("click", function () {
+        console.log("🖨️ Impression du calendrier...");
+        lancerImpressionCalendrier();
+    });
+}
+
+const btnExporterPDFCalendrier = document.getElementById("btnExporterPDFCalendrier");
 if (btnExporterPDFCalendrier) {
     btnExporterPDFCalendrier.addEventListener("click", function () {
-        const tableau =
-            document.getElementById("tableauCalendrier");
-
-        if (!tableau) {
-            console.error("❌ Tableau du calendrier introuvable.");
-            return;
-        }
-
-        console.log("📄 Préparation du calendrier pour export PDF...");
-        window.print();
+        console.log("📄 Export PDF du calendrier (via impression navigateur)...");
+        lancerImpressionCalendrier();
     });
 }
 
