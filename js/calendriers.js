@@ -1172,10 +1172,10 @@ function preparerImpressionCalendrier() {
     // Ajuster la taille du texte selon le nombre de colonnes (meilleur rendu A3)
     const nbColonnes = tableauImpression.querySelectorAll("thead tr:last-child th").length
         + 2; // + FILIÈRE + AMPHIS si la 2e ligne n'inclut pas les rowSpan
-    let taille = "7.5pt";
-    if (nbColonnes > 28) taille = "6pt";
-    else if (nbColonnes > 22) taille = "6.5pt";
-    else if (nbColonnes > 16) taille = "7pt";
+    let taille = "9pt";
+    if (nbColonnes > 28) taille = "7.5pt";
+    else if (nbColonnes > 22) taille = "8pt";
+    else if (nbColonnes > 16) taille = "8.5pt";
 
     document.documentElement.style.setProperty(
         "--taille-impression-calendrier",
