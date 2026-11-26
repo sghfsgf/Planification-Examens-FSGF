@@ -999,14 +999,32 @@ function ajouterDateEditionRecap() {
         });
 }
 
+// Taille du texte à l'impression : plus il y a de colonnes, plus elle diminue
+function calculerTaillePoliceImpression(tableau) {
+    const nombreColonnes = Math.max(
+        1,
+        (tableau.querySelector("tr")?.querySelectorAll("th, td").length ?? 1) - 1
+    );
+
+    return Math.max(6, Math.min(11, Math.round(180 / nombreColonnes)));
+}
+
 function imprimerRecap() {
     const tableau = obtenirTableauRecapPourExport();
     if (!tableau) return;
 
     ajouterDateEditionRecap();
+
+    const conteneur = document.getElementById("tableauRecapLocaux");
+    conteneur.style.setProperty(
+        "--taille-impression",
+        calculerTaillePoliceImpression(tableau) + "px"
+    );
+
     window.print();
 }
 
+// Le PDF passe par la même impression (A3 paysage, une seule page en largeur)
 function exporterRecapPDF() {
     imprimerRecap();
 }
