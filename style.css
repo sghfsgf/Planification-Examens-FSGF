@@ -1346,26 +1346,43 @@ select:focus-visible {
 }
 
 /* =========================================================
-   24. IMPRESSION DU CALENDRIER - A3 PAYSAGE
+   24. IMPRESSION / PDF — CALENDRIER PUBLIC (A3 PAYSAGE)
 ========================================================= */
 
 @page {
     size: A3 landscape;
-    margin: 10mm;
+    margin: 8mm;
 }
 
 @media print {
-   /* Masquer uniquement les éléments inutiles à l'impression */
-.menu-principal,
-.pied-page,
-button,
-#accueil,
-.aide-calendrier {
-    display: none !important;
-}
 
-    /* Afficher uniquement la section des calendriers */
-    body > * {
+    /* ----- Masquer tout ce qui n'est pas le calendrier ----- */
+    .menu-principal,
+    .pied-page,
+    .entete,
+    #accueil,
+    .aide-calendrier,
+    #calendriers .filtres-calendrier,
+    #calendriers .actions,
+    #calendriers button,
+    button {
+        display: none !important;
+    }
+
+    html,
+    body {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Afficher uniquement la zone calendriers */
+    body * {
         visibility: hidden;
     }
 
@@ -1380,57 +1397,41 @@ button,
         left: 0;
         top: 0;
         width: 100% !important;
+        max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-
-    /* Page */
-    html,
-    body {
-        width: 100%;
-        margin: 0;
-        padding: 0;
         background: #ffffff !important;
-        color: #000000 !important;
     }
 
-    /* Contenu principal */
     main,
-    .espace-travail {
+    .espace-travail,
+    #calendriers .carte {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-
-    /* Carte */
-    .carte {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
         border: none !important;
         box-shadow: none !important;
+        background: #ffffff !important;
     }
-
-/* Masquer les filtres sur le document imprimé */
-#calendriers .filtres-calendrier {
-    display: none !important;
-}
 
     /* Titre */
-   
     #calendriers .carte h2 {
         display: block !important;
-        color: #000000 !important;
+        visibility: visible !important;
         text-align: center;
-        border-bottom: 1px solid #000000;
-        font-size: 16pt;
-        margin: 0 0 5mm 0;
-        padding: 0 0 2mm 0;
+        color: #000000 !important;
+        font-size: 14pt !important;
+        font-weight: 700 !important;
+        margin: 0 0 4mm 0 !important;
+        padding: 0 0 2mm 0 !important;
+        border: none !important;
+        border-bottom: 1px solid #000000 !important;
+        background: transparent !important;
     }
 
-    /* Conteneur du calendrier */
-    .tableau-conteneur {
+    /* Conteneur tableau */
+    #calendriers .tableau-conteneur {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
@@ -1439,47 +1440,116 @@ button,
         border: none !important;
     }
 
-    /* Tableau */
-    #tableauCalendrier {
+    /* Tableau : occupe toute la page, colonnes régulières */
+    #calendriers #tableauCalendrier {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
-        margin: 0 auto !important;
-
-        border-collapse: collapse;
-
-        table-layout: fixed;
-
-        background: #ffffff;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        page-break-inside: auto;
+        break-inside: auto;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-  
-/* Cellules du calendrier à l'impression */
-#tableauCalendrier th,
-#tableauCalendrier td {
-    min-width: 0 !important;
-    max-width: none !important;
-    height: auto !important;
+    /* Répéter les en-têtes sur chaque page PDF */
+    #calendriers #tableauCalendrier thead {
+        display: table-header-group !important;
+    }
 
-    border: 1px solid #000000 !important;
-    padding: 4px !important;
+    #calendriers #tableauCalendrier tbody {
+        display: table-row-group !important;
+    }
 
-    text-align: center;
-    vertical-align: middle;
+    /* Ne pas couper une ligne de filière au milieu */
+    #calendriers #tableauCalendrier tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        height: auto !important;
+    }
 
-    /* Autoriser le texte à occuper plusieurs lignes */
-    white-space: normal !important;
-    overflow: visible !important;
-    overflow-wrap: anywhere;
-    word-wrap: break-word;
-    line-height: 1.25;
-}
+    /* Cellules générales */
+    #calendriers #tableauCalendrier th,
+    #calendriers #tableauCalendrier td {
+        border: 0.6pt solid #000000 !important;
+        padding: 2px 3px !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        line-height: 1.15 !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: auto !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 
-/* Hauteur des lignes adaptée à leur contenu */
-#tableauCalendrier tr {
-    height: auto !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    /* Largeurs : FILIÈRE + AMPHIS un peu plus larges, créneaux égaux */
+    #calendriers #tableauCalendrier th:first-child,
+    #calendriers #tableauCalendrier td:first-child {
+        width: 9% !important;
+        font-size: 7.5pt !important;
+        font-weight: 700 !important;
+        background-color: rgb(252, 228, 214) !important;
+    }
+
+    #calendriers #tableauCalendrier th:nth-child(2),
+    #calendriers #tableauCalendrier td:nth-child(2) {
+        width: 8% !important;
+        font-size: 7pt !important;
+        font-weight: 700 !important;
+        background-color: rgb(252, 228, 214) !important;
+    }
+
+    /* En-têtes (dates + créneaux) */
+    #calendriers #tableauCalendrier thead th {
+        font-size: 7pt !important;
+        font-weight: 700 !important;
+        background-color: rgb(252, 228, 214) !important;
+        color: #000000 !important;
+    }
+
+    /* Ligne des horaires : fond blanc pour distinguer */
+    #calendriers #tableauCalendrier thead tr:nth-child(2) th {
+        background-color: #ffffff !important;
+        font-size: 6.5pt !important;
+        font-weight: 600 !important;
+    }
+
+    /* Matières */
+    #calendriers #tableauCalendrier .cellule-examen {
+        background: rgb(153, 204, 255) !important;
+        color: #000000 !important;
+        font-family: "Calibri", "Segoe UI", Arial, sans-serif !important;
+        font-size: var(--taille-impression-calendrier, 7.5pt) !important;
+        font-weight: 400 !important;
+        line-height: 1.15 !important;
+        padding: 2px 3px !important;
+        writing-mode: horizontal-tb !important;
+        transform: none !important;
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Cellules vides */
+    #calendriers #tableauCalendrier tbody td:not(.cellule-examen):not(:first-child):not(:nth-child(2)) {
+        background: #ffffff !important;
+    }
+
+    /* Éviter les sauts de page juste après le titre */
+    #calendriers .carte h2 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
 }
 
 /* =====================================================
@@ -1655,55 +1725,4 @@ button,
   
 }
 
-/* =========================================================
-   IMPRESSION CALENDRIER PUBLIC
-   Créneaux de largeur uniforme
-   FILIÈRE et AMPHIS préservés
-========================================================= */
-
-@media print {
-
-    /* Répartition fixe des colonnes à l'impression */
-    #calendriers #tableauCalendrier {
-        table-layout: fixed !important;
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    /*
-       FILIÈRE et AMPHIS :
-       conserver leurs largeurs définies par les règles
-       d'impression existantes.
-    */
-
-    /*
-       Dates :
-       chaque cellule de date regroupe plusieurs créneaux.
-       Sa largeur sera répartie selon son colspan.
-    */
-    #calendriers #tableauCalendrier thead tr:first-child th:nth-child(n+3) {
-        white-space: normal !important;
-        overflow-wrap: normal !important;
-        word-break: normal !important;
-        text-align: center !important;
-        vertical-align: middle !important;
-    }
-
-    /*
-       Horaires :
-       même répartition de largeur que les cellules
-       d'examen situées sous les créneaux.
-    */
-    #calendriers #tableauCalendrier thead tr:nth-child(2) th,
-    #calendriers #tableauCalendrier tbody td:nth-child(n+3) {
-        white-space: normal !important;
-        overflow-wrap: break-word !important;
-        word-break: normal !important;
-        text-align: center !important;
-        vertical-align: middle !important;
-        padding-left: 3px !important;
-        padding-right: 3px !important;
-    }
-
-}
 
