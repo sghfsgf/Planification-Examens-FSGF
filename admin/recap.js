@@ -780,11 +780,7 @@ function afficherRecapitulatifLocaux(calendriers) {
                                     return `<td style="${styleVide}">Vide</td>`;
                                 }
 
-                                const detail = filieres.size > 0
-                                    ? ` (${[...filieres].join(", ")})`
-                                    : "";
-
-                                return `<td style="${styleOccupe}">${echapperHTML("Occupé" + detail)}</td>`;
+                                return `<td style="${styleOccupe}">${echapperHTML([...filieres].join(", "))}</td>`;
                             }).join("")}
                         </tr>
                     `).join("")}
