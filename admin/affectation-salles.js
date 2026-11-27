@@ -1399,6 +1399,8 @@ async function obtenirDonneesReferentiel() {
 
 // Contrôle du planning par controle.js avant d'affecter des locaux.
 // Lève une erreur si le planning est bloqué.
+// Contrôle du planning : signale les anomalies sans bloquer l'affectation.
+// Retourne { absent, avertissements: string[] }.
 function controlerPlanningAvantAffectation(id, planning, sessionCode) {
     const controle = window.controleExamens;
 
@@ -1406,22 +1408,34 @@ function controlerPlanningAvantAffectation(id, planning, sessionCode) {
         if (CONFIG.CONTROLE_PLANNING_OBLIGATOIRE) {
             throw new Error("controle.js n'est pas chargé : impossible de contrôler le planning.");
         }
-        return { absent: true };
+        return { absent: true, avertissements: [] };
     }
 
     const resultat = controle.verifierPlanningGlobal(planning, {
         silencieux: true,
-        sessionCode: sessionCode
+        sessionCode: sessionCode,
+        exigerLocaux: false,
+        matieresNonPlaceesBloquantes: false
     });
 
-    if (!resultat.valide) {
-        throw new Error(
-            "planning bloqué par le contrôle (" +
-            resultat.anomaliesBloquantes.join(", ") + ")."
-        );
+    const avertissements = [];
+
+    if (!resultat.valide || (resultat.anomalies && resultat.anomalies.length > 0)) {
+        const messages = (resultat.anomalies || [])
+            .map(a => a.message)
+            .concat(resultat.anomaliesBloquantes || [])
+            .concat(resultat.avertissements || []);
+
+        const uniques = [...new Set(messages.filter(Boolean))];
+
+        if (uniques.length > 0) {
+            avertissements.push(
+                id + " — contrôle planning : " + uniques.join(" ; ")
+            );
+        }
     }
 
-    return { absent: false, resultat };
+    return { absent: false, avertissements: avertissements };
 }
 
 const pause = () => new Promise(resolve => setTimeout(resolve, 0));
