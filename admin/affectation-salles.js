@@ -1,17 +1,14 @@
 // =================================================
 // AFFECTATION DES SALLES / AMPHIS  (version améliorée)
 //
-// Améliorations par rapport à la version précédente :
-//  - anomalies structurées { type, bloquant, message } (plus de includes("..."))
-//  - contrôle du planning (controle.js) avant affectation
-//  - calendriers ignorés traités comme réservations
-//  - réservations externes défectueuses signalées sans tout bloquer
-//  - écriture en transaction : détection des modifications concurrentes
-//  - sauvegarde de l'ancien planning + mode simulation + confirmation
-//  - index d'occupation (calcul de capacité beaucoup plus rapide)
-//  - meilleure solution partielle corrigée, troncatures signalées
-//  - une seule opération à la fois, interface qui respire (pauses)
-//  - constantes regroupées dans CONFIG
+// Améliorations :
+//  - anomalies structurées { type, bloquant, message }
+//  - contrôle planning (controle.js) : avertit sans bloquer l'affectation
+//  - conflits de capacité/niveaux signalés sans annuler l'enregistrement
+//  - calendriers hors sélection traités comme réservations
+//  - écriture en transaction + historique + simulation + confirmation
+//  - index d'occupation, recherche limitée, interface avec pauses
+//  - constantes dans CONFIG
 // =================================================
 
 import { app } from "../firebase-config.js";
@@ -1830,6 +1827,7 @@ async function enregistrerAffectations(elements, signatures) {
             const signatures = new Map();
             const anneeParId = new Map();
             let controleAbsent = false;
+            const avertissementsControle = [];
 
             for (const documentCalendrier of calendriersSelectionnes) {
                 const donneesCalendrier = documentCalendrier.data();
@@ -1842,21 +1840,33 @@ async function enregistrerAffectations(elements, signatures) {
 
                     validerPlanningDates(planning);
 
+                    // Contrôle : messages collectés, calendrier NON exclu
                     const controle = controlerPlanningAvantAffectation(
                         documentCalendrier.id,
                         planning,
                         donneesCalendrier.sessionCode
                     );
                     if (controle.absent) controleAbsent = true;
+                    if (controle.avertissements && controle.avertissements.length) {
+                        avertissementsControle.push(...controle.avertissements);
+                    }
 
                     calendriersValides.push(documentCalendrier);
                     signatures.set(documentCalendrier.id, JSON.stringify(planning));
                     anneeParId.set(documentCalendrier.id, donneesCalendrier.anneeUniversitaire);
                 } catch (erreur) {
+                    // Uniquement structure / dates invalides
                     console.error("PLANNING IGNORÉ :", documentCalendrier.id, erreur);
                     identifiantsIgnores.add(documentCalendrier.id);
                     erreurs.push(documentCalendrier.id + " : " + erreur.message);
                 }
+            }
+
+            if (avertissementsControle.length > 0) {
+                await afficher(
+                    "Contrôle : " + avertissementsControle.length +
+                    " avertissement(s) — affectation poursuivie…"
+                );
             }
 
             let calendriersEnErreur = identifiantsIgnores.size;
@@ -2038,6 +2048,12 @@ async function enregistrerAffectations(elements, signatures) {
 
             const anomaliesGlobales = [...anomaliesExternes];
 
+            anomaliesGlobales.push(
+                ...avertissementsControle.map(msg =>
+                    anomalie("CONTROLE_PLANNING", msg)
+                )
+            );
+
             if (calendriersEnErreur > 0) {
                 anomaliesGlobales.push(anomalie(
                     "ERREUR_AFFECTATION",
@@ -2085,26 +2101,30 @@ async function enregistrerAffectations(elements, signatures) {
                 const prudentes = reservationsExternes.filter(r => r.reservationPrudente).length;
                 if (prudentes > 0) lignes.push("Réservations externes prudentes (effectif inconnu, local entier réservé) : " + prudentes);
 
-                if (erreurs.length > 0) lignes.push("Erreurs d'affectation :", ...erreurs);
-                if (anomaliesGlobales.length > 0) lignes.push("Anomalies détectées :", ...anomaliesGlobales.map(a => a.message));
+                if (avertissementsControle.length > 0) {
+                    lignes.push("Avertissements contrôle planning :", ...avertissementsControle);
+                }
+                if (erreurs.length > 0) lignes.push("Problèmes d'affectation :", ...erreurs);
+                if (anomaliesGlobales.length > 0) {
+                    lignes.push(
+                        "Anomalies détectées :",
+                        ...anomaliesGlobales.map(a => (a.bloquant ? "[important] " : "") + a.message)
+                    );
+                }
 
                 return lignes.join("\n");
             };
 
             // -------------------------------------------------
-            // BLOQUER L'ÉCRITURE EN CAS DE VRAI CONFLIT DE LOCAUX
+            // Conflits de locaux : signalés, n'empêchent plus l'enregistrement
             // -------------------------------------------------
             const conflitsBloquants = anomaliesGlobales.filter(a => a.bloquant);
 
             if (conflitsBloquants.length > 0) {
-                if (statut) {
-                    statut.textContent =
-                        "Enregistrement annulé : " + conflitsBloquants.length + " conflit(s) de locaux.";
-                }
-                if (resume) {
-                    resume.textContent = conflitsBloquants.map(a => a.message).join("\n");
-                }
-                return; // le bloc finally réactive les boutons
+                console.warn(
+                    "Conflits de locaux signalés (enregistrement proposé quand même) :",
+                    conflitsBloquants
+                );
             }
 
             if (simulation) {
@@ -2128,10 +2148,13 @@ async function enregistrerAffectations(elements, signatures) {
             const confirme = window.confirm(
                 "Enregistrer les affectations de " + calendriersAEnregistrer.length + " calendrier(s) ?\n\n" +
                 "• Filières sans local (leurs anciens locaux seront vidés) : " + filieresEnEchec + "\n" +
-                "• Anomalies non bloquantes : " + anomaliesGlobales.length + "\n" +
+                "• Anomalies signalées : " + anomaliesGlobales.length +
+                (conflitsBloquants.length
+                    ? "\n• dont " + conflitsBloquants.length + " conflit(s) de capacité/niveaux (non bloquants pour l'enregistrement)"
+                    : "") +
                 (CONFIG.SAUVEGARDER_AVANT_ECRITURE
-                    ? "\nL'ancien planning de chaque calendrier sera conservé dans son historique."
-                    : "\nAucune sauvegarde de l'ancien planning n'est activée.")
+                    ? "\n\nL'ancien planning de chaque calendrier sera conservé dans son historique."
+                    : "\n\nAucune sauvegarde de l'ancien planning n'est activée.")
             );
 
             if (!confirme) {
