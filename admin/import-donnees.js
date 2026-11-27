@@ -10,11 +10,22 @@
 //   - formaterDate(valeur)
 //   - convertirHeureExcel(valeur)
 //   - window.generationExamens.definirDonneesLocales(donnees)
-//   - Firestore (SDK "compat") : instance dans window.db
-//     ex. : window.db = firebase.firestore();
+//   - ../firebase-config.js qui exporte { app }
 //
 // Si Firestore n'est pas disponible, l'import reste local.
 // =====================================================
+
+import { app } from "../firebase-config.js";
+
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDocs,
+    limit,
+    query,
+    writeBatch
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 
 // =====================================================
@@ -61,20 +72,13 @@ const CONFIG_IMPORT = {
 // Retourne l'instance Firestore (ou null)
 function obtenirFirestore() {
 
-    if (window.db && typeof window.db.collection === "function") {
-        return window.db;
+    try {
+        return getFirestore(app);
     }
-
-    if (
-        typeof firebase !== "undefined" &&
-        firebase.apps &&
-        firebase.apps.length > 0 &&
-        typeof firebase.firestore === "function"
-    ) {
-        return firebase.firestore();
+    catch (erreur) {
+        console.error("❌ Initialisation Firestore impossible :", erreur);
+        return null;
     }
-
-    return null;
 }
 
 
@@ -277,20 +281,23 @@ function sauvegarderLocalement(donnees) {
 // Supprime tous les documents d'une collection (par lots)
 async function viderCollection(db, nomCollection) {
 
-    const reference = db.collection(nomCollection);
-
     while (true) {
 
-        const instantane = await reference.limit(CONFIG_IMPORT.tailleLot).get();
+        const instantane = await getDocs(
+            query(
+                collection(db, nomCollection),
+                limit(CONFIG_IMPORT.tailleLot)
+            )
+        );
 
         if (instantane.empty) {
             break;
         }
 
-        const lot = db.batch();
+        const lot = writeBatch(db);
 
-        instantane.docs.forEach(function (doc) {
-            lot.delete(doc.ref);
+        instantane.docs.forEach(function (documentFirestore) {
+            lot.delete(documentFirestore.ref);
         });
 
         await lot.commit();
@@ -315,7 +322,7 @@ async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
     for (let debut = 0; debut < lignes.length; debut += CONFIG_IMPORT.tailleLot) {
 
         const morceau = lignes.slice(debut, debut + CONFIG_IMPORT.tailleLot);
-        const lot = db.batch();
+        const lot = writeBatch(db);
 
         morceau.forEach(function (ligne, i) {
 
@@ -324,7 +331,7 @@ async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
             );
 
             lot.set(
-                db.collection(nomCollection).doc(identifiant),
+                doc(db, nomCollection, identifiant),
                 { ...ligne, importeLe: horodatage }
             );
 
@@ -552,7 +559,4 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (!obtenirFirestore()) {
-        console.warn("⚠ Firestore non détecté : les imports resteront locaux.");
-    }
-
-});
+        consol
