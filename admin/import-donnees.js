@@ -1,57 +1,56 @@
 // =====================================================
 // PLANIFICATION DES EXAMENS FSGF
-// IMPORT-DONNEES.JS  (version améliorée)
-// Import Excel → mémoire locale → localStorage → Firestore
+// IMPORT-DONNEES.JS
+// Import Excel -> mémoire locale -> Firestore
 // =====================================================
 //
-// Prérequis côté page HTML :
-//   - SheetJS (XLSX) chargé
-//   - window.generationExamens.definirDonneesLocales(...) disponible
-//   - Firestore initialisé et exposé dans window.db
-//        • SDK "compat"  : window.db = firebase.firestore();
-//        • SDK modulaire : window.db = getFirestore(app);
-//                          window.firestoreFns = { doc, writeBatch };
+// Dépendances attendues (définies dans d'autres fichiers) :
+//   - XLSX (SheetJS)
+//   - lireFeuille(classeur, nomFeuille)
+//   - formaterDate(valeur)
+//   - convertirHeureExcel(valeur)
+//   - window.generationExamens.definirDonneesLocales(donnees)
+//   - Firestore (SDK "compat") : instance dans window.db
+//     ex. : window.db = firebase.firestore();
 //
-// Éléments HTML utilisés (inchangés + 2 optionnels) :
-//   btnImporterParametrage, fichierParametrage, statutImportParametrage
-//   btnImporterSallesAmphis, fichierSallesAmphis, statutImportSallesAmphis
-//   chkSauvegardeFirestore  (optionnel : case à cocher, cochée par défaut)
+// Si Firestore n'est pas disponible, l'import reste local.
 // =====================================================
 
-
-"use strict";
 
 // =====================================================
 // 1. CONFIGURATION
 // =====================================================
 
-const IMPORT_CONFIG = {
+const CONFIG_IMPORT = {
 
-    // Taille max d'un lot Firestore (limite officielle : 500)
+    // Firestore accepte 500 opérations max par lot
     tailleLot: 400,
 
-    // Préfixe des clés localStorage
-    prefixeLocal: "fsgf_examens_",
+    // Copie de secours dans le navigateur
+    sauvegardeLocalStorage: true,
+    prefixeLocalStorage: "fsgf_examens_",
 
-    // Collections Firestore
+    // Noms des collections Firestore
     collections: {
         matieres: "matieres",
         sessions: "sessions",
         creneaux: "creneaux",
-        sallesAmphis: "sallesAmphis",
+        sallesAmphis: "salles_amphis",   // doit correspondre aux règles Firestore
         effectifs: "effectifs"
     },
 
-    // Champs utilisés (dans l'ordre) pour fabriquer l'identifiant
-    // d'un document. Un ré-import met ainsi à jour au lieu de dupliquer.
+    // Champs utilisés (dans l'ordre) pour fabriquer l'identifiant du document.
+    // Adaptez-les aux colonnes de vos fichiers Excel.
     champsIdentifiant: {
-        matieres: ["id", "code", "codeMatiere"],
-        sessions: ["id", "code", "session"],
-        creneaux: ["id", "code", "creneau"],
-        sallesAmphis: ["id", "code", "salle", "nom"],
-        effectifs: ["id", "code", "codeMatiere", "matiere"]
-    }
+        matieres: ["codeMatiere", "code", "id"],
+        sessions: ["codeSession", "code", "id"],
+        creneaux: ["codeCreneau", "code", "id"],
+        sallesAmphis: ["codeSalle", "code", "id", "nom"],
+        effectifs: ["id"]
+    },
 
+    // true : supprime d'abord les anciens documents de la collection
+    remplacerCollections: false
 };
 
 
@@ -59,685 +58,501 @@ const IMPORT_CONFIG = {
 // 2. OUTILS GÉNÉRAUX
 // =====================================================
 
-function afficherStatut(element, message, type) {
+// Retourne l'instance Firestore (ou null)
+function obtenirFirestore() {
 
-    if (!element) return;
+    if (window.db && typeof window.db.collection === "function") {
+        return window.db;
+    }
 
-    element.textContent = message;
+    if (
+        typeof firebase !== "undefined" &&
+        firebase.apps &&
+        firebase.apps.length > 0 &&
+        typeof firebase.firestore === "function"
+    ) {
+        return firebase.firestore();
+    }
 
-    element.style.color =
-        type === "erreur" ? "#b00020" :
-        type === "succes" ? "#1b7f3b" :
-        "";
-
+    return null;
 }
 
 
-function basculerBouton(bouton, actif) {
+// Affiche un message dans la zone de statut
+function afficherStatut(element, message) {
 
-    if (!bouton) return;
+    if (element) {
+        element.textContent = message;
+    }
 
-    bouton.disabled = !actif;
-
+    console.log(message);
 }
 
 
-// Utilise les fonctions déjà présentes dans vos autres fichiers
-// si elles existent, sinon une version de secours.
+// Active / désactive un bouton pendant l'import
+function basculerBouton(idBouton, actif) {
 
-function lireFeuilleSecurisee(classeur, nomFeuille) {
+    const bouton = document.getElementById(idBouton);
 
-    if (!classeur.Sheets[nomFeuille]) {
-
-        throw new Error(
-            "Feuille « " + nomFeuille + " » introuvable. " +
-            "Feuilles présentes : " + classeur.SheetNames.join(", ") + "."
-        );
-
+    if (bouton) {
+        bouton.disabled = !actif;
     }
-
-    if (typeof window.lireFeuille === "function") {
-
-        return window.lireFeuille(classeur, nomFeuille);
-
-    }
-
-    return XLSX.utils.sheet_to_json(
-        classeur.Sheets[nomFeuille],
-        { defval: "" }
-    );
-
 }
 
 
-function formaterDateSecurisee(valeur) {
+// Nettoie une ligne : espaces, valeurs undefined
+// (Firestore refuse les valeurs undefined)
+function nettoyerLigne(ligne) {
 
-    if (typeof window.formaterDate === "function") {
+    const propre = {};
 
-        return window.formaterDate(valeur);
+    Object.keys(ligne).forEach(function (cle) {
 
-    }
+        let valeur = ligne[cle];
 
-    // Numéro de série Excel → jj/mm/aaaa
-    if (typeof valeur === "number") {
+        if (valeur === undefined) {
+            return;
+        }
 
-        const d = new Date(Math.round((valeur - 25569) * 86400 * 1000));
+        if (typeof valeur === "string") {
+            valeur = valeur.trim();
+        }
 
-        return (
-            String(d.getUTCDate()).padStart(2, "0") + "/" +
-            String(d.getUTCMonth() + 1).padStart(2, "0") + "/" +
-            d.getUTCFullYear()
-        );
+        propre[String(cle).trim()] = valeur;
 
-    }
-
-    return valeur;
-
-}
-
-
-function convertirHeureSecurisee(valeur) {
-
-    if (typeof window.convertirHeureExcel === "function") {
-
-        return window.convertirHeureExcel(valeur);
-
-    }
-
-    // Fraction de jour Excel → hh:mm
-    if (typeof valeur === "number") {
-
-        const minutes = Math.round(valeur * 24 * 60);
-
-        return (
-            String(Math.floor(minutes / 60) % 24).padStart(2, "0") + ":" +
-            String(minutes % 60).padStart(2, "0")
-        );
-
-    }
-
-    return valeur;
-
-}
-
-
-// Vérifie qu'une feuille contient bien les colonnes attendues
-function verifierColonnes(lignes, colonnes, nomFeuille) {
-
-    if (lignes.length === 0) {
-
-        throw new Error("La feuille « " + nomFeuille + " » est vide.");
-
-    }
-
-    const presentes = Object.keys(lignes[0]);
-
-    const manquantes = colonnes.filter(function (c) {
-        return !presentes.includes(c);
     });
 
-    if (manquantes.length > 0) {
+    return propre;
+}
+
+
+// Fabrique un identifiant de document valide
+function fabriquerIdentifiant(ligne, champs, nomCollection, index, dejaUtilises) {
+
+    let base = "";
+
+    for (const champ of champs) {
+
+        if (
+            ligne[champ] !== undefined &&
+            ligne[champ] !== null &&
+            String(ligne[champ]).trim() !== ""
+        ) {
+            base = String(ligne[champ]).trim();
+            break;
+        }
+
+    }
+
+    if (base === "") {
+        base = nomCollection + "_" + (index + 1);
+    }
+
+    // "/" est interdit dans un identifiant Firestore
+    base = base.replace(/\//g, "-");
+
+    // Doublon : on ajoute le numéro de ligne
+    let identifiant = base;
+
+    if (dejaUtilises.has(identifiant)) {
+
+        console.warn(
+            "⚠ Identifiant en double dans " + nomCollection +
+            " : " + base + " (ligne " + (index + 2) + " d'Excel)"
+        );
+
+        identifiant = base + "_" + (index + 1);
+    }
+
+    dejaUtilises.add(identifiant);
+
+    return identifiant;
+}
+
+
+// Lit un fichier Excel et retourne le classeur
+async function lireClasseur(idChampFichier, nomAttendu) {
+
+    const champ = document.getElementById(idChampFichier);
+    const fichier = champ ? champ.files[0] : null;
+
+    if (!fichier) {
+        throw new Error("Veuillez sélectionner le fichier " + nomAttendu + ".");
+    }
+
+    if (!/\.xlsx?$/i.test(fichier.name)) {
+        throw new Error("Le fichier doit être au format Excel (.xlsx).");
+    }
+
+    console.log("Fichier sélectionné :", fichier.name);
+
+    const tableau = await fichier.arrayBuffer();
+
+    return XLSX.read(tableau, { type: "array" });
+}
+
+
+// Lit une feuille en vérifiant qu'elle existe
+function lireFeuilleSecurisee(classeur, nomFeuille) {
+
+    if (!classeur.SheetNames.includes(nomFeuille)) {
 
         throw new Error(
-            "Feuille « " + nomFeuille + " » : colonne(s) manquante(s) → " +
-            manquantes.join(", ") + "."
+            "Feuille « " + nomFeuille + " » introuvable. Feuilles présentes : " +
+            classeur.SheetNames.join(", ")
         );
 
     }
 
+    return lireFeuille(classeur, nomFeuille).map(nettoyerLigne);
 }
 
 
-// Supprime les lignes totalement vides et nettoie les textes
-function nettoyerLignes(lignes) {
+// Vérifie qu'aucune feuille n'est vide
+function verifierNonVides(donnees) {
 
-    return lignes
-        .filter(function (ligne) {
+    const vides = Object.keys(donnees).filter(function (nom) {
+        return donnees[nom].length === 0;
+    });
 
-            return Object.values(ligne).some(function (v) {
-                return v !== "" && v !== null && v !== undefined;
-            });
-
-        })
-        .map(function (ligne) {
-
-            const propre = {};
-
-            Object.keys(ligne).forEach(function (cle) {
-
-                const valeur = ligne[cle];
-
-                propre[String(cle).trim()] =
-                    typeof valeur === "string" ? valeur.trim() : valeur;
-
-            });
-
-            return propre;
-
-        });
-
-}
-
-
-function moteurDisponible() {
-
-    return (
-        window.generationExamens &&
-        typeof window.generationExamens.definirDonneesLocales === "function"
-    );
-
+    if (vides.length > 0) {
+        throw new Error("Feuille(s) vide(s) : " + vides.join(", ") + ".");
+    }
 }
 
 
 // =====================================================
-// 3. SAUVEGARDE LOCALE (mémoire + localStorage)
+// 3. SAUVEGARDE LOCALE
 // =====================================================
 
 function sauvegarderLocalement(donnees) {
 
     // 3.1 Transmission au moteur de génération (mémoire)
-    if (!moteurDisponible()) {
-
+    if (
+        !window.generationExamens ||
+        typeof window.generationExamens.definirDonneesLocales !== "function"
+    ) {
         throw new Error("Le moteur de génération locale n'est pas disponible.");
-
     }
 
     window.generationExamens.definirDonneesLocales(donnees);
 
     // 3.2 Copie de secours dans le navigateur
-    //     (survit à l'actualisation de la page)
-    Object.keys(donnees).forEach(function (nom) {
+    if (CONFIG_IMPORT.sauvegardeLocalStorage) {
 
-        try {
+        Object.keys(donnees).forEach(function (nom) {
 
-            localStorage.setItem(
-                IMPORT_CONFIG.prefixeLocal + nom,
-                JSON.stringify({
-                    importeLe: new Date().toISOString(),
-                    donnees: donnees[nom]
-                })
-            );
+            try {
 
-        }
-        catch (erreur) {
+                localStorage.setItem(
+                    CONFIG_IMPORT.prefixeLocalStorage + nom,
+                    JSON.stringify(donnees[nom])
+                );
 
-            // Quota dépassé ou navigation privée : non bloquant
-            console.warn(
-                "⚠ Copie localStorage impossible pour « " + nom + " » :",
-                erreur.message
-            );
+            }
+            catch (erreur) {
 
-        }
-
-    });
-
-}
-
-
-// Recharge au démarrage les données sauvegardées localement
-function restaurerDepuisLocalStorage() {
-
-    const restaure = {};
-
-    Object.keys(IMPORT_CONFIG.collections).forEach(function (nom) {
-
-        try {
-
-            const brut = localStorage.getItem(IMPORT_CONFIG.prefixeLocal + nom);
-
-            if (brut) {
-
-                restaure[nom] = JSON.parse(brut).donnees;
+                // Quota dépassé ou stockage désactivé : non bloquant
+                console.warn(
+                    "⚠ Copie localStorage impossible pour " + nom + " :",
+                    erreur.message
+                );
 
             }
 
-        }
-        catch (erreur) {
-
-            console.warn("⚠ Lecture localStorage impossible :", nom, erreur);
-
-        }
-
-    });
-
-    if (Object.keys(restaure).length > 0 && moteurDisponible()) {
-
-        window.generationExamens.definirDonneesLocales(restaure);
-
-        console.log(
-            "✓ Données restaurées depuis le navigateur :",
-            Object.keys(restaure).join(", ")
-        );
+        });
 
     }
 
+    Object.keys(donnees).forEach(function (nom) {
+        console.log("✓ " + nom + " chargé localement :", donnees[nom].length);
+    });
 }
 
 
 // =====================================================
-// 4. SAUVEGARDE FIRESTORE
+// 4. ENREGISTREMENT FIRESTORE
 // =====================================================
 
-function firestoreDisponible() {
+// Supprime tous les documents d'une collection (par lots)
+async function viderCollection(db, nomCollection) {
 
-    return !!window.db;
+    const reference = db.collection(nomCollection);
 
-}
+    while (true) {
 
+        const instantane = await reference.limit(CONFIG_IMPORT.tailleLot).get();
 
-function sauvegardeFirestoreDemandee() {
-
-    const case_ = document.getElementById("chkSauvegardeFirestore");
-
-    // Si la case n'existe pas, on sauvegarde par défaut
-    return case_ ? case_.checked : true;
-
-}
-
-
-// Enlève les valeurs non acceptées par Firestore (undefined, NaN)
-function nettoyerPourFirestore(objet) {
-
-    const propre = {};
-
-    Object.keys(objet).forEach(function (cle) {
-
-        const valeur = objet[cle];
-
-        if (valeur === undefined) return;
-        if (typeof valeur === "number" && Number.isNaN(valeur)) return;
-
-        propre[cle] = valeur;
-
-    });
-
-    return propre;
-
-}
-
-
-function fabriquerIdentifiant(nomCollection, ligne, index) {
-
-    const champs = IMPORT_CONFIG.champsIdentifiant[nomCollection] || [];
-
-    for (const champ of champs) {
-
-        if (ligne[champ] !== undefined && ligne[champ] !== "") {
-
-            // "/" interdit dans un identifiant Firestore
-            return String(ligne[champ]).trim().replace(/\//g, "-");
-
+        if (instantane.empty) {
+            break;
         }
 
+        const lot = db.batch();
+
+        instantane.docs.forEach(function (doc) {
+            lot.delete(doc.ref);
+        });
+
+        await lot.commit();
     }
-
-    return nomCollection + "_" + String(index + 1).padStart(4, "0");
-
 }
 
 
-// Écrit une collection complète par lots, avec compatibilité
-// des deux versions du SDK Firestore.
-async function ecrireCollectionFirestore(nomCollection, lignes, surProgression) {
+// Écrit une liste de lignes dans une collection (par lots)
+async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
 
-    const db = window.db;
-
-    const modeCompat = typeof db.collection === "function";
-
-    const fns = window.firestoreFns;
-
-    if (!modeCompat && (!fns || !fns.doc || !fns.writeBatch)) {
-
-        throw new Error(
-            "Firestore modulaire détecté : exposez window.firestoreFns = { doc, writeBatch }."
-        );
-
-    }
-
+    const nomCollection = CONFIG_IMPORT.collections[cleDonnees];
+    const champs = CONFIG_IMPORT.champsIdentifiant[cleDonnees] || ["id"];
     const horodatage = new Date().toISOString();
+    const dejaUtilises = new Set();
+
+    if (CONFIG_IMPORT.remplacerCollections) {
+        await viderCollection(db, nomCollection);
+    }
 
     let ecrits = 0;
 
-    for (let i = 0; i < lignes.length; i += IMPORT_CONFIG.tailleLot) {
+    for (let debut = 0; debut < lignes.length; debut += CONFIG_IMPORT.tailleLot) {
 
-        const lot = modeCompat ? db.batch() : fns.writeBatch(db);
+        const morceau = lignes.slice(debut, debut + CONFIG_IMPORT.tailleLot);
+        const lot = db.batch();
 
-        lignes
-            .slice(i, i + IMPORT_CONFIG.tailleLot)
-            .forEach(function (ligne, decalage) {
+        morceau.forEach(function (ligne, i) {
 
-                const id = fabriquerIdentifiant(
-                    nomCollection,
-                    ligne,
-                    i + decalage
-                );
+            const identifiant = fabriquerIdentifiant(
+                ligne, champs, nomCollection, debut + i, dejaUtilises
+            );
 
-                const donnees = nettoyerPourFirestore({
-                    ...ligne,
-                    importeLe: horodatage
-                });
+            lot.set(
+                db.collection(nomCollection).doc(identifiant),
+                { ...ligne, importeLe: horodatage }
+            );
 
-                const reference = modeCompat
-                    ? db.collection(nomCollection).doc(id)
-                    : fns.doc(db, nomCollection, id);
-
-                // merge : met à jour sans effacer les autres champs
-                lot.set(reference, donnees, { merge: true });
-
-            });
+        });
 
         await lot.commit();
 
-        ecrits += Math.min(IMPORT_CONFIG.tailleLot, lignes.length - i);
+        ecrits += morceau.length;
 
         if (surProgression) {
-
             surProgression(nomCollection, ecrits, lignes.length);
-
         }
-
     }
+
+    console.log("✓ Firestore — " + nomCollection + " :", ecrits, "document(s)");
 
     return ecrits;
-
 }
 
 
-async function sauvegarderFirestore(donnees, statut) {
+// Envoie toutes les données dans Firestore
+async function sauvegarderFirestore(donnees, surProgression) {
 
-    const resume = [];
+    const db = obtenirFirestore();
 
-    for (const nom of Object.keys(donnees)) {
-
-        const collection = IMPORT_CONFIG.collections[nom];
-
-        await ecrireCollectionFirestore(
-            collection,
-            donnees[nom],
-            function (coll, fait, total) {
-
-                afficherStatut(
-                    statut,
-                    "⏳ Firestore — " + coll + " : " + fait + " / " + total
-                );
-
-            }
-        );
-
-        resume.push(donnees[nom].length + " " + nom);
-
-        console.log(
-            "✓ Firestore — collection « " + collection + " » : " +
-            donnees[nom].length + " document(s)."
-        );
-
+    if (!db) {
+        return { effectue: false, raison: "Firestore non disponible" };
     }
 
-    return resume;
+    const resume = {};
 
+    for (const cle of Object.keys(donnees)) {
+        resume[cle] = await ecrireCollection(db, cle, donnees[cle], surProgression);
+    }
+
+    return { effectue: true, resume: resume };
 }
 
 
 // =====================================================
-// 5. TRAITEMENT COMMUN : LOCAL PUIS FIRESTORE
+// 5. PROCÉDURE COMMUNE D'IMPORT
 // =====================================================
 
-async function enregistrerDonnees(donnees, statut) {
+async function executerImport(options) {
 
-    // ÉTAPE 1 — Local (toujours exécuté en premier)
-    sauvegarderLocalement(donnees);
+    const statut = document.getElementById(options.idStatut);
 
-    const resumeLocal = Object.keys(donnees)
-        .map(function (n) { return donnees[n].length + " " + n; })
-        .join(", ");
+    basculerBouton(options.idBouton, false);
 
-    console.log("✓ Sauvegarde locale terminée :", resumeLocal);
-
-    // ÉTAPE 2 — Firestore (facultatif)
-    if (!sauvegardeFirestoreDemandee()) {
-
-        afficherStatut(
-            statut,
-            "✓ Sauvegarde locale terminée (" + resumeLocal + "). Firestore ignoré.",
-            "succes"
-        );
-
-        return;
-
-    }
-
-    if (!firestoreDisponible()) {
-
-        afficherStatut(
-            statut,
-            "⚠ Local OK (" + resumeLocal + "), mais Firestore n'est pas initialisé (window.db).",
-            "erreur"
-        );
-
-        return;
-
-    }
+    let localOk = false;
 
     try {
 
-        await sauvegarderFirestore(donnees, statut);
+        afficherStatut(statut, "⏳ Lecture du fichier Excel…");
 
-        afficherStatut(
-            statut,
-            "✓ Sauvegarde terminée en local et dans Firestore (" + resumeLocal + ").",
-            "succes"
+        // 1. Lecture + préparation
+        const classeur = await lireClasseur(options.idFichier, options.nomFichier);
+        const donnees = options.preparer(classeur);
+
+        verifierNonVides(donnees);
+
+        // 2. Sauvegarde locale (toujours en premier)
+        sauvegarderLocalement(donnees);
+        localOk = true;
+
+        afficherStatut(statut, "✓ Chargement local terminé. Envoi vers Firestore…");
+
+        // 3. Sauvegarde Firestore
+        const resultat = await sauvegarderFirestore(
+            donnees,
+            function (collection, ecrits, total) {
+                afficherStatut(
+                    statut,
+                    "⏳ Firestore — " + collection + " : " + ecrits + " / " + total
+                );
+            }
         );
 
-    }
-    catch (erreur) {
+        // 4. Message final
+        if (!resultat.effectue) {
 
-        // Les données locales restent valides et utilisables
-        console.error("❌ Erreur Firestore :", erreur);
-
-        afficherStatut(
-            statut,
-            "⚠ Local OK, mais échec Firestore : " + erreur.message,
-            "erreur"
-        );
-
-    }
-
-}
-
-
-// =====================================================
-// 6. BOUTONS IMPORT
-// =====================================================
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    // Restaure les données de la dernière session
-    restaurerDepuisLocalStorage();
-
-    const liaisons = [
-        ["btnImporterParametrage", importerParametrage, "paramétrage"],
-        ["btnImporterSallesAmphis", importerSallesAmphis, "salles / amphis"]
-    ];
-
-    liaisons.forEach(function (liaison) {
-
-        const bouton = document.getElementById(liaison[0]);
-
-        if (bouton) {
-
-            bouton.addEventListener("click", liaison[1]);
-
-            console.log("✓ Import " + liaison[2] + " : bouton connecté.");
+            afficherStatut(
+                statut,
+                "✓ Données chargées en local uniquement (" +
+                resultat.raison + ")."
+            );
 
         }
         else {
 
-            console.error("❌ Bouton " + liaison[0] + " introuvable.");
+            const detail = Object.keys(resultat.resume).map(function (cle) {
+                return resultat.resume[cle] + " " + cle;
+            }).join(", ");
 
+            afficherStatut(
+                statut,
+                "✓ Import terminé (local + Firestore) : " + detail + "."
+            );
+
+        }
+
+    }
+    catch (erreur) {
+
+        console.error("❌ Erreur lors de l'import :", erreur);
+
+        if (localOk) {
+
+            afficherStatut(
+                statut,
+                "⚠ Données chargées en local, mais échec Firestore : " +
+                erreur.message
+            );
+
+        }
+        else {
+
+            afficherStatut(statut, "❌ " + erreur.message);
+
+        }
+
+    }
+    finally {
+
+        basculerBouton(options.idBouton, true);
+
+    }
+}
+
+
+// =====================================================
+// 6. IMPORT DU PARAMÉTRAGE
+// =====================================================
+
+function importerParametrage() {
+
+    return executerImport({
+
+        idFichier: "fichierParametrage",
+        idStatut: "statutImportParametrage",
+        idBouton: "btnImporterParametrage",
+        nomFichier: "parametrage_examens.xlsx",
+
+        preparer: function (classeur) {
+
+            const matieres = lireFeuilleSecurisee(classeur, "matieres");
+
+            const sessions = lireFeuilleSecurisee(classeur, "sessions")
+                .map(function (session) {
+                    return {
+                        ...session,
+                        dateDebutAffichage: formaterDate(session.dateDebut),
+                        dateFinAffichage: formaterDate(session.dateFin)
+                    };
+                });
+
+            const creneaux = lireFeuilleSecurisee(classeur, "creneaux")
+                .map(function (creneau) {
+                    return {
+                        ...creneau,
+                        heureDebutAffichage: convertirHeureExcel(creneau.heureDebut),
+                        heureFinAffichage: convertirHeureExcel(creneau.heureFin)
+                    };
+                });
+
+            return {
+                matieres: matieres,
+                sessions: sessions,
+                creneaux: creneaux
+            };
+        }
+
+    });
+}
+
+
+// =====================================================
+// 7. IMPORT DES SALLES / AMPHIS
+// =====================================================
+
+function importerSallesAmphis() {
+
+    return executerImport({
+
+        idFichier: "fichierSallesAmphis",
+        idStatut: "statutImportSallesAmphis",
+        idBouton: "btnImporterSallesAmphis",
+        nomFichier: "salles_amphis.xlsx",
+
+        preparer: function (classeur) {
+
+            return {
+                sallesAmphis: lireFeuilleSecurisee(classeur, "salles_amphis"),
+                effectifs: lireFeuilleSecurisee(classeur, "effectifs")
+            };
+        }
+
+    });
+}
+
+
+// =====================================================
+// 8. BOUTONS IMPORT
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const liaisons = [
+        { id: "btnImporterParametrage", action: importerParametrage },
+        { id: "btnImporterSallesAmphis", action: importerSallesAmphis }
+    ];
+
+    liaisons.forEach(function (liaison) {
+
+        const bouton = document.getElementById(liaison.id);
+
+        if (bouton) {
+            bouton.addEventListener("click", liaison.action);
+            console.log("✓ Bouton connecté :", liaison.id);
+        }
+        else {
+            console.error("❌ Bouton introuvable :", liaison.id);
         }
 
     });
 
+    if (!obtenirFirestore()) {
+        console.warn("⚠ Firestore non détecté : les imports resteront locaux.");
+    }
+
 });
-
-
-// =====================================================
-// 7. IMPORT DU PARAMÉTRAGE
-// =====================================================
-
-async function importerParametrage() {
-
-    const statut = document.getElementById("statutImportParametrage");
-
-    const bouton = document.getElementById("btnImporterParametrage");
-
-    basculerBouton(bouton, false);
-
-    try {
-
-        // 1. Fichier
-        const fichier = document.getElementById("fichierParametrage").files[0];
-
-        if (!fichier) {
-
-            throw new Error(
-                "Veuillez sélectionner le fichier parametrage_examens.xlsx."
-            );
-
-        }
-
-        afficherStatut(statut, "⏳ Lecture du fichier Excel…");
-
-        // 2. Lecture
-        const classeur = XLSX.read(
-            await fichier.arrayBuffer(),
-            { type: "array" }
-        );
-
-        const matieres = nettoyerLignes(
-            lireFeuilleSecurisee(classeur, "matieres")
-        );
-
-        const sessionsBrutes = nettoyerLignes(
-            lireFeuilleSecurisee(classeur, "sessions")
-        );
-
-        const creneauxBruts = nettoyerLignes(
-            lireFeuilleSecurisee(classeur, "creneaux")
-        );
-
-        // 3. Vérification des colonnes
-        verifierColonnes(matieres, [], "matieres");
-        verifierColonnes(sessionsBrutes, ["dateDebut", "dateFin"], "sessions");
-        verifierColonnes(creneauxBruts, ["heureDebut", "heureFin"], "creneaux");
-
-        // 4. Préparation
-        const sessions = sessionsBrutes.map(function (s) {
-
-            return {
-                ...s,
-                dateDebutAffichage: formaterDateSecurisee(s.dateDebut),
-                dateFinAffichage: formaterDateSecurisee(s.dateFin)
-            };
-
-        });
-
-        const creneaux = creneauxBruts.map(function (c) {
-
-            return {
-                ...c,
-                heureDebutAffichage: convertirHeureSecurisee(c.heureDebut),
-                heureFinAffichage: convertirHeureSecurisee(c.heureFin)
-            };
-
-        });
-
-        // 5. Sauvegarde locale puis Firestore
-        await enregistrerDonnees(
-            { matieres: matieres, sessions: sessions, creneaux: creneaux },
-            statut
-        );
-
-    }
-    catch (erreur) {
-
-        console.error("❌ Erreur import paramétrage :", erreur);
-
-        afficherStatut(statut, "❌ " + erreur.message, "erreur");
-
-    }
-    finally {
-
-        basculerBouton(bouton, true);
-
-    }
-
-}
-
-
-// =====================================================
-// 8. IMPORT DES SALLES / AMPHIS
-// =====================================================
-
-async function importerSallesAmphis() {
-
-    const statut = document.getElementById("statutImportSallesAmphis");
-
-    const bouton = document.getElementById("btnImporterSallesAmphis");
-
-    basculerBouton(bouton, false);
-
-    try {
-
-        // 1. Fichier
-        const fichier = document.getElementById("fichierSallesAmphis").files[0];
-
-        if (!fichier) {
-
-            throw new Error(
-                "Veuillez sélectionner le fichier salles_amphis.xlsx."
-            );
-
-        }
-
-        afficherStatut(statut, "⏳ Lecture du fichier Excel…");
-
-        // 2. Lecture
-        const classeur = XLSX.read(
-            await fichier.arrayBuffer(),
-            { type: "array" }
-        );
-
-        const sallesAmphis = nettoyerLignes(
-            lireFeuilleSecurisee(classeur, "salles_amphis")
-        );
-
-        const effectifs = nettoyerLignes(
-            lireFeuilleSecurisee(classeur, "effectifs")
-        );
-
-        // 3. Vérification
-        verifierColonnes(sallesAmphis, [], "salles_amphis");
-        verifierColonnes(effectifs, [], "effectifs");
-
-        // 4. Sauvegarde locale puis Firestore
-        await enregistrerDonnees(
-            { sallesAmphis: sallesAmphis, effectifs: effectifs },
-            statut
-        );
-
-    }
-    catch (erreur) {
-
-        console.error("❌ Erreur import salles / amphis :", erreur);
-
-        afficherStatut(statut, "❌ " + erreur.message, "erreur");
-
-    }
-    finally {
-
-        basculerBouton(bouton, true);
-
-    }
-
-}
