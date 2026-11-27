@@ -54,10 +54,29 @@ const CONFIG_IMPORT = {
     // Adaptez-les aux colonnes de vos fichiers Excel.
     champsIdentifiant: {
         matieres: ["codeMatiere", "code", "id"],
-        sessions: ["codeSession", "code", "id"],
+        // Identifiant composite : champs reliés par "+"
+        // ex. : 2025-2026_S1_R1_PRINCIPALE
+        sessions: [
+            "anneeUniversitaire+semestreCode+regimeCode+sessionCode"
+        ],
         creneaux: ["codeCreneau", "code", "id"],
         sallesAmphis: ["codeSalle", "code", "id", "nom"],
         effectifs: ["id"]
+    },
+
+    // Schéma des collections : champs obligatoires dans Excel ET seuls champs
+    // enregistrés dans Firestore. Une collection absente d'ici garde
+    // toutes ses colonnes.
+    schemas: {
+        sessions: [
+            "anneeUniversitaire",
+            "semestreCode",
+            "regimeCode",
+            "sessionCode",
+            "sessionLibelle",
+            "dateDebut",
+            "dateFin"
+        ]
     },
 
     // true : supprime d'abord les anciens documents de la collection
@@ -169,12 +188,22 @@ function fabriquerIdentifiant(ligne, champs, nomCollection, index, dejaUtilises)
 
     for (const champ of champs) {
 
-        if (
-            ligne[champ] !== undefined &&
-            ligne[champ] !== null &&
-            String(ligne[champ]).trim() !== ""
-        ) {
-            base = String(ligne[champ]).trim();
+        // Un champ "a+b+c" est un identifiant composite :
+        // toutes les parties doivent être renseignées
+        const parties = champ.split("+");
+
+        const valeurs = parties.map(function (nom) {
+
+            const valeur = ligne[nom];
+
+            return (valeur === undefined || valeur === null)
+                ? ""
+                : String(valeur).trim();
+
+        });
+
+        if (valeurs.every(function (v) { return v !== ""; })) {
+            base = valeurs.join("_");
             break;
         }
 
@@ -254,6 +283,66 @@ function verifierNonVides(donnees) {
     if (vides.length > 0) {
         throw new Error("Feuille(s) vide(s) : " + vides.join(", ") + ".");
     }
+}
+
+
+// Vérifie que les colonnes obligatoires existent dans chaque feuille
+function verifierColonnes(donnees) {
+
+    Object.keys(CONFIG_IMPORT.schemas).forEach(function (cle) {
+
+        if (!donnees[cle]) {
+            return;
+        }
+
+        const presentes = new Set();
+
+        donnees[cle].forEach(function (ligne) {
+            Object.keys(ligne).forEach(function (champ) {
+                presentes.add(champ);
+            });
+        });
+
+        const manquantes = CONFIG_IMPORT.schemas[cle].filter(function (champ) {
+            return !presentes.has(champ);
+        });
+
+        if (manquantes.length > 0) {
+
+            throw new Error(
+                "Feuille « " + cle + " » : colonne(s) manquante(s) : " +
+                manquantes.join(", ") + ". Colonnes trouvées : " +
+                Array.from(presentes).join(", ")
+            );
+
+        }
+
+    });
+}
+
+
+// Ne garde que les champs du schéma (si la collection en a un)
+function appliquerSchema(cleDonnees, lignes) {
+
+    const schema = CONFIG_IMPORT.schemas[cleDonnees];
+
+    if (!schema) {
+        return lignes;
+    }
+
+    return lignes.map(function (ligne) {
+
+        const filtree = {};
+
+        schema.forEach(function (champ) {
+            if (ligne[champ] !== undefined) {
+                filtree[champ] = ligne[champ];
+            }
+        });
+
+        return filtree;
+
+    });
 }
 
 
@@ -349,6 +438,9 @@ async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
     const horodatage = new Date().toISOString();
     const dejaUtilises = new Set();
 
+    // Ne garder que les champs du schéma (ex. : les 7 champs de sessions)
+    lignes = appliquerSchema(cleDonnees, lignes);
+
     if (CONFIG_IMPORT.remplacerCollections) {
         await viderCollection(db, nomCollection);
     }
@@ -436,6 +528,7 @@ async function executerImport(options) {
         const donnees = options.preparer(classeur);
 
         verifierNonVides(donnees);
+        verifierColonnes(donnees);
 
         // 2. Sauvegarde locale (toujours en premier)
         sauvegarderLocalement(donnees);
