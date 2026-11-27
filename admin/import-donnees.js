@@ -15,17 +15,17 @@
 // Si Firestore n'est pas disponible, l'import reste local.
 // =====================================================
 
-import { app } from "../firebase-config.js";
+// Firebase est chargé dynamiquement (voir obtenirFirestore) pour qu'une
+// erreur de chargement n'empêche jamais l'import local de fonctionner.
 
-import {
-    getFirestore,
-    collection,
-    doc,
-    getDocs,
-    limit,
-    query,
-    writeBatch
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+const URL_FIRESTORE =
+    "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+let baseFirestore = null;      // instance Firestore
+let moduleFirestore = null;    // fonctions du SDK (collection, doc, ...)
+let erreurFirestore = null;    // dernière erreur d'initialisation
+
+console.log("✓ import-donnees.js chargé.");
 
 
 // =====================================================
@@ -70,13 +70,33 @@ const CONFIG_IMPORT = {
 // =====================================================
 
 // Retourne l'instance Firestore (ou null)
-function obtenirFirestore() {
+async function obtenirFirestore() {
+
+    if (baseFirestore) {
+        return baseFirestore;
+    }
 
     try {
-        return getFirestore(app);
+
+        const configuration = await import("../firebase-config.js");
+        const sdk = await import(URL_FIRESTORE);
+
+        if (!configuration.app) {
+            throw new Error("firebase-config.js n'exporte pas « app ».");
+        }
+
+        moduleFirestore = sdk;
+        baseFirestore = sdk.getFirestore(configuration.app);
+        erreurFirestore = null;
+
+        return baseFirestore;
+
     }
     catch (erreur) {
+
+        erreurFirestore = erreur;
         console.error("❌ Initialisation Firestore impossible :", erreur);
+
         return null;
     }
 }
@@ -114,6 +134,13 @@ function nettoyerLigne(ligne) {
 
         let valeur = ligne[cle];
 
+        const nomChamp = String(cle).trim();
+
+        // Firestore refuse les noms de champ vides ou du type __xxx__
+        if (nomChamp === "" || /^__.*__$/.test(nomChamp)) {
+            return;
+        }
+
         if (valeur === undefined) {
             return;
         }
@@ -122,7 +149,12 @@ function nettoyerLigne(ligne) {
             valeur = valeur.trim();
         }
 
-        propre[String(cle).trim()] = valeur;
+        // NaN / Infinity ne sont pas acceptés proprement
+        if (typeof valeur === "number" && !Number.isFinite(valeur)) {
+            valeur = null;
+        }
+
+        propre[nomChamp] = valeur;
 
     });
 
@@ -281,6 +313,8 @@ function sauvegarderLocalement(donnees) {
 // Supprime tous les documents d'une collection (par lots)
 async function viderCollection(db, nomCollection) {
 
+    const { collection, getDocs, limit, query, writeBatch } = moduleFirestore;
+
     while (true) {
 
         const instantane = await getDocs(
@@ -307,6 +341,8 @@ async function viderCollection(db, nomCollection) {
 
 // Écrit une liste de lignes dans une collection (par lots)
 async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
+
+    const { doc, writeBatch } = moduleFirestore;
 
     const nomCollection = CONFIG_IMPORT.collections[cleDonnees];
     const champs = CONFIG_IMPORT.champsIdentifiant[cleDonnees] || ["id"];
@@ -355,10 +391,18 @@ async function ecrireCollection(db, cleDonnees, lignes, surProgression) {
 // Envoie toutes les données dans Firestore
 async function sauvegarderFirestore(donnees, surProgression) {
 
-    const db = obtenirFirestore();
+    const db = await obtenirFirestore();
 
     if (!db) {
-        return { effectue: false, raison: "Firestore non disponible" };
+
+        const cause = erreurFirestore
+            ? " : " + erreurFirestore.message
+            : "";
+
+        return {
+            effectue: false,
+            raison: "Firestore non disponible" + cause
+        };
     }
 
     const resume = {};
@@ -558,5 +602,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
 
-    if (!obtenirFirestore()) {
-        consol
+    obtenirFirestore().then(function (db) {
+
+        if (db) {
+            console.log("✓ Firestore prêt pour l'import.");
+        }
+        else {
+            console.warn("⚠ Firestore indisponible : les imports resteront locaux.");
+        }
+
+    });
+
+});
